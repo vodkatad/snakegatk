@@ -1,0 +1,50 @@
+import os
+def find_prj_root(path=os.getcwd()):
+        if os.path.isfile(os.path.join(path,".PRJ_ROOT")):
+                return path
+        else:
+                if path:
+                        return find_prj_root(os.path.dirname(path))
+                else:
+                        raise Exception("Can not find the PRJ_ROOT directory")
+
+
+PRJ_ROOT=find_prj_root()
+                                                    
+DATA=PRJ_ROOT+"/local/share/data"
+BIN_DIR=PRJ_ROOT+"/local/bin"
+
+XENOME_FQ_DIR=DATA_DIR
+EXONS=DATA+'/PJ1807203_covered.bed'
+###SEXONS='../../PJ1807203_sorted.bed' ## TODO RULE
+
+FASTQ_SUFFIX="_R{pair}.fastq.gz"
+FASTQ_SUFFIX_XENOME=".xenome_graft_{pair}.fastq.gz"
+
+PAIRS=[1,2]
+PAIRS_XENOME=['1','2']
+# TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
+
+PATTERNED=2500 # HiSeq4000, otherwise 100 for unpatterned
+
+wildcard_constraints:
+    sample="[a-zA-Z0-9]+"
+
+# Used references
+#https://gdc.cancer.gov/about-data/data-harmonization-and-generation/gdc-reference-files based on
+#ftp://ftp.ncbi.nlm.nih.gov/genomes/archive/old_genbank/Eukaryotes/vertebrates_mammals/Homo_sapiens/GRCh38/seqs_for_alignment_pipelines/README_ANALYSIS_SETS
+# DBSNP 151 ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606_b151_GRCh38p7/VCF/All_20180418.vcf.gz
+ROOT="TODO"
+ANNOTATIONS=ROOT+"/common/task/annotations/dataset/gdc"
+#https://github.com/vodkatad/snaketry.git
+
+
+CALLABLE="5:10,10:50,50:100,100:150,150:inf"
+CALLABLE_STRICT="50:100,100:150,150:inf"
+
+PADDING=100
+MINDP=10
+
+GNOMAD=ROOT+"/common/task/annotations/dataset/gnomad"
+VEP_CACHE_DIR=ROOT+"/common/task/variant_annotations/dataset/VEP"
+

@@ -1,0 +1,15 @@
+include: "conf.sk"
+
+## Setup of layout.sk starting from SampleSheet.tsv or fastq dir ##
+
+## Alignment ##
+ 
+## Recalibration ##
+
+## Recal and align QC - depth ##
+
+## Mutect ##
+
+## Mutect QC ##
+
+## Annotation and MAF creation ##

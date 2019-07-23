@@ -1,0 +1,3 @@
+dataset/*
+local/share/data/*
+.snakemake
