@@ -1,9 +1,94 @@
 include: "conf.sk"
 
+## Common rules, such as sorting targeted bed ##
+
 ## Setup of layout.sk starting from SampleSheet.tsv or fastq dir ##
 
+def define_samples():
+    global REF
+    import os
+    if os.path.exists(DATA+"/SampleSheet.tsv"):
+        with open(DATA+"/SampleSheet.tsv", 'r') as info:
+            for l in info.readlines():
+                l = l.strip()
+                values = l.split("\t")
+                SAMPLES.append(values[0])
+                if values[1] != "ref":
+                    SAMPLESD.append(values[0])
+                else:
+                    if REF == "":
+                        REF = values[0]
+                    else:
+                        print("A single sample should be the reference!")
+                        exit(1)
+        print(SAMPLES)
+        print(REF)
+    else:
+        #look in fastq dir, need to decide how to setup reference sample TODO
+        print("Configuration without a SampleSheet.tsv still to be implemented")
+        exit(1)
+
+define_samples()
+
+
+## Optional xenome ##
+
 ## Alignment ##
- 
+def produce_pairs(wildcards):
+    if XENO == "yes":
+        return produce_pairs_xeno(wildcards)
+    elif XENO == "no":
+        return produce_pairs_noxeno(wildcards)
+    else:
+        print("XENO variable in conf.sk should be yes or no")
+        return {}
+        
+def produce_pairs_xeno(wildcards):
+    print("TBD!")
+    return {}
+
+def produce_pairs_noxeno(wildcards):
+    import os
+    fastqs = expand(FQ_DIR+'/'+wildcards.sample+FASTQ_SUFFIX, pair=PAIRS)
+    if len(fastqs) == 2:
+            return { 'fastq1': fastqs[0], 'fastq2': fastqs[1] }
+    else:
+        print("I want paired samples!")
+        return {}
+
+# But GATK:
+# "PreProcessingForVariantDiscovery_GATK4.bwa_commandline": "bwa mem -K 100000000 -p -v 3 -t 16 -Y $bash_ref_fasta",
+# If the quality scores are encoded as Illumina 1.3 or 1.5, use BWA aln with the “-l” flag.
+#-T INT Don't output alignment with scores lower than INT. This option only affects output. [30]
+# defining RG from help from https://www.biostars.org/p/280837/, but changed SM to be more human readable, lib is somewhat
+# conceptually wrong here, I fear.
+
+#      -K INT        process INT input bases in each batch regardless of nThreads (for reproducibility) []
+#      -Y            use soft clipping for supplementary alignments
+# -p            smart pairing (ignoring in2.fq)  nonono!
+
+# -v 3 is the default so it's not needed
+# Why -T 0? Where did I get it? https://docs.gdc.cancer.gov/Data/PDF/Data_UG.pdf
+# but these are not best practices from GATK, they use the default -T 30, will it work anyway?
+# In that doc they merge with picard, but merge all samples together?
+rule bwa_mem:
+    input: unpack(produce_pairs)
+    output: temp("{sample}.bam")
+    params: cores=CORES, ref=DATA_DIR+"/GRCh38.d1.vd1.fa"
+    shell:
+        """
+        if echo {input.fastq1} | grep -q .gz; then
+            header=$(zcat {input.fastq1} | head -n 1) || echo "pipehead"
+        else
+            header=$(cat {input.fastq1} | head -n 1) || echo "pipehead"
+        fi
+        id=$(echo $header | cut -f 1-4 -d":" | sed 's/^@//' | sed 's/:/_/g')
+        smnh=$(echo $header | grep -Eo "[ATGCN\+]+$")
+        sm={wildcards.sample}
+        bwa mem -R "@RG\\tID:$id\\tSM:$sm\\tLB:$sm"_"$id"_"$smnh\\tPL:ILLUMINA" -t {params.cores} -K 100000000 -Y {params.ref} {input.fastq1} {input.fastq2} | samtools view -Shb -o {output}
+        """
+
+
 ## Recalibration ##
 
 ## Recal and align QC - depth ##
@@ -13,3 +98,20 @@ include: "conf.sk"
 ## Mutect QC ##
 
 ## Annotation and MAF creation ##
+
+## All "phony" rules ##
+rule all_something:
+    input: expand("{sample}-"+REF+".{{something}}", sample=SAMPLESD)
+    output: "all_samples_{something}"
+    shell: "touch {output}"
+
+rule all_single_something:
+    input: expand("{sample}.{{something}}", sample=SAMPLES)
+    output: "all_samples_{something}"
+    shell: "touch {output}"
+
+rule all_somethingd:
+    input: expand("{sample}.{{something}}", sample=SAMPLESD)
+    output: "all_samplesd_{something}"
+    shell: "touch {output}"
+

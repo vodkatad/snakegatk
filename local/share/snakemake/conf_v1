@@ -1,23 +1,27 @@
 import os
 def find_prj_root(path=os.getcwd()):
-        if os.path.isfile(os.path.join(path,".PRJ_ROOT")):
-                return path
+    if os.path.isfile(os.path.join(path,".PRJ_ROOT")):
+        return path
+    else:
+        if path:
+            return find_prj_root(os.path.dirname(path))
         else:
-                if path:
-                        return find_prj_root(os.path.dirname(path))
-                else:
-                        raise Exception("Can not find the PRJ_ROOT directory")
+            raise Exception("Can not find the PRJ_ROOT directory")
 
 
 PRJ_ROOT=find_prj_root()
-                                                    
+
+CORES=4                                                   
 DATA=PRJ_ROOT+"/local/share/data"
+DATA_DIR=DATA # TODO put here "/GRCh38.d1.vd1.fa"
+FQ_DIR=DATA+"/fastq"
 BIN_DIR=PRJ_ROOT+"/local/bin"
 
 XENOME_FQ_DIR=DATA_DIR
 EXONS=DATA+'/PJ1807203_covered.bed'
 ###SEXONS='../../PJ1807203_sorted.bed' ## TODO RULE
 
+XENO="no" # "yes"
 FASTQ_SUFFIX="_R{pair}.fastq.gz"
 FASTQ_SUFFIX_XENOME=".xenome_graft_{pair}.fastq.gz"
 
@@ -48,3 +52,7 @@ MINDP=10
 GNOMAD=ROOT+"/common/task/annotations/dataset/gnomad"
 VEP_CACHE_DIR=ROOT+"/common/task/variant_annotations/dataset/VEP"
 
+
+SAMPLES = []
+SAMPLESD = []
+REF = ""
