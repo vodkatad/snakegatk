@@ -15,7 +15,14 @@ PRJ_ROOT=find_prj_root()
 SRC_DIR=PRJ_ROOT+'/local/src'
 BIN_DIR=PRJ_ROOT+'/local/bin'
 DATA_DIR=PRJ_ROOT+'/local/share/data'
+
+# Needed references and annotations
 REF_DIR='/home/egrassi/strata/local/share/data'
+GNOMAD=ROOT+"/common/task/annotations/dataset/gnomad" 
+VEP_CACHE_DIR=ROOT+"/common/task/variant_annotations/dataset/VEP"
+# Singularity containers
+GATK_SING=ROOT+"/gatk4100/gatk.img"
+
 DEBUG="yes"
 
 ## This dataset:
@@ -24,7 +31,6 @@ DATA=PRJ_ROOT+"/local/share/data/example"
 FQ_XENOME_DIR="xenome"
 EXONS=DATA+'/targeted.bed'
 SEXONS='targeted_sorted.bed'
-LSEXONS='targeted_sorted.bed'
 
 # sed 1d PJ1903090-SF-Integragen-Targeted-Seq.tsv  | cut -f 1 | tr "_" "\t" | cut -f 1 | tr "\n" "," | sed 's/,/","/g'
 SAMPLES_ORIG=["example"]
@@ -62,13 +68,6 @@ CALLABLE_STRICT="50:100,100:150,150:inf"
 
 PADDING=100
 MINDP=10
-
-GNOMAD=ROOT+"/common/task/annotations/dataset/gnomad"
-VEP_CACHE_DIR=ROOT+"/common/task/variant_annotations/dataset/VEP"
-REFFLATGZ=ROOT+"/common/task/annotations/dataset/ucsc/hg38/refFlat.txt.gz"
-
-# Singularity containers
-GATK_SING=ROOT+"/gatk4100/gatk.img"
 
 
 rule all_single_something:

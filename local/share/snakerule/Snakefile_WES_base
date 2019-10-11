@@ -148,17 +148,8 @@ rule add_chr_to_vcf:
 
 rule sort_targeted:
     input: bed=EXONS, fai=DATA_DIR+"/GRCh38.d1.vd1.fa.fai" 
-    output: LSEXONS
+    output: SEXONS
     shell:
         """
             bedtools sort -faidx {input.fai} -i {input.bed} > {output}
         """
-
-rule refflat:
-    input: REFFLATGZ
-    output: "refFlat.txt"
-    shell:
-        """
-           gunzip -c {input} > {output}
-        """
-
