@@ -6,7 +6,7 @@ def produce_pairs(wildcards):
             fastqs = expand('xenome/'+wildcards.sample+FASTQ_SUFFIX_XENOME, pair=PAIRS_XENOME)
         else:
             # we depend on normal fastqs (normal samples, organoids)
-            fastqs = expand(FQ_DIR+'/'+wildcards.sample+FASTQ_SUFFIX, pair=PAIRS)
+            fastqs = expand(wildcards.sample+FASTQ_SUFFIX, pair=PAIRS)
         return { 'fastq1': fastqs[0], 'fastq2': fastqs[1] }
 
 rule bwa_mem:
