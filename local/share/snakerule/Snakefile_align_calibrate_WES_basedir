@@ -1,0 +1,155 @@
+# We look for the right file depending on conf, so the pipeline could
+# be called automatically (if only xenome finished instead of hanging and needing a manual check)
+def produce_pairs(wildcards):
+        if wildcards.sample in XENOMED_SAMPLES:
+            # we need depend on xenome fastqs (xenos)
+            fastqs = expand('xenome/'+wildcards.sample+FASTQ_SUFFIX_XENOME, pair=PAIRS_XENOME)
+        else:
+            # we depend on normal fastqs (normal samples, organoids)
+            fastqs = expand(FQ_DIR+'/'+wildcards.sample+FASTQ_SUFFIX, pair=PAIRS)
+        return { 'fastq1': fastqs[0], 'fastq2': fastqs[1] }
+
+rule bwa_mem:
+    input: unpack(produce_pairs)
+    output: temp(ALIGN_DIR+"/{sample}.bam")
+    params: cores=CORES, ref=REF_DIR+"/GRCh38.d1.vd1.fa", dir=ALIGN_DIR
+    shell: 
+        """
+        mkdir -p {params.dir}
+        if echo {input.fastq1} | grep -q .gz; then
+            header=$(zcat {input.fastq1} | head -n 1) || echo "pipehead"
+        else
+            header=$(cat {input.fastq1} | head -n 1) || echo "pipehead"
+        fi
+        id=$(echo $header | cut -f 1-4 -d":" | sed 's/^@//' | sed 's/:/_/g')
+        smnh=$(echo $header | grep -Eo "[ATGCN\+]+$")
+        sm={wildcards.sample}
+        bwa mem -R "@RG\\tID:$id\\tSM:$sm\\tLB:$sm"_"$id"_"$smnh\\tPL:ILLUMINA" -t {params.cores} -K 100000000 -Y {params.ref} {input.fastq1} {input.fastq2} | samtools view -Shb -o {output} 
+        """
+
+rule mark_duplicates_picard:
+    input: ALIGN_DIR+"/{sample}.bam"
+    output: bam=temp(ALIGN_DIR+"/markedDup_{sample}.bam"), metrics=ALIGN_DIR+"/{sample}.dupMetrics.txt"
+    params: pixel_dist=PATTERNED
+    shell: 
+        """
+        picard -Xmx10g -XX:ParallelGCThreads=11 MarkDuplicates INPUT="{input}" OUTPUT="{output.bam}" METRICS_FILE="{output.metrics}" \
+        ASSUME_SORT_ORDER="queryname" OPTICAL_DUPLICATE_PIXEL_DISTANCE="{params.pixel_dist}" \
+        ADD_PG_TAG_TO_READS=false VALIDATION_STRINGENCY="STRICT"
+        """
+
+rule recalibrate_quality:
+    input: bam=ALIGN_DIR+"/markedDup_{sample}.sorted.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa", snps="dbsnp.all.vcf.gz", bed=SEXONS, bai=ALIGN_DIR+"/markedDup_{sample}.sorted.bam.bai"
+    singularity: GATK_SING
+    output: bam=protected(ALIGN_DIR+"/realigned_{sample}.bam"), table=ALIGN_DIR+"/{sample}.table"
+    params: padding=PADDING
+    shell:
+        """
+            gatk BaseRecalibrator --interval-padding {params.padding} -R {input.reference} -I {input.bam} --known-sites {input.snps} -O {output.table} -L {input.bed} 2> {output.table}.slog
+            gatk ApplyBQSR -R {input.reference} -I {input.bam} --bqsr-recal-file  {output.table} -O {output.bam} --create-output-bam-index true 2> {output.bam}.slog
+        """
+
+rule recalibrate_plot:
+    input: reference=REF_DIR+"/GRCh38.d1.vd1.fa", table=ALIGN_DIR+"/{sample}.table", bam=ALIGN_DIR+"/realigned_{sample}.bam", snps="dbsnp.all.vcf.gz", bed=SEXONS
+    output: ALIGN_DIR+"/{sample}.recal_plots.pdf"
+    singularity: GATK_SING
+    params: padding=PADDING
+    shell: 
+        """
+        gatk BaseRecalibrator --interval-padding {params.padding} -R {input.reference} -I {input.bam} --known-sites {input.snps} -O {output}.table -L {input.bed}
+        gatk AnalyzeCovariates -before {input.table} -after {output}.table -plots {output}
+        """
+
+rule sort_all_realigned:
+    input: expand(ALIGN_DIR+"/realigned_{samples}.sorted.bam", samples=SAMPLES)
+    
+rule sorted_bai:
+    input: ALIGN_DIR+"/{whatever}.bam"
+    output: bai=ALIGN_DIR+"/{whatever}.sorted.bam.bai", bam=ALIGN_DIR+"/{whatever}.sorted.bam"
+    params: threads="8"
+    shell: 
+        """
+        samtools sort --threads {params.threads} -o {output.bam} {input}
+        samtools index {output.bam} {output.bai}
+        """
+
+# --fast-mode is not available in conda's version
+rule all_coverage:
+    input: bam=ALIGN_DIR+"/realigned_{sample}.sorted.bam", bai=ALIGN_DIR+"/realigned_{sample}.sorted.bam.bai"
+    output: "depth/{sample}.quantized.bed.gz"
+    params: prefix="depth/{sample}", thread=12
+    shell: 
+        """
+            mkdir -p depth
+            mosdepth -t {params.thread} -n --quantize 0:1:5:10:50:100:150: {params.prefix} {input.bam}
+        """
+
+rule split_coverage:
+    input: exons=SEXONS, depth="depth/{sample}.quantized.bed.gz"
+    output: exons="depth/{sample}.exons.bed.gz", outof="depth/{sample}.outof.bed.gz"
+    shell:
+        """
+            bedtools intersect -u -a {input.depth} -b {input.exons} | gzip > {output.exons}
+            bedtools subtract -sorted -a {input.depth} -b {input.exons} | gzip > {output.outof}
+        """
+
+rule coverage_plot:
+    input: bed="depth/{sample}.{kind}.bed.gz"
+    output: pdf="depth/{sample}.{kind}.pdf"
+    params: debug=DEBUG
+    script: SRC_DIR+"/coverage_plot.R"
+
+
+rule coverage_plot_bis:
+    input: bam=ALIGN_DIR+"/realigned_{sample}.sorted.bam", bai=ALIGN_DIR+"/realigned_{sample}.sorted.bam.bai", bed=SEXONS
+    output: temp("depth/{sample}.mosdepth.region.dist.txt")
+    params: thread=12, prefix="depth/{sample}"
+    shell:
+        """ 
+            mkdir -p depth
+            mosdepth -n -t {params.thread} --by {input.bed} {params.prefix} {input.bam}
+        """
+
+rule coverage_plot_all:
+    input: expand("depth/{sample}.mosdepth.region.dist.txt", sample=SAMPLES)
+    output: "depth/exons_covplot.html"
+    params: tool=SRC_DIR+"/plot_dist.py"
+    shell:
+        """
+            python {params.tool} {input}
+            mv dist.html {output}
+        """
+
+rule interval:
+    input: bed=SEXONS, sd=REF_DIR+"/GRCh38.d1.vd1.fa"
+    output: "target.interval_list"
+    shell:
+        """
+            picard BedToIntervalList \
+              I={input.bed} \
+              O={output} \
+              SD={input.sd}
+        """
+
+# tODO change in CollectHsMetrics -I realigned_CRC1979NORM.sorted.bam -O CRC1979NORM.hsmetrics -R /work/egrassi/WXS/local/share/data/GRCh38.d1.vd1.fa -BAIT_INTERVALS target.interval_list -TARGET_INTERVALS target.interval_list
+rule hsmetrics:
+    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa", il="target.interval_list"
+    output: "{sample}.hsmetrics"
+    shell:
+        """
+            picard -Xmx2g  CollectHsMetrics \
+            I={input.bam} \
+            O={output} \
+            R={input.reference} \
+            BAIT_INTERVALS={input.il} \
+            TARGET_INTERVALS={input.il}
+       """
+
+rule hsmetrics_summary:
+    input: expand("{sample}.hsmetrics", sample=SAMPLES)
+    output: "all_metrics"
+    shell:
+        """
+             grep BAIT_SET {input[0]} > {output}
+             for f in {input}; do grep -A 1 BAIT_SET $f | tail -n 1 >> {output}; done
+        """

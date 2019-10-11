@@ -1,0 +1,184 @@
+rule sufficient_coverage_outof:
+    input: "./depth/{sample}.outof.bed.gz"
+    output: MUTECT_DIR+"/callable_outof_{sample}.bed"
+    params: callable=CALLABLE, dir=MUTECT_DIR
+    shell: 
+        """
+         mkdir -p {params.dir}
+         zcat {input} | filter_1col 4 <(echo {params.callable} | tr "," "\\n") > {output}
+        """
+
+rule callable:
+    input: exons=SEXONS, outof=MUTECT_DIR+"/callable_outof_{sample}.bed", fai=REF_DIR+"/GRCh38.d1.vd1.fa.fai"
+    output: MUTECT_DIR+"/callable_exons_{sample}.bed"
+    shell:
+        """ 
+            cat {input.exons} {input.outof} | bedtools sort -faidx {input.fai} -i - > {output}.tmp
+            bedtools merge -i {output}.tmp > {output}
+            rm {output}.tmp
+        """
+
+## For example, the gnomAD resource af-only-gnomad_grch38.vcf.gz represents ~200k exomes and ~16k genomes and the tutorial data is exome data, so we adjust --af-of-alleles-not-in-resource to 0.0000025 which corresponds to 1/(2*exome samples).
+#gnomad_af=GNOMAD+"/gnomad.forcontamination.exomes.vcf"
+## add --dbsnp and --comp  where are they in the new gatk4?
+rule mutect:
+    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", bed=SEXONS, reference=REF_DIR+"/GRCh38.d1.vd1.fa"
+    output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), bam=MUTECT_DIR+"/{sample}.igv.bam"
+    singularity: GATK_SING
+    params: loweraf="0", padding=PADDING
+    shell: 
+        """
+            gatk Mutect2 -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --interval-padding {params.padding} --germline-resource {input.gnomad} -L {input.bed} --af-of-alleles-not-in-resource {params.loweraf} --bam-output {output.bam}
+        """
+
+rule getpileup:
+    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/gnomad.forcontamination.exomes.vcf", bed=SEXONS
+    output: temp(MUTECT_DIR+"/{sample}.pileup.table")
+    singularity: GATK_SING
+    params: padding=PADDING
+    shell: 
+        """
+            gatk GetPileupSummaries -I {input.bam} -V {input.gnomad} -L {input.bed} -O {output} --interval-padding {params.padding}
+        """
+
+rule calculatecontamination:
+    input: MUTECT_DIR+"/{sample}.pileup.table"
+    output: MUTECT_DIR+"/{sample}.contamination.table"
+    singularity: GATK_SING
+    shell:
+        """
+            gatk CalculateContamination  -I {input} -O {output}
+        """
+
+rule filtercalls:
+    input: vcf=MUTECT_DIR+"/{sample}.vcf.gz"
+    output: vcf=MUTECT_DIR+"/{sample}.filtered.vcf.gz", stats=MUTECT_DIR+"/{sample}_filtering_stats.tsv"
+    singularity: GATK_SING
+    shell:
+        """
+            gatk FilterMutectCalls -V {input.vcf} -O {output.vcf} --stats {output.stats}
+        """
+
+rule artifacts:
+    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
+    output: MUTECT_DIR+"/{sample}.artifacts.pre_adapter_summary_metrics"
+    singularity: GATK_SING
+    shell:
+        """
+            gatk CollectSequencingArtifactMetrics -R {input.reference} -I {input.bam} -O {wildcards.sample}.artifacts
+        """
+
+
+rule filterOrientation:
+    input: vcf=MUTECT_DIR+"/{sample}.filtered.vcf.gz", artifact=MUTECT_DIR+"/{sample}.artifacts.pre_adapter_detail_metrics"
+    output: vcf=MUTECT_DIR+"/{sample}.bifiltered.vcf.gz"
+    singularity: GATK_SING
+    shell:
+        """
+            gatk FilterByOrientationBias --artifact-modes G/T -P {input.artifact} -V {input.vcf} -O {output}
+        """
+
+
+# We remove the POP_AF=1, they are SNP where the reference is mutated, all gnomad has alternate allele, not a somatic mutation
+# I think. XXX check if they are still there or not
+rule passFilter:
+    input: MUTECT_DIR+"/{sample}.filtered.vcf.gz"
+    output: MUTECT_DIR+"/{sample}.pass.vcf.gz"
+    shell:
+        """
+        zcat {input} |  awk '/^#/ || $7=="PASS"' | bgzip > {output}
+        tabix {output}
+        """ 
+
+
+################ we have to filter more
+rule sufficient_coverage_outof_strict:
+    input: "depth/{sample}.outof.bed.gz", "depth/{sample}.exons.bed.gz"
+    output: "callable_strict_{sample}.bed"
+    params: callable=CALLABLE_STRICT
+    shell: 
+        """
+         zcat {input} | filter_1col 4 <(echo {params.callable} | tr "," "\\n") |  sort -k1,1 -k2,2n | bedtools merge -i - > {output}
+        """
+
+####TODO FIXME
+rule single_table:
+    input: vcf=MUTECT_DIR+"/{sample}.pass.vcf.gz"
+    output: MUTECT_DIR+"/{sample}.pass.table.gz"
+    params: nsamples=1
+    shell:
+        """
+      zcat {input} | grep -v "^##" |  perl -ane '@gt=splice(@F,9,{params.nsamples}); $gt=""; foreach $g (@gt) {{ if ($.==1) {{$gt.=$g."\\t";}} else {{ @afs = split(":",$g); if ($afs[2] eq ".") {{$afs[2]=0;}} $gt.=$afs[2]."\\t";}} }} chop($gt) ; print $F[2]."\\t".$gt."\\n";' | grep -v "," | gzip > {output}
+        """
+
+rule neutral_sottoriva:
+    input: afmatrix=MUTECT_DIR+"/{sample}.pass.table.gz"
+    params: debug=DEBUG, afcolumn="{sample}"
+    output: hist="{sample}.hist.{loweraf}_{higheraf}.pdf", fit="{sample}.fit.{loweraf}_{higheraf}.pdf", r2="{sample}.fit.{loweraf}_{higheraf}.r2"
+    script: SRC_DIR+"/neutral_sottoriva.R"
+
+# Skip sites where FILTER column does not contain any of the strings listed in LIST. For example, to include only sites which have no filters set, use -f .,PASS. 
+rule merge:
+    input: vcf=expand(MUTECT_DIR+"/{sample}.pass.vcf.gz", sample=SAMPLES), bed=expand(MUTECT_DIR+"/callable_strict_{sample}.bed", sample=SAMPLES)
+    output: MUTECT_DIR+"/merged.vcf"
+    params: nsamples=len(SAMPLES)
+    shell:
+        """
+            bcftools merge --missing-to-ref -m none -i DP:avg,TLOD:min,P_CONTAM:max,P_GERMLINE:min -o {output}.vcf.tmp {input.vcf}
+            bedtools multiinter -i {input.bed} | bawk '$4=={params.nsamples}' | bedtools merge -i - > {output}.bed.tmp
+            bedtools intersect -header -u -a {output}.vcf.tmp -b {output}.bed.tmp > {output}
+            rm {output}.*.tmp
+        """
+
+rule merge_targeted:
+    input: vcf=expand(MUTECT_DIR+"/{sample}.pass.vcf.gz", sample=SAMPLES), bed=SEXONS
+    output: MUTECT_DIR+"/merged_targeted.vcf"
+    shell:
+        """
+            bcftools merge --missing-to-ref -m none -o {output}.vcf.tmp {input.vcf}
+            bedtools intersect -header -u -a {output}.vcf.tmp -b {input.bed} > {output}
+            rm {output}.*.tmp
+        """
+
+
+
+rule VEP:
+    input: MUTECT_DIR+"/merged_targeted.vcf"
+    output: txt=MUTECT_DIR+"/merged.vep.txt", html=MUTECT_DIR+"/merged.vep.stats.html", vcf=MUTECT_DIR+"/merged.vcf.id"
+    params: cd=VEP_CACHE_DIR
+    shell:
+        """
+             bcftools annotate -I +'%CHROM:%POS:%REF:%ALT' {input} > {output.vcf}
+             vep -i {output.vcf}  --cache --dir_cache {params.cd} --output_file {output.txt} --stats_file {output.html} --pick
+        """
+
+rule vcf_to_aftable:
+    input: MUTECT_DIR+"/merged.vcf.id"
+    output: table=MUTECT_DIR+"/merged.table_nomultiallele"
+    params: nsamples=len(SAMPLES)
+    shell:
+        """
+             cat {input} | grep -v "^##" |  perl -ane '@gt=splice(@F,9,{params.nsamples}); $gt=""; foreach $g (@gt) {{ if ($.==1) {{$gt.=$g."\\t";}} else {{ @afs = split(":",$g); if ($afs[2] eq ".") {{$afs[2]=0;}} $gt.=$afs[2]."\\t";}} }} chop($gt) ; print $F[2]."\\t".$gt."\\n";' | grep -v "," > {output.table}
+        """
+
+### annovar
+rule merged_bed:
+    input: MUTECT_DIR+"/merged.table_nomultiallele"
+    output: MUTECT_DIR+"/merged.bed"
+    shell:
+        """
+            sed 1d {input} | tr ":" "\\t" | bawk '{{print $1,$2-1,$2,$3"-"$4}}' > {output}
+        """
+
+rule annovar:
+    input: MUTECT_DIR+"/merged.bed", "/home/egrassi/common/task/variant_annotations/dataset/annovar/hg38/humandb/"
+    output: MUTECT_DIR+"/merged.hg38_multianno.txt"
+    log: MUTECT_DIR+"/merged.hg38_multianno.log"
+    params: ver="hg38"
+    shell:
+        """
+        sed 's/chr//1;' < {input[0]} | tr "-" "\\t" | bawk '{{if($5=="") {{$5="-"}} if ($4==""){{$4="-"}} b=$2+1; e=b+length($4)-1; print $1,b,e,$4,$5,$6}}' > {output}.tmp
+        table_annovar.pl {output}.tmp {input[1]} --otherinfo -buildver {params.ver} -out merged -remove -protocol refGene,avsnp150,cosmic87_coding,nci60,dbnsfp35c,clinvar_20180603 -operation g,f,f,f,f,f -nastring . -polish &> {log}
+        rm {output}.tmp
+        mv merged.hg38_multianno.log {output}
+        """
