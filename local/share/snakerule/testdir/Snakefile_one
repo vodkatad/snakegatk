@@ -1,0 +1,6 @@
+rule:
+    output: A+"/test"
+    shell:
+        """
+            echo {output} > {output}
+        """
