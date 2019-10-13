@@ -31,11 +31,12 @@ rule mark_duplicates_picard:
     input: ALIGN_DIR+"/{sample}.bam"
     output: bam=temp(ALIGN_DIR+"/markedDup_{sample}.bam"), metrics=ALIGN_DIR+"/{sample}.dupMetrics.txt"
     params: pixel_dist=PATTERNED
+    log: ALIGN_DIR+"/markedDup_{sample}.bam.log"
     shell: 
         """
         picard -Xmx10g -XX:ParallelGCThreads=11 MarkDuplicates INPUT="{input}" OUTPUT="{output.bam}" METRICS_FILE="{output.metrics}" \
         ASSUME_SORT_ORDER="queryname" OPTICAL_DUPLICATE_PIXEL_DISTANCE="{params.pixel_dist}" \
-        ADD_PG_TAG_TO_READS=false VALIDATION_STRINGENCY="STRICT"
+        ADD_PG_TAG_TO_READS=false VALIDATION_STRINGENCY="STRICT" 2> {log}
         """
 
 rule recalibrate_quality:
@@ -43,10 +44,11 @@ rule recalibrate_quality:
     singularity: GATK_SING
     output: bam=protected(ALIGN_DIR+"/realigned_{sample}.bam"), table=ALIGN_DIR+"/{sample}.table"
     params: padding=PADDING
+    log: bam=ALIGN_DIR+"/realigned_{sample}.bam.log", table=ALIGN_DIR+"/{sample}.table.log"
     shell:
         """
-            gatk BaseRecalibrator --interval-padding {params.padding} -R {input.reference} -I {input.bam} --known-sites {input.snps} -O {output.table} -L {input.bed} 2> {output.table}.slog
-            gatk ApplyBQSR -R {input.reference} -I {input.bam} --bqsr-recal-file  {output.table} -O {output.bam} --create-output-bam-index true 2> {output.bam}.slog
+            gatk BaseRecalibrator --interval-padding {params.padding} -R {input.reference} -I {input.bam} --known-sites {input.snps} -O {output.table} -L {input.bed} 2> {log.table}
+            gatk ApplyBQSR -R {input.reference} -I {input.bam} --bqsr-recal-file  {output.table} -O {output.bam} --create-output-bam-index true 2> {log.bam}
         """
 
 rule recalibrate_plot:
@@ -54,10 +56,11 @@ rule recalibrate_plot:
     output: ALIGN_DIR+"/{sample}.recal_plots.pdf"
     singularity: GATK_SING
     params: padding=PADDING
+    log: ALIGN_DIR+"/{sample}.recal_plots.pdf.log"
     shell: 
         """
-        gatk BaseRecalibrator --interval-padding {params.padding} -R {input.reference} -I {input.bam} --known-sites {input.snps} -O {output}.table -L {input.bed}
-        gatk AnalyzeCovariates -before {input.table} -after {output}.table -plots {output}
+        gatk BaseRecalibrator --interval-padding {params.padding} -R {input.reference} -I {input.bam} --known-sites {input.snps} -O {output}.table -L {input.bed} 2> {log}
+        gatk AnalyzeCovariates -before {input.table} -after {output}.table -plots {output} 2>> {log}
         """
 
 rule sort_all_realigned:
@@ -131,7 +134,7 @@ rule interval:
               SD={input.sd}
         """
 
-# tODO change in CollectHsMetrics -I realigned_CRC1979NORM.sorted.bam -O CRC1979NORM.hsmetrics -R /work/egrassi/WXS/local/share/data/GRCh38.d1.vd1.fa -BAIT_INTERVALS target.interval_list -TARGET_INTERVALS target.interval_list
+# tODO change in CollectHsMetrics -I realigned_CRC1979NORM.sorted.bam -O CRC1979NORM.hsmetrics -R /work/egrassi/WXS/local/share/data/GRCh38.d1.vd1.fa -BAIT_INTERVALS target.interval_list -TARGET_INTERVALS target.interval_list  it was suggested but it did not work ... !?
 rule hsmetrics:
     input: bam=ALIGN_DIR+"/realigned_{sample}.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa", il="target.interval_list"
     output: "{sample}.hsmetrics"
