@@ -51,8 +51,8 @@ rule calculatecontamination:
 # precision in the harmonic mean). Setting it lower biases results toward greater precision. (https://gatkforums.broadinstitute.org/gatk/discussion/24057/how-to-call-somatic-mutations-using-gatk4-mutect2#latest)
 # -alleles force-call-alleles.vcf
 rule filtercalls:
-    input: vcf=MUTECT_DIR+"/{sample}.vcf.gz", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
-    output: vcf=MUTECT_DIR+"/{sample}.filtered.vcf.gz", stats=MUTECT_DIR+"/{sample}_filtering_stats.tsv", contam=MUTECT_DIR+"/{sample}.contamination.table", seg=MUTECT_DIR+"/{sample}.tum.seg"
+    input: vcf=MUTECT_DIR+"/{sample}.vcf.gz", ref=REF_DIR+"/GRCh38.d1.vd1.fa", stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", contam=MUTECT_DIR+"/{sample}.contamination.table", seg=MUTECT_DIR+"/{sample}.tum.seg"
+    output: vcf=MUTECT_DIR+"/{sample}.filtered.vcf.gz", stats=MUTECT_DIR+"/{sample}_filtering_stats.tsv"
     singularity: GATK_SING
     log: MUTECT_DIR+"/{sample}_filtering_stats.tsv.log"
     shell:
