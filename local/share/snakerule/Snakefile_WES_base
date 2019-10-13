@@ -138,7 +138,7 @@ rule murine_content:
 ### misc
 
 rule add_chr_to_vcf:
-    input: DATA_DIR+"/All_20180418.vcf.gz"
+    input: DBSNP
     output: "dbsnp.all.vcf.gz"
     shell:
         """
@@ -147,7 +147,7 @@ rule add_chr_to_vcf:
         """
 
 rule sort_targeted:
-    input: bed=EXONS, fai=DATA_DIR+"/GRCh38.d1.vd1.fa.fai" 
+    input: bed=EXONS, fai=REF_DIR+"/GRCh38.d1.vd1.fa.fai" 
     output: SEXONS
     shell:
         """

@@ -5,7 +5,7 @@
 if PON != "":
     rule mutect:
         input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", bed=SEXONS, reference=REF_DIR+"/GRCh38.d1.vd1.fa", pon=PON
-        output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), bam=MUTECT_DIR+"/{sample}.igv.bam", stats="MUTECT_DIR+"/{sample}.vcf.gz.stats"
+        output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), bam=MUTECT_DIR+"/{sample}.igv.bam", stats=MUTECT_DIR+"/{sample}.vcf.gz.stats"
         singularity: GATK_SING
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
         params: padding=PADDING
@@ -16,7 +16,7 @@ if PON != "":
 else:
     rule mutect:
         input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", bed=SEXONS, reference=REF_DIR+"/GRCh38.d1.vd1.fa"
-        output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), bam=MUTECT_DIR+"/{sample}.igv.bam", stats="MUTECT_DIR+"/{sample}.vcf.gz.stats"
+        output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), bam=MUTECT_DIR+"/{sample}.igv.bam", stats=MUTECT_DIR+"/{sample}.vcf.gz.stats"
         singularity: GATK_SING
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
         params: padding=PADDING
@@ -38,9 +38,9 @@ rule getpileup:
 
 rule calculatecontamination:
     input: MUTECT_DIR+"/{sample}.pileup.table"
-    output: table=MUTECT_DIR+"/{sample}.contamination.table", seg=MUTECT_DIR+"/{sample}.contamination.table"
+    output: table=MUTECT_DIR+"/{sample}.contamination.table", seg=MUTECT_DIR+"/{sample}.tum.seg"
     singularity: GATK_SING
-    log: "MUTECT_DIR+"/{sample}.contamination.table.log"
+    log: MUTECT_DIR+"/{sample}.contamination.table.log"
     shell:
         """
             gatk CalculateContamination  -I {input} -O {output.table} --tumor-segmentation {output.seg} 2> {log}
@@ -51,8 +51,8 @@ rule calculatecontamination:
 # precision in the harmonic mean). Setting it lower biases results toward greater precision. (https://gatkforums.broadinstitute.org/gatk/discussion/24057/how-to-call-somatic-mutations-using-gatk4-mutect2#latest)
 # -alleles force-call-alleles.vcf
 rule filtercalls:
-    input: vcf=MUTECT_DIR+"/{sample}.vcf.gz"
-    output: vcf=MUTECT_DIR+"/{sample}.filtered.vcf.gz", stats=MUTECT_DIR+"/{sample}_filtering_stats.tsv", reference=REF_DIR+"/GRCh38.d1.vd1.fa", contam=MUTECT_DIR+"/{sample}.contamination.table", seg="MUTECT_DIR+"/{sample}.tum.seg"
+    input: vcf=MUTECT_DIR+"/{sample}.vcf.gz", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
+    output: vcf=MUTECT_DIR+"/{sample}.filtered.vcf.gz", stats=MUTECT_DIR+"/{sample}_filtering_stats.tsv", contam=MUTECT_DIR+"/{sample}.contamination.table", seg=MUTECT_DIR+"/{sample}.tum.seg"
     singularity: GATK_SING
     log: MUTECT_DIR+"/{sample}_filtering_stats.tsv.log"
     shell:
