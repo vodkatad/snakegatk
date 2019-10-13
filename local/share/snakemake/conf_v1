@@ -21,9 +21,9 @@ REF_DIR='/home/egrassi/strata/local/share/data'
 GNOMAD=ROOT+"/common/task/annotations/dataset/gnomad" 
 VEP_CACHE_DIR=ROOT+"/common/task/variant_annotations/dataset/VEP"
 ANNOVAR=ROOT+"/common/task/variant_annotations/dataset/annovar/hg38/humandb/"
+PON=""
 # Singularity containers
 GATK_SING=ROOT+"/gatk4100/gatk.img"
-
 DEBUG="yes"
 
 ## This dataset:
@@ -71,7 +71,6 @@ CALLABLE="5:10,10:50,50:100,100:150,150:inf"
 CALLABLE_STRICT="50:100,100:150,150:inf"
 
 PADDING=100
-MINDP=10
 
 
 rule all_single_something:

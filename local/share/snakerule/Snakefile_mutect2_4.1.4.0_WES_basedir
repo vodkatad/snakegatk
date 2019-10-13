@@ -2,18 +2,28 @@
 # do we need it? TODO
 #https://gatkforums.broadinstitute.org/gatk/discussion/24057/how-to-call-somatic-mutations-using-gatk4-mutect2#latest
 
-#-pon panel_of_normals.vcf 
-#  -alleles force-call-alleles.vcf
-rule mutect:
-    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", bed=SEXONS, reference=REF_DIR+"/GRCh38.d1.vd1.fa"
-    output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), bam=MUTECT_DIR+"/{sample}.igv.bam", stats="MUTECT_DIR+"/{sample}.vcf.gz.stats"
-    singularity: GATK_SING
-    log: MUTECT_DIR+"/{sample}.vcf.gz.log"
-    params: padding=PADDING
-    shell: 
-        """
-            gatk Mutect2 -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --interval-padding {params.padding} --germline-resource {input.gnomad} -L {input.bed} --bam-output {output.bam} 2> {log}
-        """
+if PON != "":
+    rule mutect:
+        input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", bed=SEXONS, reference=REF_DIR+"/GRCh38.d1.vd1.fa", pon=PON
+        output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), bam=MUTECT_DIR+"/{sample}.igv.bam", stats="MUTECT_DIR+"/{sample}.vcf.gz.stats"
+        singularity: GATK_SING
+        log: MUTECT_DIR+"/{sample}.vcf.gz.log"
+        params: padding=PADDING
+        shell: 
+            """
+                gatk Mutect2 -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --interval-padding {params.padding} --germline-resource {input.gnomad} -L {input.bed} --panel-of-normals {input.pon} --bam-output {output.bam} 2> {log}
+            """
+else:
+    rule mutect:
+        input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", bed=SEXONS, reference=REF_DIR+"/GRCh38.d1.vd1.fa"
+        output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), bam=MUTECT_DIR+"/{sample}.igv.bam", stats="MUTECT_DIR+"/{sample}.vcf.gz.stats"
+        singularity: GATK_SING
+        log: MUTECT_DIR+"/{sample}.vcf.gz.log"
+        params: padding=PADDING
+        shell: 
+            """
+                gatk Mutect2 -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --interval-padding {params.padding} --germline-resource {input.gnomad} -L {input.bed} --bam-output {output.bam} 2> {log}
+            """
 
 rule getpileup:
     input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/gnomad.forcontamination.exomes.vcf", bed=SEXONS
