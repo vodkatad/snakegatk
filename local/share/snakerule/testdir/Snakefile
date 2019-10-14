@@ -1,0 +1,6 @@
+A="one"
+include: "Snakefile_one"
+
+
+A="two"
+include: "Snakefile_two"
