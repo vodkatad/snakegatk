@@ -11,7 +11,7 @@ if PON != "":
         params: padding=PADDING
         shell: 
             """
-                gatk Mutect2 -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --interval-padding {params.padding} --germline-resource {input.gnomad} -L {input.bed} --panel-of-normals {input.pon} --bam-output {output.bam} 2> {log}
+                gatk Mutect2 --independent-mates -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --interval-padding {params.padding} --germline-resource {input.gnomad} -L {input.bed} --panel-of-normals {input.pon} --bam-output {output.bam} 2> {log}
             """
 else:
     rule mutect:
@@ -22,7 +22,7 @@ else:
         params: padding=PADDING
         shell: 
             """
-                gatk Mutect2 -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --interval-padding {params.padding} --germline-resource {input.gnomad} -L {input.bed} --bam-output {output.bam} 2> {log}
+                gatk Mutect2 --independent-mates -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --interval-padding {params.padding} --germline-resource {input.gnomad} -L {input.bed} --bam-output {output.bam} 2> {log}
             """
 
 rule getpileup:
@@ -64,12 +64,13 @@ rule filtercalls:
 #(A lower Q-score means a higher probability that a REF_BASE:ALT_BASE observation randomly picked from the data will be due to this artifact, rather than a true variant.)
 rule artifacts:
     input: bam=ALIGN_DIR+"/realigned_{sample}.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
-    output: MUTECT_DIR+"/{sample}.artifacts.pre_adapter_summary_metrics"
+    output: MUTECT_DIR+"/{sample}.artifacts.pre_adapter_summary_metrics", MUTECT_DIR+"/{sample}.artifacts.pre_adapter_detail_metrics"
     singularity: GATK_SING
     log: MUTECT_DIR+"/{sample}.artifacts.pre_adapter_summary_metrics.log"
+    params: dir=MUTECT_DIR
     shell:
         """
-            gatk CollectSequencingArtifactMetrics -R {input.reference} -I {input.bam} -O {wildcards.sample}.artifacts 2> {log}
+            gatk CollectSequencingArtifactMetrics -R {input.reference} -I {input.bam} -O {params.dir}/{wildcards.sample}.artifacts 2> {log}
         """
 
 # Right now manual check if needed and rewiring of rules must be done, by default only standard filtering
