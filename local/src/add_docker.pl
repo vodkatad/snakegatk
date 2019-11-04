@@ -13,7 +13,7 @@ while (<STDIN>) {
         $next = "";
     }
     if ($_ =~ /^(\s+)singularity:/) {
-        $next = $1 . 'docker: "' . $docker . '"' . "\n";
+        $next = $1 . 'docker: ' . $docker . "\n";
     } 
     print $_;
 }
