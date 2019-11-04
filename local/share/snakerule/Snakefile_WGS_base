@@ -145,3 +145,10 @@ if PAIRED:
 else:
     MUTECT_DIR="mutect_paired"
     include: PRJ_ROOT+"/local/share/snakerule/Snakefile_mutect2_paired_4.1.4.0_"+TYPE
+
+
+rule all_single_something:
+    input: expand("{{dir}}/{sample}.{{something}}", sample=SAMPLES)
+    output: "{dir}/all_samples_{something}"
+    shell: "mkdir -p {wildcards.dir}; touch {output}"
+    

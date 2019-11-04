@@ -74,8 +74,3 @@ wildcard_constraints:
 CALLABLE="5:10,10:50,50:100,100:150,150:inf"
 CALLABLE_STRICT="50:100,100:150,150:inf"
 
-rule all_single_something:
-    input: expand("{{dir}}/{sample}.{{something}}", sample=SAMPLES)
-    output: "{dir}/all_samples_{something}"
-    shell: "mkdir -p {wildcards.dir}; touch {output}"
-

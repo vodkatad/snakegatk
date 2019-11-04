@@ -94,5 +94,42 @@ rule wgs_metrics:
             picard CollectWgsMetrics I={input.bam} O={output.txt} R={input.reference} INCLUDE_BQ_HISTOGRAM=true ALLELE_FRACTION=0.5 MINIMUM_BASE_QUALITY=18 THEORETICAL_SENSITIVITY_OUTPUT={output.sens} MINIMUM_MAPPING_QUALITY=20
         """
 
+rule bam_stats:
+    input: ALIGN_DIR+"/{something}.bam"
+    output: ALIGN_DIR+"/{something}.bam.stats"
+    shell:
+        """
+             samtools stats {input} > {output}
+        """
 
-## TODO multiqc to get covplots
+rule bam_flagstat:
+    input: ALIGN_DIR+"/{something}.bam"
+    output: ALIGN_DIR+"/{something}.bam.flagstat"
+    shell:
+       """
+          samtools flagstat {input} > {output}
+       """
+
+
+# UNTESTED multiqc
+#ewels/MultiQC for docker, not in align_recalibrate env
+rule multiqc_align:
+    input: expand(ALIGN_DIR+"/{sample}.bam.flagstat", sample=SAMPLES) 
+    output: "multiqc_report.align.html"
+    shell: 
+        """
+            echo {input} | tr " " "\\n" > {output}.tmp;
+            multiqc --file-list {output}.tmp -f -n {output};
+            rm {output}.tmp;
+        """
+
+
+rule multiqc_coverage:
+    input: expand(ALIGN_DIR+"/{sample}.bam.wgsmetrics", sample=SAMPLES) 
+    output: "multiqc_report.coverage.html"
+    shell: 
+        """
+            echo {input} | tr " " "\\n" > {output}.tmp;
+            multiqc --file-list {output}.tmp -f -n {output};
+            rm {output}.tmp;
+        """
