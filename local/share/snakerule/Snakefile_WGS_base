@@ -29,6 +29,7 @@ rule all_fastqc:
 rule fastqc:
     input: expand("{{sample}}_{pair}.fastq.gz", pair=PAIRS)
     output: directory("fastqc_{sample}")
+    docker: ALIGN_ODOCKER
     shell: "mkdir -p {output}; fastqc --extract -t " + str(CORES) + " -o {output} {input}; rm {output}/*_fastqc.zip"
 
 
@@ -37,6 +38,7 @@ rule fastqc:
 rule multiqc:
     input: expand("fastqc_{sample}", sample=SAMPLES)
     output: "multiqc_report.html"
+    docker: ALIGN_ODOCKER
     shell: "multiqc {input}"
 
 ### trimming (optional)
@@ -72,6 +74,7 @@ rule xenome:
     params: cores=8, mem=20, xenome="/home/egrassi/common/task/sequences/dataset/gdc/xenomidx"
     log: "{sample}.xenome"
     singularity: ROOT+"/gossamer/gossamer.img"
+    docker: XENOME_ODOCKER
     shell: 
         """
             mkdir -p xenome
@@ -82,6 +85,7 @@ rule xenome:
 rule checkxenome:
     input: unpack(produce_pairs)
     output: "xenome/{sample}.xenome.placeholder"
+    docker: ALIGN_ODOCKER
     shell:
        """
         tot1=$(zcat {input.fastq2} {input.fastq1} | wc -l);

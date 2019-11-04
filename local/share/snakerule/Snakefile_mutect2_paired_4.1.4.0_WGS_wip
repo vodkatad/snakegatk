@@ -9,6 +9,7 @@ rule mutectpaired:
     input: bamdelta=aligncalibrateflow("../align_calibrate/realigned_{sampledelta}.bam"), gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", reference=DATA_DIR+"/GRCh38.d1.vd1.fa", bamref=aligncalibrateflow("../align_calibrate/realigned_{sampleref}.bam")
     output: vcf="{sampledelta}-{sampleref}.vcf.gz"
     singularity: GATK_SING
+    docker: GATK_ODOCKER
     params: loweraf=LOWERAF, vcf="{sampledelta}-{sampleref}.vcf.gz"
     shell: 
         """
@@ -20,6 +21,7 @@ rule getpileup:
     input: bam=aligncalibrateflow("../align_calibrate/realigned_{sample}.bam"), gnomad=GNOMAD+"/gnomad.forcontamination.exomes.vcf"
     output: "{sample}.pileup.table"
     singularity: GATK_SING
+    docker: GATK_ODOCKER
     shell: 
         """
             gatk GetPileupSummaries -I {input.bam} -V {input.gnomad} -O {output} -L {input.gnomad}
@@ -29,6 +31,7 @@ rule calculatecontamination:
     input: delta="{sampledelta}.pileup.table", ref="{sampleref}.pileup.table"
     output: "{sampledelta}-{sampleref}.contamination.table"
     singularity: GATK_SING
+    docker: GATK_ODOCKER
     shell:
         """
             gatk CalculateContamination  -I {input.delta} -matched {input.ref} -O {output}
@@ -38,6 +41,7 @@ rule filtercalls:
     input: vcf="{sampledelta}-{sampleref}.vcf.gz"
     output: vcf="{sampledelta}-{sampleref}.filtered.vcf.gz", stats="{sampledelta}-{sampleref}_filtering_stats.tsv"
     singularity: GATK_SING
+    docker: GATK_ODOCKER
     shell:
         """
             gatk FilterMutectCalls -V {input.vcf} -O {output.vcf} --stats {output.stats}
@@ -47,6 +51,7 @@ rule filtercallsinterval:
     input: vcf="{sampledelta}-{sampleref}.vcf.gz", interval="/work/egrassi/WXS/local/share/data/resources_broad_hg38_v0_wgs_calling_regions.hg38.interval_list"
     output: vcf="{sampledelta}-{sampleref}.filtered_limited.vcf.gz", stats="{sampledelta}-{sampleref}_filtering_stats.tsv"
     singularity: GATK_SING
+    docker: GATK_ODOCKER
     shell:
         """
             gatk FilterMutectCalls -V {input.vcf} -O {output.vcf} --stats {output.stats} -L {input.interval}
@@ -56,6 +61,7 @@ rule filterallcalls:
     input: vcf="all.vcf.gz"
     output: vcf="all.filtered.vcf.gz", stats="all_filtering_stats.tsv"
     singularity: GATK_SING
+    docker: GATK_ODOCKER
     shell:
         """
             gatk FilterMutectCalls -V {input.vcf} -O {output.vcf} --stats {output.stats}
@@ -69,6 +75,7 @@ rule artifacts:
     input: bam=aligncalibrateflow("../align_calibrate/realigned_{sample}.bam"), reference=DATA_DIR+"/GRCh38.d1.vd1.fa"
     output: "{sample}.artifacts.pre_adapter_summary_metrics"
     singularity: GATK_SING
+    docker: GATK_ODOCKER
     shell:
         """
             gatk CollectSequencingArtifactMetrics -R {input.reference} -I {input.bam} -O {wildcards.sample}.artifacts
@@ -78,6 +85,7 @@ rule filterOrientation:
     input: vcf="{sample}.filtered.vcf.gz", artifact="{sample}.artifacts.pre_adapter_detail_metrics"
     output: vcf="{sample}.bifiltered.vcf.gz"
     singularity: GATK_SING
+    docker: GATK_ODOCKER
     shell:
         """
             gatk FilterByOrientationBias --artifact-modes G/T -P {input.artifact} -V {input.vcf} -O {output}

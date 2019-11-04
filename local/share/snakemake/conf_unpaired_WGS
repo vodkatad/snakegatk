@@ -33,7 +33,7 @@ GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images 
 GATK_ODOCKER="egrassi/occamsnakes/gatk:1"
 XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
 PLH_DOCKER="bubusettete"
-
+ALIGN_ODOCKER="egreassi/occamsnakes/align_recalibrate:1"
 
 ## This dataset:
 DATA=PRJ_ROOT+"/local/share/data/example"

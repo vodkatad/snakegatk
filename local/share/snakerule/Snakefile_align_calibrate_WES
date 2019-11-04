@@ -42,6 +42,7 @@ rule mark_duplicates_picard:
 rule recalibrate_quality:
     input: bam=ALIGN_DIR+"/markedDup_{sample}.sorted.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa", snps="dbsnp.all.vcf.gz", bed=SEXONS, bai=ALIGN_DIR+"/markedDup_{sample}.sorted.bam.bai"
     singularity: GATK_SING
+    docker: GATK_ODOCKER
     output: bam=protected(ALIGN_DIR+"/realigned_{sample}.bam"), table=ALIGN_DIR+"/{sample}.table"
     params: padding=PADDING
     log: bam=ALIGN_DIR+"/realigned_{sample}.bam.log", table=ALIGN_DIR+"/{sample}.table.log"
@@ -55,6 +56,7 @@ rule recalibrate_plot:
     input: reference=REF_DIR+"/GRCh38.d1.vd1.fa", table=ALIGN_DIR+"/{sample}.table", bam=ALIGN_DIR+"/realigned_{sample}.bam", snps="dbsnp.all.vcf.gz", bed=SEXONS
     output: ALIGN_DIR+"/{sample}.recal_plots.pdf"
     singularity: GATK_SING
+    docker: GATK_ODOCKER
     params: padding=PADDING
     log: ALIGN_DIR+"/{sample}.recal_plots.pdf.log"
     shell: 

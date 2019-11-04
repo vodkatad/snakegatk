@@ -66,6 +66,7 @@ rule xenome:
     params: cores=8, mem=20, xenome="/home/egrassi/common/task/sequences/dataset/gdc/xenomidx"
     log: "{sample}.xenome"
     singularity: ROOT+"/gossamer/gossamer.img"
+    docker: GATK_ODOCKER
     shell: 
         """
             mkdir -p xenome
