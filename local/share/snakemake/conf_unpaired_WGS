@@ -27,13 +27,13 @@ GNOMAD=GNOMAD_TASK_DIR
 VEP_CACHE_DIR=ROOT+"/task/variant_annotations/dataset/VEP"
 ANNOVAR=ROOT+"/task/variant_annotations/dataset/annovar/hg38/humandb/"
 PON="" # on hold for WGS
-DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
+DBSNP=GNOMAD_TASK_DIR+'/All_20180418.vcf.gz'
 # Singularity containers and occam docker images
 GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
 GATK_ODOCKER="egrassi/occamsnakes/gatk:1"
 XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
 PLH_DOCKER="bubusettete"
-ALIGN_ODOCKER="egreassi/occamsnakes/align_recalibrate:1"
+ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
 
 ## This dataset:
 DATA=PRJ_ROOT+"/local/share/data/example"
