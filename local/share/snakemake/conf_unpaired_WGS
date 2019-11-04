@@ -27,7 +27,7 @@ GNOMAD=GNOMAD_TASK_DIR
 VEP_CACHE_DIR=ROOT+"/common/task/variant_annotations/dataset/VEP"
 ANNOVAR=ROOT+"/common/task/variant_annotations/dataset/annovar/hg38/humandb/"
 PON="" # on hold for WGS
-DNBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
+DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
 # Singularity containers and occam docker images
 GATK_SING="~/gatk4140/gatk.img"
 GATK_ODOCKER="egrassi/occamsnakes/gatk:1"
