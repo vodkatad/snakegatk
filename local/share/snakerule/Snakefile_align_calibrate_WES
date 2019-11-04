@@ -15,16 +15,16 @@ rule bwa_mem:
     params: cores=CORES, ref=REF_DIR+"/GRCh38.d1.vd1.fa", dir=ALIGN_DIR
     shell: 
         """
-        mkdir -p {params.dir}
+        mkdir -p {params.dir};
         if echo {input.fastq1} | grep -q .gz; then
-            header=$(zcat {input.fastq1} | head -n 1) || echo "pipehead"
+            header=$(zcat {input.fastq1} | head -n 1) || echo "pipehead";
         else
-            header=$(cat {input.fastq1} | head -n 1) || echo "pipehead"
+            header=$(cat {input.fastq1} | head -n 1) || echo "pipehead";
         fi
-        id=$(echo $header | cut -f 1-4 -d":" | sed 's/^@//' | sed 's/:/_/g')
-        smnh=$(echo $header | grep -Eo "[ATGCN\+]+$")
-        sm={wildcards.sample}
-        bwa mem -R "@RG\\tID:$id\\tSM:$sm\\tLB:$sm"_"$id"_"$smnh\\tPL:ILLUMINA" -t {params.cores} -K 100000000 -Y {params.ref} {input.fastq1} {input.fastq2} | samtools view -Shb -o {output} 
+        id=$(echo $header | cut -f 1-4 -d":" | sed 's/^@//' | sed 's/:/_/g');
+        smnh=$(echo $header | grep -Eo "[ATGCN\+]+$");
+        sm={wildcards.sample};
+        bwa mem -R "@RG\\tID:$id\\tSM:$sm\\tLB:$sm"_"$id"_"$smnh\\tPL:ILLUMINA" -t {params.cores} -K 100000000 -Y {params.ref} {input.fastq1} {input.fastq2} | samtools view -Shb -o {output};
         """
 
 rule mark_duplicates_picard:
@@ -47,8 +47,8 @@ rule recalibrate_quality:
     log: bam=ALIGN_DIR+"/realigned_{sample}.bam.log", table=ALIGN_DIR+"/{sample}.table.log"
     shell:
         """
-            gatk BaseRecalibrator --interval-padding {params.padding} -R {input.reference} -I {input.bam} --known-sites {input.snps} -O {output.table} -L {input.bed} 2> {log.table}
-            gatk ApplyBQSR -R {input.reference} -I {input.bam} --bqsr-recal-file  {output.table} -O {output.bam} --create-output-bam-index true 2> {log.bam}
+            gatk BaseRecalibrator --interval-padding {params.padding} -R {input.reference} -I {input.bam} --known-sites {input.snps} -O {output.table} -L {input.bed} 2> {log.table};
+            gatk ApplyBQSR -R {input.reference} -I {input.bam} --bqsr-recal-file  {output.table} -O {output.bam} --create-output-bam-index true 2> {log.bam};
         """
 
 rule recalibrate_plot:
@@ -59,8 +59,8 @@ rule recalibrate_plot:
     log: ALIGN_DIR+"/{sample}.recal_plots.pdf.log"
     shell: 
         """
-        gatk BaseRecalibrator --interval-padding {params.padding} -R {input.reference} -I {input.bam} --known-sites {input.snps} -O {output}.table -L {input.bed} 2> {log}
-        gatk AnalyzeCovariates -before {input.table} -after {output}.table -plots {output} 2>> {log}
+        gatk BaseRecalibrator --interval-padding {params.padding} -R {input.reference} -I {input.bam} --known-sites {input.snps} -O {output}.table -L {input.bed} 2> {log};
+        gatk AnalyzeCovariates -before {input.table} -after {output}.table -plots {output} 2>> {log};
         """
 
 rule sort_all_realigned:
@@ -83,8 +83,8 @@ rule all_coverage:
     params: prefix="depth/{sample}", thread=12
     shell: 
         """
-            mkdir -p depth
-            mosdepth -t {params.thread} -n --quantize 0:1:5:10:50:100:150: {params.prefix} {input.bam}
+            mkdir -p depth;
+            mosdepth -t {params.thread} -n --quantize 0:1:5:10:50:100:150: {params.prefix} {input.bam};
         """
 
 rule split_coverage:
@@ -92,8 +92,8 @@ rule split_coverage:
     output: exons="depth/{sample}.exons.bed.gz", outof="depth/{sample}.outof.bed.gz"
     shell:
         """
-            bedtools intersect -u -a {input.depth} -b {input.exons} | gzip > {output.exons}
-            bedtools subtract -sorted -a {input.depth} -b {input.exons} | gzip > {output.outof}
+            bedtools intersect -u -a {input.depth} -b {input.exons} | gzip > {output.exons};
+            bedtools subtract -sorted -a {input.depth} -b {input.exons} | gzip > {output.outof};
         """
 
 rule coverage_plot:
@@ -109,8 +109,8 @@ rule coverage_plot_bis:
     params: thread=12, prefix="depth/{sample}"
     shell:
         """ 
-            mkdir -p depth
-            mosdepth -n -t {params.thread} --by {input.bed} {params.prefix} {input.bam}
+            mkdir -p depth;
+            mosdepth -n -t {params.thread} --by {input.bed} {params.prefix} {input.bam};
         """
 
 rule coverage_plot_all:
@@ -119,8 +119,8 @@ rule coverage_plot_all:
     params: tool=SRC_DIR+"/plot_dist.py"
     shell:
         """
-            python {params.tool} {input}
-            mv dist.html {output}
+            python {params.tool} {input};
+            mv dist.html {output};
         """
 
 rule interval:
@@ -153,6 +153,6 @@ rule hsmetrics_summary:
     output: "all_metrics"
     shell:
         """
-             grep BAIT_SET {input[0]} > {output}
+             grep BAIT_SET {input[0]} > {output};
              for f in {input}; do grep -A 1 BAIT_SET $f | tail -n 1 >> {output}; done
         """
