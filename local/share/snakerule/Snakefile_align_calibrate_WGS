@@ -41,14 +41,14 @@ rule mark_duplicates_picard:
 
 def check_subsample(wildcards):
     if SUBSAMPLE == 1:
-        return {bam: ALIGN_DIR+"/markedDup_{sample}.sorted.bam", bai: ALIGN_DIR+"/markedDup_{sample}.sorted.bam.bai"}
+        return {'bam': ALIGN_DIR+"/markedDup_{sample}.sorted.bam", 'bai': ALIGN_DIR+"/markedDup_{sample}.sorted.bam.bai"}
     else:
-        return {bam: ALIGN_DIR+"/sub-markedDup_{sample}.sorted.bam", bai: ALIGN_DIR+"/sub-markedDup_{sample}.sorted.bam.bai"}
+        return {'bam': ALIGN_DIR+"/sub-markedDup_{sample}.sorted.bam", 'bai': ALIGN_DIR+"/sub-markedDup_{sample}.sorted.bam.bai"}
 
 rule subsample:
     input: bam=ALIGN_DIR+"/markedDup_{sample}.sorted.bam"
-    output: bam: ALIGN_DIR+"/sub-markedDup_{sample}.sorted.bam", bai: ALIGN_DIR+"/sub-markedDup_{sample}.sorted.bam.bai"
-    params: subs=SUMBSAMPLE
+    output: bam=ALIGN_DIR+"/sub-markedDup_{sample}.sorted.bam", bai=ALIGN_DIR+"/sub-markedDup_{sample}.sorted.bam.bai"
+    params: subs=SUBSAMPLE
     shell:
         """ 
             samtools view -s 0.{params.subs} -b -o {output.bam} {input};
@@ -56,7 +56,7 @@ rule subsample:
         """
 
 rule recalibrate_quality:
-    input: reference=REF_DIR+"/GRCh38.d1.vd1.fa", snps=DBSNP, check_subsample
+    input: unpack(check_subsample), reference=REF_DIR+"/GRCh38.d1.vd1.fa", snps=DBSNP
     singularity: GATK_SING
     output: bam=protected(ALIGN_DIR+"/realigned_{sample}.bam"), table=ALIGN_DIR+"/{sample}.table"
     log: bam=ALIGN_DIR+"/realigned_{sample}.bam.log", table=ALIGN_DIR+"/{sample}.table.log"

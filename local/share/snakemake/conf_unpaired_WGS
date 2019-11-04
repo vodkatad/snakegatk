@@ -18,7 +18,7 @@ FQ_REMOVED=False
 DEBUG="yes"
 TYPE="WGS"
 PAIRED=False
-SUBSAMPLE=0.9 # if == 1 do not downsample (downsampling is done right after alignment and dup removal, not before calling, to also recalibrate on less data).
+SUBSAMPLE=1 # if == 1 do not downsample (downsampling is done right after alignment and dup removal, not before calling, to also recalibrate on less data).
 
 # Needed references and annotations
 GNOMAD_TASK_DIR=ROOT+'/task/annotations/dataset/gnomad'
