@@ -31,7 +31,7 @@ PON="" # on hold for WGS
 DNBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
 # Singularity containers and occam docker images
 GATK_SING="~/gatk4140/gatk.img"
-GATK_ODOCKER=""
+GATK_ODOCKER="egrassi/occamsnakes/gatk:1"
 XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
 PLH_DOCKER="bubusettete"
 
