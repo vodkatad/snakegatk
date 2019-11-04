@@ -14,11 +14,10 @@ if PON != "":
             """
 else:
     rule mutect:
-        input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", bed=SEXONS, reference=REF_DIR+"/GRCh38.d1.vd1.fa"
+        input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
         output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), stats=MUTECT_DIR+"/{sample}.vcf.gz.stats"
         singularity: GATK_SING
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
-        params: padding=PADDING
         shell: 
             """
                 gatk Mutect2 -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} 2> {log}

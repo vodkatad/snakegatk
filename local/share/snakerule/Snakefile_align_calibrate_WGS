@@ -54,7 +54,6 @@ rule recalibrate_plot:
     input: reference=REF_DIR+"/GRCh38.d1.vd1.fa", table=ALIGN_DIR+"/{sample}.table", bam=ALIGN_DIR+"/realigned_{sample}.bam", snps=DBSNP
     output: ALIGN_DIR+"/{sample}.recal_plots.pdf"
     singularity: GATK_SING
-    params: padding=PADDING
     log: ALIGN_DIR+"/{sample}.recal_plots.pdf.log"
     shell: 
         """

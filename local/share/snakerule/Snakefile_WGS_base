@@ -139,7 +139,7 @@ ALIGN_DIR="align"
 include: PRJ_ROOT+"/local/share/snakerule/Snakefile_align_calibrate_"+TYPE
 
 # then mutect
-if PAIRED:
+if not PAIRED:
     MUTECT_DIR="mutect"
     include: PRJ_ROOT+"/local/share/snakerule/Snakefile_mutect2_4.1.4.0_"+TYPE
 else:
@@ -149,6 +149,6 @@ else:
 
 rule all_single_something:
     input: expand("{{dir}}/{sample}.{{something}}", sample=SAMPLES)
-    output: "{dir}/all_samples_{something}"
+    output: "{dir}/all_samples.{something}"
     shell: "mkdir -p {wildcards.dir}; touch {output}"
     
