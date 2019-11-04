@@ -134,4 +134,14 @@ rule murine_content:
                         ratio = float(tupl[1]) / float(tupl[0])
                     out.write('{}\t{}\n'.format(s, ratio))
     
-### misc
+### Alignment and calling are in separate Snakefiles that we include here following conf.sk:
+ALIGN_DIR="align"
+include: PRJ_ROOT+"/local/share/snakerule/Snakefile_align_calibrate_"+TYPE
+
+# then mutect
+if PAIRED:
+    MUTECT_DIR="mutect"
+    include: PRJ_ROOT+"/local/share/snakerule/Snakefile_mutect2_4.1.4.0_"+TYPE
+else:
+    MUTECT_DIR="mutect_paired"
+    include: PRJ_ROOT+"/local/share/snakerule/Snakefile_mutect2_paired_4.1.4.0_"+TYPE

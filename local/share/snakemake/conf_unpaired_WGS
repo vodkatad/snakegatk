@@ -16,30 +16,37 @@ SRC_DIR=PRJ_ROOT+'/local/src'
 BIN_DIR=PRJ_ROOT+'/local/bin'
 DATA_DIR=PRJ_ROOT+'/local/share/data'
 FQ_REMOVED=False
+DEBUG="yes"
+TYPE="WGS"
+PAIRED=False
+SUBSAMPLE=0.9 # if == 1 do not downsample (downsampling is done right after alignment and dup removal, not before calling, to also recalibrate on less data).
 
 # Needed references and annotations
-REF_DIR='/home/egrassi/strata/local/share/data'
-GNOMAD=ROOT+"/common/task/annotations/dataset/gnomad" 
+GNOMAD_TASK_DIR=ROOT+'/common/task/annotations/dataset/gnomad'
+REF_DIR=GNOMAD_TASK_DIR
+GNOMAD=GNOMAD_TASK_DIR
 VEP_CACHE_DIR=ROOT+"/common/task/variant_annotations/dataset/VEP"
 ANNOVAR=ROOT+"/common/task/variant_annotations/dataset/annovar/hg38/humandb/"
-PON=""
-# Singularity containers
-GATK_SING=ROOT+"/gatk4100/gatk.img"
-DEBUG="yes"
+PON="" # on hold for WGS
+# Singularity containers and occam docker images
+GATK_SING="~/gatk4140/gatk.img"
+GATK_ODOCKER=""
+XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
+PLH_DOCKER="bubusettete"
+
 
 ## This dataset:
 DATA=PRJ_ROOT+"/local/share/data/example"
-#FQ_DIR=PRJ_ROOT+"/dataset/v1"
 FQ_XENOME_DIR="xenome"
-EXONS=DATA+'/targeted.bed'
-SEXONS='targeted_sorted.bed'
 
 # sed 1d PJ1903090-SF-Integragen-Targeted-Seq.tsv  | cut -f 1 | tr "_" "\t" | cut -f 1 | tr "\n" "," | sed 's/,/","/g'
 SAMPLES_ORIG=["example"]
 SAMPLES=["pippo"]
-REF=""
-SAMPLESD=[]
-SAMPS=",".join(SAMPLESD)
+
+#REF=""
+#SAMPLESD=[]
+#SAMPS=",".join(SAMPLESD)
+
 XENOMED_SAMPLES=[]
 TRIMMED_SAMPLES=[]
 
@@ -71,20 +78,8 @@ ANNOTATIONS=ROOT+"/common/task/annotations/dataset/gdc"
 CALLABLE="5:10,10:50,50:100,100:150,150:inf"
 CALLABLE_STRICT="50:100,100:150,150:inf"
 
-PADDING=100
-
-
 rule all_single_something:
     input: expand("{{dir}}/{sample}.{{something}}", sample=SAMPLES)
     output: "{dir}/all_samples_{something}"
     shell: "mkdir -p {wildcards.dir}; touch {output}"
 
-
-# Other phases Snakefiles are included here without symbolic links: in this way the right ones need to be
-# plugged in the base conf.sk
-ALIGN_DIR="align"
-include: PRJ_ROOT+"/local/share/snakerule/Snakefile_align_calibrate_WES_basedir"
-
-# then mutect
-MUTECT_DIR="mutect"
-include: PRJ_ROOT+"/local/share/snakerule/Snakefile_mutect2_WES_basedir"
