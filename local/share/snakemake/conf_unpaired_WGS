@@ -14,7 +14,6 @@ PRJ_ROOT=find_prj_root()
 
 SRC_DIR=PRJ_ROOT+'/local/src'
 BIN_DIR=PRJ_ROOT+'/local/bin'
-DATA_DIR=PRJ_ROOT+'/local/share/data'
 FQ_REMOVED=False
 DEBUG="yes"
 TYPE="WGS"
