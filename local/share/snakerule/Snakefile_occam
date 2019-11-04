@@ -1,0 +1,16 @@
+#[egrassi@occam snakerule]>ls Snakefile_* | grep -v _occam | sed "s/Snakefile_//1" | tr "\n" "\t" | sed 's/\t/","/g'
+SNAKES=["align_calibrate_WES","align_calibrate_WGS","mutect2","mutect2_4.1.4.0_WES","mutect2_4.1.4.0_WGS","mutect2_paired_4.1.4.0_WGS_wip","mutect2_WES","WES_base","WGS_base"]
+
+rule all_add:
+	input: expand("nodocker/Snakefile_{spec}", spec=SNAKES)
+
+rule add_docker:
+	input: "Snakefile_{spec}"
+	output: "nodocker/Snakefile_{spec}"
+	shell:
+		"""
+			mv {input} {output}
+			../../src/add_docker.pl GATK_ODOCKER < {output} > {input}
+		 	echo "check manually that all images are ok!"
+		"""
+
