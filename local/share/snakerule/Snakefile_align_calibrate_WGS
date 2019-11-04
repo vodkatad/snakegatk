@@ -40,26 +40,25 @@ rule mark_duplicates_picard:
         """
 
 rule recalibrate_quality:
-    input: bam=ALIGN_DIR+"/markedDup_{sample}.sorted.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa", snps="dbsnp.all.vcf.gz", bed=SEXONS, bai=ALIGN_DIR+"/markedDup_{sample}.sorted.bam.bai"
+    input: bam=ALIGN_DIR+"/markedDup_{sample}.sorted.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa", snps=DBSNP, bai=ALIGN_DIR+"/markedDup_{sample}.sorted.bam.bai"
     singularity: GATK_SING
     output: bam=protected(ALIGN_DIR+"/realigned_{sample}.bam"), table=ALIGN_DIR+"/{sample}.table"
-    params: padding=PADDING
     log: bam=ALIGN_DIR+"/realigned_{sample}.bam.log", table=ALIGN_DIR+"/{sample}.table.log"
     shell:
         """
-            gatk BaseRecalibrator --interval-padding {params.padding} -R {input.reference} -I {input.bam} --known-sites {input.snps} -O {output.table} -L {input.bed} 2> {log.table};
+            gatk BaseRecalibrator -R {input.reference} -I {input.bam} --known-sites {input.snps} -O {output.table} 2> {log.table};
             gatk ApplyBQSR -R {input.reference} -I {input.bam} --bqsr-recal-file  {output.table} -O {output.bam} --create-output-bam-index true 2> {log.bam};
         """
 
 rule recalibrate_plot:
-    input: reference=REF_DIR+"/GRCh38.d1.vd1.fa", table=ALIGN_DIR+"/{sample}.table", bam=ALIGN_DIR+"/realigned_{sample}.bam", snps="dbsnp.all.vcf.gz", bed=SEXONS
+    input: reference=REF_DIR+"/GRCh38.d1.vd1.fa", table=ALIGN_DIR+"/{sample}.table", bam=ALIGN_DIR+"/realigned_{sample}.bam", snps=DBSNP
     output: ALIGN_DIR+"/{sample}.recal_plots.pdf"
     singularity: GATK_SING
     params: padding=PADDING
     log: ALIGN_DIR+"/{sample}.recal_plots.pdf.log"
     shell: 
         """
-        gatk BaseRecalibrator --interval-padding {params.padding} -R {input.reference} -I {input.bam} --known-sites {input.snps} -O {output}.table -L {input.bed} 2> {log};
+        gatk BaseRecalibrator -R {input.reference} -I {input.bam} --known-sites {input.snps} -O {output}.table 2> {log};
         gatk AnalyzeCovariates -before {input.table} -after {output}.table -plots {output} 2>> {log};
         """
 
@@ -76,7 +75,6 @@ rule sorted_bai:
         samtools index {output.bam} {output.bai};
         """
 
-# --fast-mode is not available in conda's version
 rule all_coverage:
     input: bam=ALIGN_DIR+"/realigned_{sample}.sorted.bam", bai=ALIGN_DIR+"/realigned_{sample}.sorted.bam.bai"
     output: "depth/{sample}.quantized.bed.gz"
@@ -87,72 +85,14 @@ rule all_coverage:
             mosdepth -t {params.thread} -n --quantize 0:1:5:10:50:100:150: {params.prefix} {input.bam};
         """
 
-rule split_coverage:
-    input: exons=SEXONS, depth="depth/{sample}.quantized.bed.gz"
-    output: exons="depth/{sample}.exons.bed.gz", outof="depth/{sample}.outof.bed.gz"
+# thresholds gotten from Mutect2 default parameters that we are adopting
+rule wgs_metrics:
+    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
+    output: txt=ALIGN_DIR+"/{sample}.wgsmetrics", sens=ALIGN_DIR+"/{sample}.sens"
     shell:
         """
-            bedtools intersect -u -a {input.depth} -b {input.exons} | gzip > {output.exons};
-            bedtools subtract -sorted -a {input.depth} -b {input.exons} | gzip > {output.outof};
+            picard CollectWgsMetrics I={input.bam} O={output.txt} R={input.reference} INCLUDE_BQ_HISTOGRAM=true ALLELE_FRACTION=0.5 MINIMUM_BASE_QUALITY=18 THEORETICAL_SENSITIVITY_OUTPUT={output.sens} MINIMUM_MAPPING_QUALITY=20
         """
 
-rule coverage_plot:
-    input: bed="depth/{sample}.{kind}.bed.gz"
-    output: pdf="depth/{sample}.{kind}.pdf"
-    params: debug=DEBUG
-    script: SRC_DIR+"/coverage_plot.R"
 
-
-rule coverage_plot_bis:
-    input: bam=ALIGN_DIR+"/realigned_{sample}.sorted.bam", bai=ALIGN_DIR+"/realigned_{sample}.sorted.bam.bai", bed=SEXONS
-    output: temp("depth/{sample}.mosdepth.region.dist.txt")
-    params: thread=12, prefix="depth/{sample}"
-    shell:
-        """ 
-            mkdir -p depth;
-            mosdepth -n -t {params.thread} --by {input.bed} {params.prefix} {input.bam};
-        """
-
-rule coverage_plot_all:
-    input: expand("depth/{sample}.mosdepth.region.dist.txt", sample=SAMPLES)
-    output: "depth/exons_covplot.html"
-    params: tool=SRC_DIR+"/plot_dist.py"
-    shell:
-        """
-            python {params.tool} {input};
-            mv dist.html {output};
-        """
-
-rule interval:
-    input: bed=SEXONS, sd=REF_DIR+"/GRCh38.d1.vd1.fa"
-    output: "target.interval_list"
-    shell:
-        """
-            picard BedToIntervalList \
-              I={input.bed} \
-              O={output} \
-              SD={input.sd}
-        """
-
-# tODO change in CollectHsMetrics -I realigned_CRC1979NORM.sorted.bam -O CRC1979NORM.hsmetrics -R /work/egrassi/WXS/local/share/data/GRCh38.d1.vd1.fa -BAIT_INTERVALS target.interval_list -TARGET_INTERVALS target.interval_list  it was suggested but it did not work ... !?
-rule hsmetrics:
-    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa", il="target.interval_list"
-    output: "{sample}.hsmetrics"
-    shell:
-        """
-            picard -Xmx2g  CollectHsMetrics \
-            I={input.bam} \
-            O={output} \
-            R={input.reference} \
-            BAIT_INTERVALS={input.il} \
-            TARGET_INTERVALS={input.il}
-       """
-
-rule hsmetrics_summary:
-    input: expand("{sample}.hsmetrics", sample=SAMPLES)
-    output: "all_metrics"
-    shell:
-        """
-             grep BAIT_SET {input[0]} > {output};
-             for f in {input}; do grep -A 1 BAIT_SET $f | tail -n 1 >> {output}; done
-        """
+## TODO multiqc to get covplots
