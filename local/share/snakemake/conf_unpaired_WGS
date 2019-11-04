@@ -1,5 +1,5 @@
-ROOT='/home/egrassi'
 import os
+ROOT=os.environ.get('BIOINFO_ROOT')
 def find_prj_root(path=os.getcwd()):
     if os.path.isfile(os.path.join(path,".PRJ_ROOT")):
         return path
@@ -21,15 +21,15 @@ PAIRED=False
 SUBSAMPLE=0.9 # if == 1 do not downsample (downsampling is done right after alignment and dup removal, not before calling, to also recalibrate on less data).
 
 # Needed references and annotations
-GNOMAD_TASK_DIR=ROOT+'/common/task/annotations/dataset/gnomad'
+GNOMAD_TASK_DIR=ROOT+'/task/annotations/dataset/gnomad'
 REF_DIR=GNOMAD_TASK_DIR
 GNOMAD=GNOMAD_TASK_DIR
-VEP_CACHE_DIR=ROOT+"/common/task/variant_annotations/dataset/VEP"
-ANNOVAR=ROOT+"/common/task/variant_annotations/dataset/annovar/hg38/humandb/"
+VEP_CACHE_DIR=ROOT+"/task/variant_annotations/dataset/VEP"
+ANNOVAR=ROOT+"/task/variant_annotations/dataset/annovar/hg38/humandb/"
 PON="" # on hold for WGS
 DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
 # Singularity containers and occam docker images
-GATK_SING="~/gatk4140/gatk.img"
+GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
 GATK_ODOCKER="egrassi/occamsnakes/gatk:1"
 XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
 PLH_DOCKER="bubusettete"
@@ -53,7 +53,7 @@ TRIMMED_SAMPLES=[]
 FASTQ_SUFFIX="_{pair}.fastq.gz"
 FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
 
-PAIRS=['R1','R2']
+PAIRS=['R1_001','R2_001']
 PAIRS_XENOME=['1','2']
 CORES=8
 MEM=4
