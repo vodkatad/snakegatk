@@ -94,7 +94,7 @@ rule checkxenome:
             echo -e "ok\t$tot1\t$tot2" > {output};
         else
             echo -e "error\t$tot1\t$tot2" > {output};
-        fi
+        fi;
        """  
 
 

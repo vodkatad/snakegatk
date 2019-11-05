@@ -41,8 +41,24 @@ rule mark_duplicates_picard:
         ADD_PG_TAG_TO_READS=false VALIDATION_STRINGENCY="STRICT" 2> {log}
         """
 
+def check_subsample(wildcards):
+    if SUBSAMPLE == 1:
+        return {'bam': ALIGN_DIR+"/markedDup_{sample}.sorted.bam", 'bai': ALIGN_DIR+"/markedDup_{sample}.sorted.bam.bai"}
+    else:
+        return {'bam': ALIGN_DIR+"/sub-markedDup_{sample}.sorted.bam", 'bai': ALIGN_DIR+"/sub-markedDup_{sample}.sorted.bam.bai"}
+
+rule subsample:
+    input: bam=ALIGN_DIR+"/markedDup_{sample}.sorted.bam"
+    output: bam=ALIGN_DIR+"/sub-markedDup_{sample}.sorted.bam", bai=ALIGN_DIR+"/sub-markedDup_{sample}.sorted.bam.bai"
+    params: subs=SUBSAMPLE
+    shell:
+        """ 
+            samtools view -s 0.{params.subs} -b -o {output.bam} {input};
+            samtools index {output.bam} {output.bai};
+        """
+
 rule recalibrate_quality:
-    input: bam=ALIGN_DIR+"/markedDup_{sample}.sorted.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa", snps=DBSNP, bai=ALIGN_DIR+"/markedDup_{sample}.sorted.bam.bai"
+    input: unpack(check_subsample), reference=REF_DIR+"/GRCh38.d1.vd1.fa", snps=DBSNP
     singularity: GATK_SING
     docker: GATK_ODOCKER
     output: bam=protected(ALIGN_DIR+"/realigned_{sample}.bam"), table=ALIGN_DIR+"/{sample}.table"
