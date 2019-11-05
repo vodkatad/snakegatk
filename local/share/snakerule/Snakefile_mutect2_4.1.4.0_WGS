@@ -33,7 +33,7 @@ rule getpileup:
     log: MUTECT_DIR+"/{sample}.pileup.table.log"
     shell: 
         """
-            gatk GetPileupSummaries -I {input.bam} -V {input.gnomad} -O {output} 2> {log}
+            gatk GetPileupSummaries -I {input.bam} -V {input.gnomad} -O {output} -L {input.gnomad} 2> {log}
         """
 
 rule calculatecontamination:
@@ -61,6 +61,17 @@ rule filtercalls:
         """
             gatk FilterMutectCalls -V {input.vcf} -O {output.vcf} -R {input.ref} --stats {input.stats} --contamination-table {input.contam} --tumor-segmentation={input.seg} --filtering-stats {output.stats} 2> {log}
         """
+
+rule filtercallsinterval:
+    input: vcf=MUTECT_DIR+"/{sample}.vcf.gz", ref=REF_DIR+"/GRCh38.d1.vd1.fa", stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", contam=MUTECT_DIR+"/{sample}.contamination.table", seg=MUTECT_DIR+"/{sample}.tum.seg", interval=INTERVAL
+    output: vcf=MUTECT_DIR+"/{sample}.filtered_limited.vcf.gz", stats=MUTECT_DIR+"/{sample}_filtering_limited_stats.tsv"
+    singularity: GATK_SING
+    log: MUTECT_DIR+"/{sample}_filtering_stats.tsv.log"
+    shell:
+        """
+            gatk FilterMutectCalls -V {input.vcf} -O {output.vcf} -R {input.ref} --stats {input.stats} --contamination-table {input.contam} --tumor-segmentation={input.seg} --filtering-stats {output.stats} -L {input.interval} 2> {log}
+        """
+
 
 # Rule of thumb: less than 30 is worrisome for QSCORE  (https://gatkforums.broadinstitute.org/gatk/discussion/11136/how-to-call-somatic-mutations-using-gatk4-mutect2)
 #(A lower Q-score means a higher probability that a REF_BASE:ALT_BASE observation randomly picked from the data will be due to this artifact, rather than a true variant.)
