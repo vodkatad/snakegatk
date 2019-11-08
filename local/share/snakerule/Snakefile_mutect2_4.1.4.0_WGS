@@ -67,32 +67,6 @@ rule filtercallsinterval:
             gatk FilterMutectCalls -V {input.vcf} -O {output.vcf} -R {input.ref} --stats {input.stats} --contamination-table {input.contam} --tumor-segmentation={input.seg} --filtering-stats {output.stats} -L {input.interval} 2> {log}
         """
 
-
-# Rule of thumb: less than 30 is worrisome for QSCORE  (https://gatkforums.broadinstitute.org/gatk/discussion/11136/how-to-call-somatic-mutations-using-gatk4-mutect2)
-#(A lower Q-score means a higher probability that a REF_BASE:ALT_BASE observation randomly picked from the data will be due to this artifact, rather than a true variant.)
-rule artifacts:
-    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
-    output: MUTECT_DIR+"/{sample}.artifacts.pre_adapter_summary_metrics", MUTECT_DIR+"/{sample}.artifacts.pre_adapter_detail_metrics"
-    singularity: GATK_SING
-    log: MUTECT_DIR+"/{sample}.artifacts.pre_adapter_summary_metrics.log"
-    params: dir=MUTECT_DIR
-    shell:
-        """
-            gatk CollectSequencingArtifactMetrics -R {input.reference} -I {input.bam} -O {params.dir}/{wildcards.sample}.artifacts 2> {log}
-        """
-
-# Right now manual check if needed and rewiring of rules must be done, by default only standard filtering
-# TODO automatize bifilter or not depending of QSCORES?
-rule filterOrientation:
-    input: vcf=MUTECT_DIR+"/{sample}.filtered.vcf.gz", artifact=MUTECT_DIR+"/{sample}.artifacts.pre_adapter_detail_metrics"
-    output: vcf=MUTECT_DIR+"/{sample}.bifiltered.vcf.gz"
-    singularity: GATK_SING
-    log: MUTECT_DIR+"/{sample}.bifiltered.vcf.gz.log"
-    shell:
-        """
-            gatk FilterByOrientationBias --artifact-modes G/T -P {input.artifact} -V {input.vcf} -O {output} 2> {log}
-        """
-
 rule passFilter:
     input: MUTECT_DIR+"/{sample}.filtered.vcf.gz"
     output: MUTECT_DIR+"/{sample}.pass.vcf.gz"
