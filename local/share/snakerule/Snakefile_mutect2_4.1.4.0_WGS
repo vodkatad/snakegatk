@@ -10,7 +10,7 @@ if PON != "":
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
         shell: 
             """
-                gatk Mutect2 -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --panel-of-normals {input.pon} --f1r2-tar-gz {f1r2} 2> {log}
+                gatk Mutect2 -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --panel-of-normals {input.pon} --f1r2-tar-gz {output.f1r2} 2> {log}
             """
 else:
     rule mutect:
@@ -20,7 +20,7 @@ else:
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
         shell: 
             """
-                gatk Mutect2 -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --f1r2-tar-gz {f1r2} 2> {log}
+                gatk Mutect2 -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --f1r2-tar-gz {output.f1r2} 2> {log}
             """
 
 rule getpileup:
