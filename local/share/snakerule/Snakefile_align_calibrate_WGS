@@ -49,10 +49,10 @@ def check_subsample(wildcards):
 rule subsample:
     input: bam=ALIGN_DIR+"/markedDup_{sample}.sorted.bam"
     output: bam=ALIGN_DIR+"/sub-markedDup_{sample}.sorted.bam", bai=ALIGN_DIR+"/sub-markedDup_{sample}.sorted.bam.bai"
-    params: subs=SUBSAMPLE
+    params: subs=SUBSAMPLE, threads=str(CORES)
     shell:
         """ 
-            samtools view -s {params.subs} -b -o {output.bam} {input};
+            samtools view --threads {params.threads} -s {params.subs} -b -o {output.bam} {input};
             samtools index {output.bam} {output.bai};
         """
 
@@ -84,7 +84,7 @@ rule sort_all_realigned:
 rule sorted_bai:
     input: ALIGN_DIR+"/{whatever}.bam"
     output: bai=ALIGN_DIR+"/{whatever}.sorted.bam.bai", bam=ALIGN_DIR+"/{whatever}.sorted.bam"
-    params: threads="8"
+    params: threads=str(CORES)
     shell: 
         """
         samtools sort --threads {params.threads} -o {output.bam} {input};
@@ -127,10 +127,9 @@ rule bam_flagstat:
        """
 
 
-# UNTESTED multiqc
-#ewels/MultiQC for docker, not in align_recalibrate env
+# multiqc (the align_output is horrible)
 rule multiqc_align:
-    input: expand(ALIGN_DIR+"/{sample}.bam.flagstat", sample=SAMPLES) 
+    input: expand(ALIGN_DIR+"/realigned_{sample}.bam.flagstat", sample=SAMPLES) 
     output: "multiqc_report.align.html"
     shell: 
         """

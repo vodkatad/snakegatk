@@ -1,8 +1,10 @@
 include: "conf.sk"
 
+rule all:
+    input: "multiqc_report.html","multiqc_report.coverage.html","multiqc_report.align.html","mutect/all_samples.pass.table.gz"
+
 rule all_ln:
     input: expand("{sample}_{pair}.fastq.gz", pair=PAIRS, sample=SAMPLES)
-
 
 # FQ removed is needed to avoid failures when the original fq have been moved to make space
 def find_ln(wildcards):
