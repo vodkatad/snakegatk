@@ -56,8 +56,7 @@ FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
 
 PAIRS=['R1_001','R2_001']
 PAIRS_XENOME=['1','2']
-CORES=8
-MEM=4
+CORES=12
 # TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
 PATTERNED=2500 
 # HiSeq4000, otherwise 100 for unpatterned

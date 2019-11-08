@@ -51,7 +51,7 @@ rule subsample:
     params: subs=SUBSAMPLE
     shell:
         """ 
-            samtools view -s 0.{params.subs} -b -o {output.bam} {input};
+            samtools view -s {params.subs} -b -o {output.bam} {input};
             samtools index {output.bam} {output.bai};
         """
 
@@ -114,7 +114,7 @@ rule bam_stats:
     output: ALIGN_DIR+"/{something}.bam.stats"
     shell:
         """
-             samtools stats {input} > {output}
+            samtools stats {input} > {output}
         """
 
 rule bam_flagstat:
@@ -140,7 +140,7 @@ rule multiqc_align:
 
 
 rule multiqc_coverage:
-    input: expand(ALIGN_DIR+"/{sample}.bam.wgsmetrics", sample=SAMPLES) 
+    input: expand(ALIGN_DIR+"/{sample}.wgsmetrics", sample=SAMPLES) 
     output: "multiqc_report.coverage.html"
     shell: 
         """
