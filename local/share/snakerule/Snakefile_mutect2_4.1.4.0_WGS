@@ -5,22 +5,22 @@
 if PON != "":
     rule mutect:
         input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", bed=SEXONS, reference=REF_DIR+"/GRCh38.d1.vd1.fa", pon=PON
-        output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), stats=MUTECT_DIR+"/{sample}.vcf.gz.stats"
+        output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", f1r2=MUTECT_DIR+"/{sample}_f1r2.tar.gz"
         singularity: GATK_SING
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
         shell: 
             """
-                gatk Mutect2 -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --panel-of-normals {input.pon} 2> {log}
+                gatk Mutect2 -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --panel-of-normals {input.pon} --f1r2-tar-gz {f1r2} 2> {log}
             """
 else:
     rule mutect:
         input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
-        output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), stats=MUTECT_DIR+"/{sample}.vcf.gz.stats"
+        output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", f1r2=MUTECT_DIR+"/{sample}_f1r2.tar.gz"
         singularity: GATK_SING
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
         shell: 
             """
-                gatk Mutect2 -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} 2> {log}
+                gatk Mutect2 -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --f1r2-tar-gz {f1r2} 2> {log}
             """
 
 rule getpileup:
@@ -31,6 +31,17 @@ rule getpileup:
     shell: 
         """
             gatk GetPileupSummaries -I {input.bam} -V {input.gnomad} -O {output} -L {input.gnomad} 2> {log}
+        """
+
+# note: if mutect will ever be called in // on different chr we will need to put back together things here (multiple -I)
+rule learnOrientationModel:
+    input:  MUTECT_DIR+"/{sample}_f1r2.tar.gz"
+    output: MUTECT_DIR+"/{sample}_read-orientation-model.tar.gz"
+    singularity: GATK_SING
+    log: MUTECT_DIR+"/{sample}_read-orientation-model.tar.gz.log"
+    shell:
+        """
+            gatk LearnReadOrientationModel -I {input} -O {output} 2> {log}
         """
 
 rule calculatecontamination:
@@ -48,23 +59,23 @@ rule calculatecontamination:
 # precision in the harmonic mean). Setting it lower biases results toward greater precision. (https://gatkforums.broadinstitute.org/gatk/discussion/24057/how-to-call-somatic-mutations-using-gatk4-mutect2#latest)
 # -alleles force-call-alleles.vcf
 rule filtercalls:
-    input: vcf=MUTECT_DIR+"/{sample}.vcf.gz", ref=REF_DIR+"/GRCh38.d1.vd1.fa", stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", contam=MUTECT_DIR+"/{sample}.contamination.table", seg=MUTECT_DIR+"/{sample}.tum.seg"
+    input: vcf=MUTECT_DIR+"/{sample}.vcf.gz", ref=REF_DIR+"/GRCh38.d1.vd1.fa", stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", contam=MUTECT_DIR+"/{sample}.contamination.table", seg=MUTECT_DIR+"/{sample}.tum.seg", f1r2=MUTECT_DIR+"/{sample}_read-orientation-model.tar.gz"
     output: vcf=MUTECT_DIR+"/{sample}.filtered.vcf.gz", stats=MUTECT_DIR+"/{sample}_filtering_stats.tsv"
     singularity: GATK_SING
     log: MUTECT_DIR+"/{sample}_filtering_stats.tsv.log"
     shell:
         """
-            gatk FilterMutectCalls -V {input.vcf} -O {output.vcf} -R {input.ref} --stats {input.stats} --contamination-table {input.contam} --tumor-segmentation={input.seg} --filtering-stats {output.stats} 2> {log}
+            gatk FilterMutectCalls -V {input.vcf} -O {output.vcf} -R {input.ref} --stats {input.stats} --contamination-table {input.contam} --tumor-segmentation={input.seg} --filtering-stats {output.stats} --ob-priors {input.f1r2} 2> {log}
         """
 
 rule filtercallsinterval:
-    input: vcf=MUTECT_DIR+"/{sample}.vcf.gz", ref=REF_DIR+"/GRCh38.d1.vd1.fa", stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", contam=MUTECT_DIR+"/{sample}.contamination.table", seg=MUTECT_DIR+"/{sample}.tum.seg", interval=INTERVAL
+    input: vcf=MUTECT_DIR+"/{sample}.vcf.gz", ref=REF_DIR+"/GRCh38.d1.vd1.fa", stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", contam=MUTECT_DIR+"/{sample}.contamination.table", seg=MUTECT_DIR+"/{sample}.tum.seg", interval=INTERVAL, f1r2=MUTECT_DIR+"/{sample}_read-orientation-model.tar.gz"
     output: vcf=MUTECT_DIR+"/{sample}.filtered_limited.vcf.gz", stats=MUTECT_DIR+"/{sample}_filtering_limited_stats.tsv"
     singularity: GATK_SING
     log: MUTECT_DIR+"/{sample}_filtering_stats.tsv.log"
     shell:
         """
-            gatk FilterMutectCalls -V {input.vcf} -O {output.vcf} -R {input.ref} --stats {input.stats} --contamination-table {input.contam} --tumor-segmentation={input.seg} --filtering-stats {output.stats} -L {input.interval} 2> {log}
+            gatk FilterMutectCalls -V {input.vcf} -O {output.vcf} -R {input.ref} --stats {input.stats} --contamination-table {input.contam} --tumor-segmentation={input.seg} --filtering-stats {output.stats} -L {input.interval} --ob-priors {input.f1r2} 2> {log}
         """
 
 rule passFilter:
