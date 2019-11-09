@@ -1,6 +1,9 @@
 ##Mutect2's orientation bias filter. This applies to all FFPE tumor samples and samples sequenced on Illumina Novaseq machines, among others
-# do we need it? TODO
+# do we need it? Yes, filter and artifacts are now off and this is needed for oxog!
 #https://gatkforums.broadinstitute.org/gatk/discussion/24057/how-to-call-somatic-mutations-using-gatk4-mutect2#latest
+
+#https://github.com/broadinstitute/gatk/issues/6230
+#https://gatkforums.broadinstitute.org/gatk/discussion/24492/mutect2-java-lang-illegalargumentexception-cannot-construct-fragment-from-more-than-two-reads#latest
 
 if PON != "":
     rule mutect:
@@ -10,7 +13,7 @@ if PON != "":
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
         shell: 
             """
-                gatk Mutect2 -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --panel-of-normals {input.pon} --f1r2-tar-gz {output.f1r2} 2> {log}
+                gatk Mutect2 -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --panel-of-normals {input.pon} --f1r2-tar-gz {output.f1r2} --independent-mates 2> {log}
             """
 else:
     rule mutect:
@@ -20,7 +23,7 @@ else:
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
         shell: 
             """
-                gatk Mutect2 -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --f1r2-tar-gz {output.f1r2} 2> {log}
+                gatk Mutect2 -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --f1r2-tar-gz {output.f1r2} --independent-mates 2> {log}
             """
 
 rule getpileup:
