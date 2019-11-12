@@ -44,6 +44,7 @@ rule learnOrientationModel:
     input:  MUTECT_DIR+"/{sample}_f1r2.tar.gz"
     output: MUTECT_DIR+"/{sample}_read-orientation-model.tar.gz"
     singularity: GATK_SING
+    docker: GATK_ODOCKER
     log: MUTECT_DIR+"/{sample}_read-orientation-model.tar.gz.log"
     shell:
         """
@@ -80,6 +81,7 @@ rule filtercallsinterval:
     input: vcf=MUTECT_DIR+"/{sample}.vcf.gz", ref=REF_DIR+"/GRCh38.d1.vd1.fa", stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", contam=MUTECT_DIR+"/{sample}.contamination.table", seg=MUTECT_DIR+"/{sample}.tum.seg", interval=INTERVAL, f1r2=MUTECT_DIR+"/{sample}_read-orientation-model.tar.gz"
     output: vcf=MUTECT_DIR+"/{sample}.filtered_limited.vcf.gz", stats=MUTECT_DIR+"/{sample}_filtering_limited_stats.tsv"
     singularity: GATK_SING
+    docker: GATK_ODOCKER
     log: MUTECT_DIR+"/{sample}_filtering_stats.tsv.log"
     shell:
         """

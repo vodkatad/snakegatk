@@ -52,6 +52,7 @@ rule subsample:
     input: bam=ALIGN_DIR+"/markedDup_{sample}.sorted.bam"
     output: bam=ALIGN_DIR+"/sub-markedDup_{sample}.sorted.bam", bai=ALIGN_DIR+"/sub-markedDup_{sample}.sorted.bam.bai"
     params: subs=SUBSAMPLE, threads=str(CORES)
+    docker: ALIGN_ODOCKER
     shell:
         """ 
             samtools view --threads {params.threads} -s {params.subs} -b -o {output.bam} {input};
