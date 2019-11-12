@@ -18,7 +18,7 @@ FQ_REMOVED=False
 DEBUG="yes"
 TYPE="WGS"
 PAIRED=False
-SUBSAMPLE=0.9 # if == 1 do not downsample (downsampling is done right after alignment and dup removal, not before calling, to also recalibrate on less data).
+SUBSAMPLE=1 # if == 1 do not downsample (downsampling is done right after alignment and dup removal, not before calling, to also recalibrate on less data).
 
 # Needed references and annotations
 GNOMAD_TASK_DIR=ROOT+'/task/annotations/dataset/gnomad'
@@ -28,7 +28,7 @@ VEP_CACHE_DIR=ROOT+"/task/variant_annotations/dataset/VEP"
 ANNOVAR=ROOT+"/task/variant_annotations/dataset/annovar/hg38/humandb/"
 PON="" # on hold for WGS
 DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
-INTERVAL=GNOMAD_TASK_DIR+'/resources_broad_hg38_v0_wgs_calling_regions.hg38.interval_list'
+INTERVAL=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.interval_list'
 # Singularity containers and occam docker images
 GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
 GATK_ODOCKER="egrassi/occamsnakes/gatk:1"
@@ -56,8 +56,7 @@ FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
 
 PAIRS=['R1_001','R2_001']
 PAIRS_XENOME=['1','2']
-CORES=8
-MEM=4
+CORES=12
 # TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
 PATTERNED=2500 
 # HiSeq4000, otherwise 100 for unpatterned

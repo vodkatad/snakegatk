@@ -14,6 +14,7 @@ rule bwa_mem:
     output: temp(ALIGN_DIR+"/{sample}.bam")
     params: cores=CORES, ref=REF_DIR+"/GRCh38.d1.vd1.fa", dir=ALIGN_DIR
     docker: ALIGN_ODOCKER
+    log: ALIGN_DIR+"/{sample}.bam.log"
     shell: 
         """
         mkdir -p {params.dir};
@@ -25,7 +26,7 @@ rule bwa_mem:
         id=$(echo $header | cut -f 1-4 -d":" | sed "s/^@//" | sed "s/:/_/g");
         smnh=$(echo $header | grep -Eo "[ATGCN\+]+$");
         sm={wildcards.sample};
-        bwa mem -R "@RG\\tID:$id\\tSM:$sm\\tLB:$sm"_"$id"_"$smnh\\tPL:ILLUMINA" -t {params.cores} -K 100000000 -Y {params.ref} {input.fastq1} {input.fastq2} | samtools view -Shb -o {output};
+        bwa mem -R "@RG\\tID:$id\\tSM:$sm\\tLB:$sm"_"$id"_"$smnh\\tPL:ILLUMINA" -t {params.cores} -K 100000000 -Y {params.ref} {input.fastq1} {input.fastq2} 2> log | samtools view -Shb -o {output};
         """
 
 rule mark_duplicates_picard:
@@ -50,10 +51,10 @@ def check_subsample(wildcards):
 rule subsample:
     input: bam=ALIGN_DIR+"/markedDup_{sample}.sorted.bam"
     output: bam=ALIGN_DIR+"/sub-markedDup_{sample}.sorted.bam", bai=ALIGN_DIR+"/sub-markedDup_{sample}.sorted.bam.bai"
-    params: subs=SUBSAMPLE
+    params: subs=SUBSAMPLE, threads=str(CORES)
     shell:
         """ 
-            samtools view -s 0.{params.subs} -b -o {output.bam} {input};
+            samtools view --threads {params.threads} -s {params.subs} -b -o {output.bam} {input};
             samtools index {output.bam} {output.bai};
         """
 
@@ -87,8 +88,8 @@ rule sort_all_realigned:
 rule sorted_bai:
     input: ALIGN_DIR+"/{whatever}.bam"
     output: bai=ALIGN_DIR+"/{whatever}.sorted.bam.bai", bam=ALIGN_DIR+"/{whatever}.sorted.bam"
-    params: threads="8"
     docker: ALIGN_ODOCKER
+    params: threads=str(CORES)
     shell: 
         """
         samtools sort --threads {params.threads} -o {output.bam} {input};
@@ -122,7 +123,7 @@ rule bam_stats:
     docker: ALIGN_ODOCKER
     shell:
         """
-             samtools stats {input} > {output}
+            samtools stats {input} > {output}
         """
 
 rule bam_flagstat:
@@ -135,10 +136,9 @@ rule bam_flagstat:
        """
 
 
-# UNTESTED multiqc
-#ewels/MultiQC for docker, not in align_recalibrate env
+# multiqc (the align_output is horrible)
 rule multiqc_align:
-    input: expand(ALIGN_DIR+"/{sample}.bam.flagstat", sample=SAMPLES) 
+    input: expand(ALIGN_DIR+"/realigned_{sample}.bam.flagstat", sample=SAMPLES) 
     output: "multiqc_report.align.html"
     docker: ALIGN_ODOCKER
     shell: 
@@ -150,7 +150,7 @@ rule multiqc_align:
 
 
 rule multiqc_coverage:
-    input: expand(ALIGN_DIR+"/{sample}.bam.wgsmetrics", sample=SAMPLES) 
+    input: expand(ALIGN_DIR+"/{sample}.wgsmetrics", sample=SAMPLES) 
     output: "multiqc_report.coverage.html"
     docker: ALIGN_ODOCKER
     shell: 
@@ -159,3 +159,13 @@ rule multiqc_coverage:
             multiqc --file-list {output}.tmp -f -n {output};
             rm {output}.tmp;
         """
+
+#(align_recalibrate) [biodiversa]egrassi@compute-1-15$ time samtools view -C -T ~/bit//task/annotations/dataset/gnomad/GRCh38.d1.vd1.fa -o test.cram align/realigned_CRC1307LMO.bam
+#real    99m27.690s
+#user    84m50.811s
+#sys     4m29.224s
+#(align_recalibrate) [biodiversa]egrassi@compute-1-15$ du -sh align/realigned_CRC1307LMO.bam
+#88G     align/realigned_CRC1307LMO.bam
+#(align_recalibrate) [biodiversa]egrassi@compute-1-15$ du -sh test.cram 
+#42G     test.cram
+
