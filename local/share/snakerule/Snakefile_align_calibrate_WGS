@@ -148,3 +148,13 @@ rule multiqc_coverage:
             multiqc --file-list {output}.tmp -f -n {output};
             rm {output}.tmp;
         """
+
+#(align_recalibrate) [biodiversa]egrassi@compute-1-15$ time samtools view -C -T ~/bit//task/annotations/dataset/gnomad/GRCh38.d1.vd1.fa -o test.cram align/realigned_CRC1307LMO.bam
+#real    99m27.690s
+#user    84m50.811s
+#sys     4m29.224s
+#(align_recalibrate) [biodiversa]egrassi@compute-1-15$ du -sh align/realigned_CRC1307LMO.bam
+#88G     align/realigned_CRC1307LMO.bam
+#(align_recalibrate) [biodiversa]egrassi@compute-1-15$ du -sh test.cram 
+#42G     test.cram
+

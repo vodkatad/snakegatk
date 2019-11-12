@@ -27,7 +27,7 @@ else:
             """
 
 rule getpileup:
-    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/gnomad.forcontamination.exomes.vcf"
+    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/gnomad.forcontamination.noalt.exomes.vcf"
     output: temp(MUTECT_DIR+"/{sample}.pileup.table")
     singularity: GATK_SING
     log: MUTECT_DIR+"/{sample}.pileup.table.log"
@@ -100,5 +100,3 @@ rule single_table:
             zcat {input} | grep -v "^##" |  perl -ane '@gt=splice(@F,9,{params.nsamples}); $gt=""; foreach $g (@gt) {{ if ($.==1) {{$gt.=$g."\\t";}} else {{ @afs = split(":",$g); if ($afs[2] eq ".") {{$afs[2]=0;}} $gt.=$afs[2]."\\t";}} }} chop($gt) ; print $F[2]."\\t".$gt."\\n";' | grep -v "," | gzip > {output}
         """
 
-
-## TODO resources_broad_hg38_v0_wgs_calling_regions.hg38.interval_list filtering here
