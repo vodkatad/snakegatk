@@ -25,7 +25,7 @@ rule bwa_mem:
         id=$(echo $header | cut -f 1-4 -d":" | sed "s/^@//" | sed "s/:/_/g");
         smnh=$(echo $header | grep -Eo "[ATGCN\+]+$");
         sm={wildcards.sample};
-        bwa mem -R "@RG\\tID:$id\\tSM:$sm\\tLB:$sm"_"$id"_"$smnh\\tPL:ILLUMINA" -t {params.cores} -K 100000000 -Y {params.ref} {input.fastq1} {input.fastq2} 2> log | samtools view -Shb -o {output};
+        bwa mem -R "@RG\\tID:$id\\tSM:$sm\\tLB:$sm"_"$id"_"$smnh\\tPL:ILLUMINA" -t {params.cores} -K 100000000 -Y {params.ref} {input.fastq1} {input.fastq2} 2> {log} | samtools view -Shb -o {output};
         """
 
 rule mark_duplicates_picard:
