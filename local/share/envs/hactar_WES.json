@@ -1,0 +1,129 @@
+{
+    "__default__":
+    {
+        "mail-user": "elena.grassi@ircc.it",
+        "mail-type": "ALL",
+        "partition": "bioeda",
+        "nodes": "1",
+        "job-name": "{rule}.{wildcards}",
+        "output": "{rule}.{wildcards}.out",
+        "error": "{rule}.{wildcards}.err",
+        "time": "00:30:00",
+        "mem": "1000",
+        "ntasks": "1"
+    },
+    "fastqc":
+    {
+        "time": "05:00:00",
+        "mem": "9600",
+        "ntasks": "16"
+    },
+    "bwa_mem":
+    {
+        "time": "07:00:00",
+        "mem": "8000",
+        "ntasks": "4"
+    },
+   "mark_duplicates_picard":
+    {
+        "time": "01:00:00",
+        "mem": "11000",
+        "ntasks": "12"
+    },
+    "recalibrate_quality": 
+    {
+        "time": "02:00:00",
+        "mem": "1500",
+        "ntasks": "1"
+    },
+    "recalibrate_plot": 
+    {
+        "time": "01:30:00",
+        "mem": "1500",
+        "ntasks": "1"
+    },
+    "sorted_bai": 
+    {
+        "time": "03:00:00",
+        "mem": "10000",
+        "ntasks": "8"
+    },
+    "all_coverage":
+    {
+        "time": "00:30:00",
+        "mem": "10000",
+        "ntasks": "12"
+    },
+    "split_coverage":
+    {
+        "time": "00:30:00",
+        "mem": "400",
+        "ntasks": "1"
+    },
+    "mutect":
+    {
+        "time": "08:00:00",
+        "mem": "3500",
+        "ntasks": "1"
+    },
+    "getpileup":
+    {
+        "time": "01:30:00",
+        "mem": "2000",
+        "ntasks": "1"
+    },
+    "calculatecontamination":
+    {
+        "time": "00:30:00",
+        "mem": "2000",
+        "ntasks": "1"
+    },
+    "filtercalls":
+    {
+        "time": "00:30:00",
+        "mem": "1000",
+        "ntasks": "1"
+    },
+    "artifacts":
+    {
+        "time": "01:00:00",
+        "mem": "3500",
+        "ntasks": "1"
+    },
+    "filterOrientation":
+    {
+        "time": "00:30:00",
+        "mem": "400",
+        "ntasks": "1"
+    },
+    "learnOrientationModel":
+    {
+        "time": "01:00:00",
+        "mem": "2000",
+        "ntasks": "1"
+    },
+    "VEP":
+    {
+        "time": "00:30:00",
+        "mem": "2000",
+        "ntasks": "1"
+    },
+    "xenome":
+    {
+        "time": "04:00:00",
+        "mem": "18000",
+        "ntasks": "8"
+    },
+    "repeated_muts":
+    {
+        "time": "4:00:00",
+        "mem": "1000",
+        "ntasks": "1"
+    },
+    "repeated_muts_thr":
+    {
+        "time": "3:00:00",
+        "mem": "1000",
+        "ntasks": "1"
+    }
+}   
