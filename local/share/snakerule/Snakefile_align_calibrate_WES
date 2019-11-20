@@ -41,7 +41,7 @@ rule mark_duplicates_picard:
         """
 
 rule recalibrate_quality:
-    input: bam=ALIGN_DIR+"/markedDup_{sample}.sorted.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa", snps="dbsnp.all.vcf.gz", bed=SEXONS, bai=ALIGN_DIR+"/markedDup_{sample}.sorted.bam.bai"
+    input: bam=ALIGN_DIR+"/markedDup_{sample}.sorted.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa", snps=DBSNP, bed=SEXONS, bai=ALIGN_DIR+"/markedDup_{sample}.sorted.bam.bai"
     singularity: GATK_SING
     output: bam=protected(ALIGN_DIR+"/realigned_{sample}.bam"), table=ALIGN_DIR+"/{sample}.table"
     params: padding=PADDING
@@ -53,7 +53,7 @@ rule recalibrate_quality:
         """
 
 rule recalibrate_plot:
-    input: reference=REF_DIR+"/GRCh38.d1.vd1.fa", table=ALIGN_DIR+"/{sample}.table", bam=ALIGN_DIR+"/realigned_{sample}.bam", snps="dbsnp.all.vcf.gz", bed=SEXONS
+    input: reference=REF_DIR+"/GRCh38.d1.vd1.fa", table=ALIGN_DIR+"/{sample}.table", bam=ALIGN_DIR+"/realigned_{sample}.bam", snps=DBSNP, bed=SEXONS
     output: ALIGN_DIR+"/{sample}.recal_plots.pdf"
     singularity: GATK_SING
     params: padding=PADDING

@@ -15,7 +15,7 @@ def find_matched_normal(wildcards):
 
 if PON != "":
     rule mutect:
-        input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", bed=SEXONS, reference=REF_DIR+"/GRCh38.d1.vd1.fa", pon=PON, normal=unpack(find_matched_normal)
+        input: unpack(find_matched_normal), bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", bed=SEXONS, reference=REF_DIR+"/GRCh38.d1.vd1.fa", pon=PON
         output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", f1r2=MUTECT_DIR+"/{sample}_f1r2.tar.gz"
         singularity: GATK_SING
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
@@ -26,7 +26,7 @@ if PON != "":
             """
 else:
     rule mutect:
-        input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", bed=SEXONS, reference=REF_DIR+"/GRCh38.d1.vd1.fa", normal=unpack(find_matched_normal)
+        input: unpack(find_matched_normal), bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", bed=SEXONS, reference=REF_DIR+"/GRCh38.d1.vd1.fa"
         output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", f1r2=MUTECT_DIR+"/{sample}_f1r2.tar.gz"
         singularity: GATK_SING
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"

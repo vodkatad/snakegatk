@@ -44,7 +44,7 @@ SAMPLES_ORIG=["example","examplen"]
 SAMPLES=["pippo","pluto"]
 
 ##
-EXONS=DATA+'TODO'
+EXONS=DATA+'/targed.bed'
 SEXONS='targeted_sorted.bed'
 
 #REF=""
