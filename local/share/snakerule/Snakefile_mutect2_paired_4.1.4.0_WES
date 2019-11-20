@@ -58,14 +58,18 @@ rule learnOrientationModel:
             gatk LearnReadOrientationModel -I {input} -O {output} 2> {log}
         """
 
+def find_matched_normal_contable(wildcards):
+    return {'normal': MUTECT_DIR+"/"+find_matched_normal_sample(wildcards)+".pileup.table"}
+    
+
 rule calculatecontamination:
-    input: MUTECT_DIR+"/{sample}.pileup.table"
+    input: unpack(find_matched_normal_contable), tumor=MUTECT_DIR+"/{sample}.pileup.table"
     output: table=MUTECT_DIR+"/{sample}.contamination.table", seg=MUTECT_DIR+"/{sample}.tum.seg"
     singularity: GATK_SING
     log: MUTECT_DIR+"/{sample}.contamination.table.log"
     shell:
         """
-            gatk CalculateContamination  -I {input} -O {output.table} --tumor-segmentation {output.seg} 2> {log}
+            gatk CalculateContamination  -I {input.tumor} -matched {input.normal} -O {output.table} --tumor-segmentation {output.seg} 2> {log}
         """
 
 
