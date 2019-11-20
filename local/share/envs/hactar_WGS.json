@@ -81,25 +81,43 @@
     "getpileup":
     {
         "time": "06:00:00",
-        "mem": "2000",
+        "mem": "10000",
         "ntasks": "1"
+    },
+    "subsample":
+    {
+        "time": "10:00:00",
+        "mem": "10000",
+        "ntasks": "12"
     },
     "calculatecontamination":
     {
         "time": "03:00:00",
-        "mem": "800",
+        "mem": "10000",
         "ntasks": "1"
     },
     "filtercalls":
     {
         "time": "03:00:00",
-        "mem": "1500",
+        "mem": "5000",
+        "ntasks": "1"
+    },
+    "filtercallsinterval":
+    {
+        "time": "03:00:00",
+        "mem": "5000",
         "ntasks": "1"
     },
     "artifacts":
     {
         "time": "06:00:00",
         "mem": "3500",
+        "ntasks": "1"
+    },
+    "learnOrientationModel":
+    {
+        "time": "06:00:00",
+        "mem": "10000",
         "ntasks": "1"
     },
     "filterOrientation":
