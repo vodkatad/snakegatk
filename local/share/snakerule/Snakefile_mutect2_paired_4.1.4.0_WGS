@@ -20,11 +20,11 @@ if PON != "":
         singularity: GATK_SING
         docker: GATK_ODOCKER
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
-        params: padding=PADDING, cores=CORES, normal=find_matched_normal_sample
+        params: cores=CORES, normal=find_matched_normal_sample
         benchmark: "bench/{sample}.vcf.gz.times"
         shell: 
             """
-                gatk Mutect2 --native-pair-hmm-threads {params.cores} --independent-mates -normal {params.normal} -R {input.reference} -I {input.normal} -I {input.bam} -O {output.vcf} --interval-padding {params.padding} --germline-resource {input.gnomad} --panel-of-normals {input.pon} --f1r2-tar-gz {output.f1r2}  2> {log}
+                gatk Mutect2 --native-pair-hmm-threads {params.cores} --independent-mates -normal {params.normal} -R {input.reference} -I {input.normal} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --panel-of-normals {input.pon} --f1r2-tar-gz {output.f1r2}  2> {log}
             """
 else:
     rule mutect:
@@ -33,11 +33,11 @@ else:
         singularity: GATK_SING
         docker: GATK_ODOCKER
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
-        params: padding=PADDING, cores=CORES, normal=find_matched_normal_sample
+        params: cores=CORES, normal=find_matched_normal_sample
         benchmark: "bench/{sample}.vcf.gz.times"
         shell: 
             """
-                gatk Mutect2 --native-pair-hmm-threads {params.cores} --independent-mates -normal {params.normal} -R {input.reference} -I {input.normal} -I {input.bam} -O {output.vcf} --interval-padding {params.padding} --germline-resource {input.gnomad} --f1r2-tar-gz {output.f1r2} 2> {log}
+                gatk Mutect2 --native-pair-hmm-threads {params.cores} --independent-mates -normal {params.normal} -R {input.reference} -I {input.normal} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --f1r2-tar-gz {output.f1r2} 2> {log}
             """
 
 rule getpileup:
@@ -46,11 +46,10 @@ rule getpileup:
     singularity: GATK_SING
     docker: GATK_ODOCKER
     benchmark: "bench/{sample}.pileup.table.times"
-    params: padding=PADDING
     log: MUTECT_DIR+"/{sample}.pileup.table.log"
     shell: 
         """
-            gatk GetPileupSummaries -I {input.bam} -V {input.gnomad} -O {output} --interval-padding {params.padding} 2> {log}
+            gatk GetPileupSummaries -I {input.bam} -V {input.gnomad} -O {output} -L {input.gnomad} 2> {log}
         """
 
 # note: if mutect will ever be called in // on different chr we will need to put back together things here (multiple -I)
@@ -120,8 +119,8 @@ rule passFilter:
     benchmark: "bench/{sample}.pass.vcf.gz.times"
     shell:
         """
-        zcat {input} |  awk '/^#/ || $7=="PASS"' | bgzip > {output}
-        tabix {output}
+        zcat {input} |  awk '/^#/ || $7=="PASS"' | bgzip > {output};
+        tabix {output};
         """ 
 
 rule single_table:
@@ -141,16 +140,6 @@ rule neutral_sottoriva:
     output: hist="{sample}.hist.{loweraf}_{higheraf}.pdf", fit="{sample}.fit.{loweraf}_{higheraf}.pdf", r2="{sample}.fit.{loweraf}_{higheraf}.r2"
     script: SRC_DIR+"/neutral_sottoriva.R"
 
-
-rule merge_targeted:
-    input: vcf=expand(MUTECT_DIR+"/{sample}.pass.vcf.gz", sample=SAMPLES), bed=SEXONS
-    output: MUTECT_DIR+"/merged_targeted.vcf"
-    shell:
-        """
-            bcftools merge --missing-to-ref -m none -o {output}.vcf.tmp {input.vcf}
-            bedtools intersect -header -u -a {output}.vcf.tmp -b {input.bed} > {output}
-            rm {output}.*.tmp
-        """
 
 
 rule VEP:

@@ -127,7 +127,7 @@ rule bam_stats:
     input: ALIGN_DIR+"/{something}.bam"
     output: ALIGN_DIR+"/{something}.bam.stats"
     docker: ALIGN_ODOCKER
-    benchmark: "bench/{sample}.bam.stats.times"
+    benchmark: "bench/{something}.bam.stats.times"
     shell:
         """
             samtools stats {input} > {output}
@@ -137,7 +137,7 @@ rule bam_flagstat:
     input: ALIGN_DIR+"/{something}.bam"
     output: ALIGN_DIR+"/{something}.bam.flagstat"
     docker: ALIGN_ODOCKER
-    benchmark: "bench/{sample}.bam.flagstat.times"
+    benchmark: "bench/{something}.bam.flagstat.times"
     shell:
        """
           samtools flagstat {input} > {output}
