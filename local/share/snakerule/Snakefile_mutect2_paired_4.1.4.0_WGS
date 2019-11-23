@@ -18,8 +18,10 @@ if PON != "":
         input: unpack(find_matched_normal), bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", reference=REF_DIR+"/GRCh38.d1.vd1.fa", pon=PON
         output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", f1r2=MUTECT_DIR+"/{sample}_f1r2.tar.gz"
         singularity: GATK_SING
+        docker: GATK_ODOCKER
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
         params: padding=PADDING, cores=CORES, normal=find_matched_normal_sample
+        benchmark: "bench/{sample}.vcf.gz.times"
         shell: 
             """
                 gatk Mutect2 --native-pair-hmm-threads {params.cores} --independent-mates -normal {params.normal} -R {input.reference} -I {input.normal} -I {input.bam} -O {output.vcf} --interval-padding {params.padding} --germline-resource {input.gnomad} --panel-of-normals {input.pon} --f1r2-tar-gz {output.f1r2}  2> {log}
@@ -29,8 +31,10 @@ else:
         input: unpack(find_matched_normal), bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
         output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", f1r2=MUTECT_DIR+"/{sample}_f1r2.tar.gz"
         singularity: GATK_SING
+        docker: GATK_ODOCKER
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
         params: padding=PADDING, cores=CORES, normal=find_matched_normal_sample
+        benchmark: "bench/{sample}.vcf.gz.times"
         shell: 
             """
                 gatk Mutect2 --native-pair-hmm-threads {params.cores} --independent-mates -normal {params.normal} -R {input.reference} -I {input.normal} -I {input.bam} -O {output.vcf} --interval-padding {params.padding} --germline-resource {input.gnomad} --f1r2-tar-gz {output.f1r2} 2> {log}
@@ -40,6 +44,8 @@ rule getpileup:
     input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/gnomad.forcontamination.exomes.vcf"
     output: temp(MUTECT_DIR+"/{sample}.pileup.table")
     singularity: GATK_SING
+    docker: GATK_ODOCKER
+    benchmark: "bench/{sample}.pileup.table.times"
     params: padding=PADDING
     log: MUTECT_DIR+"/{sample}.pileup.table.log"
     shell: 
@@ -52,6 +58,8 @@ rule learnOrientationModel:
     input:  MUTECT_DIR+"/{sample}_f1r2.tar.gz"
     output: MUTECT_DIR+"/{sample}_read-orientation-model.tar.gz"
     singularity: GATK_SING
+    docker: GATK_ODOCKER
+    benchmark: "bench/{sample}_read-orientation-model.tar.gz.times"
     log: MUTECT_DIR+"/{sample}_read-orientation-model.tar.gz.log"
     shell:
         """
@@ -65,6 +73,8 @@ def find_matched_normal_contable(wildcards):
 rule calculatecontamination:
     input: unpack(find_matched_normal_contable), tumor=MUTECT_DIR+"/{sample}.pileup.table"
     output: table=MUTECT_DIR+"/{sample}.contamination.table", seg=MUTECT_DIR+"/{sample}.tum.seg"
+    docker: GATK_ODOCKER
+    benchmark: "bench/{sample}.contamination.table.times"
     singularity: GATK_SING
     log: MUTECT_DIR+"/{sample}.contamination.table.log"
     shell:
@@ -81,6 +91,8 @@ rule filtercalls:
     input: vcf=MUTECT_DIR+"/{sample}.vcf.gz", ref=REF_DIR+"/GRCh38.d1.vd1.fa", stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", contam=MUTECT_DIR+"/{sample}.contamination.table", seg=MUTECT_DIR+"/{sample}.tum.seg", f1r2=MUTECT_DIR+"/{sample}_read-orientation-model.tar.gz"
     output: vcf=MUTECT_DIR+"/{sample}.filtered.vcf.gz", stats=MUTECT_DIR+"/{sample}_filtering_stats.tsv"
     singularity: GATK_SING
+    docker: GATK_ODOCKER
+    benchmark: "bench/{sample}.fitered.vcf.gz.times"
     log: MUTECT_DIR+"/{sample}_filtering_stats.tsv.log"
     shell:
         """
@@ -91,6 +103,8 @@ rule filtercallsinterval:
     input: vcf=MUTECT_DIR+"/{sample}.vcf.gz", ref=REF_DIR+"/GRCh38.d1.vd1.fa", stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", contam=MUTECT_DIR+"/{sample}.contamination.table", seg=MUTECT_DIR+"/{sample}.tum.seg", interval=INTERVAL, f1r2=MUTECT_DIR+"/{sample}_read-orientation-model.tar.gz"
     output: vcf=MUTECT_DIR+"/{sample}.filtered_limited.vcf.gz", stats=MUTECT_DIR+"/{sample}_filtering_limited_stats.tsv"
     singularity: GATK_SING
+    docker: GATK_ODOCKER
+    benchmark: "bench/{sample}.fitered_limited.vcf.gz.times"
     log: MUTECT_DIR+"/{sample}_filtering_stats.tsv.log"
     shell:
         """
@@ -102,6 +116,8 @@ rule filtercallsinterval:
 rule passFilter:
     input: MUTECT_DIR+"/{sample}.filtered_limited.vcf.gz"
     output: MUTECT_DIR+"/{sample}.pass.vcf.gz"
+    docker: ALIGN_ODOCKER
+    benchmark: "bench/{sample}.pass.vcf.gz.times"
     shell:
         """
         zcat {input} |  awk '/^#/ || $7=="PASS"' | bgzip > {output}
@@ -111,7 +127,9 @@ rule passFilter:
 rule single_table:
     input: vcf=MUTECT_DIR+"/{sample}.pass.vcf.gz"
     output: MUTECT_DIR+"/{sample}.pass.table.gz"
+    benchmark: "bench/{sample}.pass.table.gz.times"
     params: nsamples=1
+    docker: ALIGN_ODOCKER
     shell:
         """
       zcat {input} | grep -v "^##" |  perl -ane '@gt=splice(@F,9,{params.nsamples}); $gt=""; foreach $g (@gt) {{ if ($.==1) {{$gt.=$g."\\t";}} else {{ @afs = split(":",$g); if ($afs[2] eq ".") {{$afs[2]=0;}} $gt.=$afs[2]."\\t";}} }} chop($gt) ; print $F[2]."\\t".$gt."\\n";' | grep -v "," | gzip > {output}

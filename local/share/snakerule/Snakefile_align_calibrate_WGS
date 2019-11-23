@@ -15,6 +15,7 @@ rule bwa_mem:
     params: cores=CORES, ref=REF_DIR+"/GRCh38.d1.vd1.fa", dir=ALIGN_DIR
     docker: ALIGN_ODOCKER
     log: ALIGN_DIR+"/{sample}.bam.log"
+    benchmark: "bench/{sample}.bam.times"
     shell: 
         """
         mkdir -p {params.dir};
@@ -35,6 +36,7 @@ rule mark_duplicates_picard:
     params: pixel_dist=PATTERNED, cores=CORES
     docker: ALIGN_ODOCKER
     log: ALIGN_DIR+"/markedDup_{sample}.bam.log"
+    benchmark: "bench/markedDup_{sample}.bam.times"
     shell: 
         """
         picard -Xmx10g -XX:ParallelGCThreads=11 MarkDuplicates INPUT="{input}" OUTPUT="{output.bam}" METRICS_FILE="{output.metrics}" \
@@ -65,6 +67,7 @@ rule recalibrate_quality:
     docker: GATK_ODOCKER
     output: bam=protected(ALIGN_DIR+"/realigned_{sample}.bam"), table=ALIGN_DIR+"/{sample}.table"
     log: bam=ALIGN_DIR+"/realigned_{sample}.bam.log", table=ALIGN_DIR+"/{sample}.table.log"
+    benchmark: "bench/realigned_{sample}.times"
     shell:
         """
             gatk BaseRecalibrator -R {input.reference} -I {input.bam} --known-sites {input.snps} -O {output.table} 2> {log.table};
@@ -91,6 +94,7 @@ rule sorted_bai:
     output: bai=ALIGN_DIR+"/{whatever}.sorted.bam.bai", bam=ALIGN_DIR+"/{whatever}.sorted.bam"
     docker: ALIGN_ODOCKER
     params: threads=str(CORES)
+    benchmark: "bench/{whatever}.sorted.bam.times"
     shell: 
         """
         samtools sort --threads {params.threads} -o {output.bam} {input};
@@ -113,6 +117,7 @@ rule wgs_metrics:
     input: bam=ALIGN_DIR+"/realigned_{sample}.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
     output: txt=ALIGN_DIR+"/{sample}.wgsmetrics", sens=ALIGN_DIR+"/{sample}.sens"
     docker: ALIGN_ODOCKER
+    benchmark: "bench/{sample}.wgsmetrics.times"
     shell:
         """
             picard CollectWgsMetrics I={input.bam} O={output.txt} R={input.reference} INCLUDE_BQ_HISTOGRAM=true ALLELE_FRACTION=0.5 MINIMUM_BASE_QUALITY=18 THEORETICAL_SENSITIVITY_OUTPUT={output.sens} MINIMUM_MAPPING_QUALITY=20
@@ -122,6 +127,7 @@ rule bam_stats:
     input: ALIGN_DIR+"/{something}.bam"
     output: ALIGN_DIR+"/{something}.bam.stats"
     docker: ALIGN_ODOCKER
+    benchmark: "bench/{sample}.bam.stats.times"
     shell:
         """
             samtools stats {input} > {output}
@@ -131,6 +137,7 @@ rule bam_flagstat:
     input: ALIGN_DIR+"/{something}.bam"
     output: ALIGN_DIR+"/{something}.bam.flagstat"
     docker: ALIGN_ODOCKER
+    benchmark: "bench/{sample}.bam.flagstat.times"
     shell:
        """
           samtools flagstat {input} > {output}
