@@ -142,10 +142,19 @@ include: PRJ_ROOT+"/local/share/snakerule/Snakefile_align_calibrate_"+TYPE
 if not PAIRED:
     MUTECT_DIR="mutect"
     include: PRJ_ROOT+"/local/share/snakerule/Snakefile_mutect2_4.1.4.0_"+TYPE
+    rule all:
+        input: "multiqc_report.html","multiqc_report.coverage.html","multiqc_report.align.html", MUTECT_DIR+"/all_samples.pass.table.gz"
 else:
     MUTECT_DIR="mutect_paired"
     include: PRJ_ROOT+"/local/share/snakerule/Snakefile_mutect2_paired_4.1.4.0_"+TYPE
+    rule all_single_paired:
+        input: expand("{{dir}}/{sample}.{{something}}", sample=TUMOR)
+        output: "{dir}/all_samples_paired.{something}"
+        shell: "mkdir -p {wildcards.dir}; touch {output}"
+    rule all:
+        input: "multiqc_report.html","multiqc_report.coverage.html","multiqc_report.align.html", MUTECT_DIR+"/all_samples_paired.pass.table.gz"
 
-
-rule all:
-    input: "multiqc_report.html","multiqc_report.coverage.html","multiqc_report.align.html", MUTECT_DIR+"/all_samples.pass.table.gz"
+rule all_single_something:
+    input: expand("{{dir}}/{sample}.{{something}}", sample=SAMPLES)
+    output: "{dir}/all_samples.{something}"
+    shell: "mkdir -p {wildcards.dir}; touch {output}"

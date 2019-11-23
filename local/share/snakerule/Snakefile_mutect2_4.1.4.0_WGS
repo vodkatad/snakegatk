@@ -84,7 +84,7 @@ rule filtercallsinterval:
         """
 
 rule passFilter:
-    input: MUTECT_DIR+"/{sample}.filtered.vcf.gz"
+    input: MUTECT_DIR+"/{sample}.filtered_limited.vcf.gz"
     output: MUTECT_DIR+"/{sample}.pass.vcf.gz"
     shell:
         """

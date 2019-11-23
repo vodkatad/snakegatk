@@ -1,0 +1,177 @@
+##Mutect2's orientation bias filter. This applies to all FFPE tumor samples and samples sequenced on Illumina Novaseq machines, among others
+# do we need it? TODO
+#https://gatkforums.broadinstitute.org/gatk/discussion/24057/how-to-call-somatic-mutations-using-gatk4-mutect2#latest
+def find_matched_normal_sample(wildcards):
+    try:
+        index = TUMOR.index(wildcards.sample)
+        return NORMAL[index]
+    except:
+        raise ValueError("Check you TUMOR and NORMAL in conf.sk, cannot find matched normal for " + wildcards.sample)
+    
+
+def find_matched_normal(wildcards):
+    return {'normal': ALIGN_DIR+"/realigned_"+find_matched_normal_sample(wildcards)+".bam"}
+    
+
+if PON != "":
+    rule mutect:
+        input: unpack(find_matched_normal), bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", reference=REF_DIR+"/GRCh38.d1.vd1.fa", pon=PON
+        output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", f1r2=MUTECT_DIR+"/{sample}_f1r2.tar.gz"
+        singularity: GATK_SING
+        log: MUTECT_DIR+"/{sample}.vcf.gz.log"
+        params: padding=PADDING, cores=CORES, normal=find_matched_normal_sample
+        shell: 
+            """
+                gatk Mutect2 --native-pair-hmm-threads {params.cores} --independent-mates -normal {params.normal} -R {input.reference} -I {input.normal} -I {input.bam} -O {output.vcf} --interval-padding {params.padding} --germline-resource {input.gnomad} --panel-of-normals {input.pon} --f1r2-tar-gz {output.f1r2}  2> {log}
+            """
+else:
+    rule mutect:
+        input: unpack(find_matched_normal), bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
+        output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", f1r2=MUTECT_DIR+"/{sample}_f1r2.tar.gz"
+        singularity: GATK_SING
+        log: MUTECT_DIR+"/{sample}.vcf.gz.log"
+        params: padding=PADDING, cores=CORES, normal=find_matched_normal_sample
+        shell: 
+            """
+                gatk Mutect2 --native-pair-hmm-threads {params.cores} --independent-mates -normal {params.normal} -R {input.reference} -I {input.normal} -I {input.bam} -O {output.vcf} --interval-padding {params.padding} --germline-resource {input.gnomad} --f1r2-tar-gz {output.f1r2} 2> {log}
+            """
+
+rule getpileup:
+    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/gnomad.forcontamination.exomes.vcf"
+    output: temp(MUTECT_DIR+"/{sample}.pileup.table")
+    singularity: GATK_SING
+    params: padding=PADDING
+    log: MUTECT_DIR+"/{sample}.pileup.table.log"
+    shell: 
+        """
+            gatk GetPileupSummaries -I {input.bam} -V {input.gnomad} -O {output} --interval-padding {params.padding} 2> {log}
+        """
+
+# note: if mutect will ever be called in // on different chr we will need to put back together things here (multiple -I)
+rule learnOrientationModel:
+    input:  MUTECT_DIR+"/{sample}_f1r2.tar.gz"
+    output: MUTECT_DIR+"/{sample}_read-orientation-model.tar.gz"
+    singularity: GATK_SING
+    log: MUTECT_DIR+"/{sample}_read-orientation-model.tar.gz.log"
+    shell:
+        """
+            gatk LearnReadOrientationModel -I {input} -O {output} 2> {log}
+        """
+
+def find_matched_normal_contable(wildcards):
+    return {'normal': MUTECT_DIR+"/"+find_matched_normal_sample(wildcards)+".pileup.table"}
+    
+
+rule calculatecontamination:
+    input: unpack(find_matched_normal_contable), tumor=MUTECT_DIR+"/{sample}.pileup.table"
+    output: table=MUTECT_DIR+"/{sample}.contamination.table", seg=MUTECT_DIR+"/{sample}.tum.seg"
+    singularity: GATK_SING
+    log: MUTECT_DIR+"/{sample}.contamination.table.log"
+    shell:
+        """
+            gatk CalculateContamination  -I {input.tumor} -matched {input.normal} -O {output.table} --tumor-segmentation {output.seg} 2> {log}
+        """
+
+
+# New filtering strategy:
+# In order to tweak results in favor of more sensitivity users may set -f-score-beta to a value greater than its default of 1 (beta is the relative weight of sensitivity versus
+# precision in the harmonic mean). Setting it lower biases results toward greater precision. (https://gatkforums.broadinstitute.org/gatk/discussion/24057/how-to-call-somatic-mutations-using-gatk4-mutect2#latest)
+# -alleles force-call-alleles.vcf
+rule filtercalls:
+    input: vcf=MUTECT_DIR+"/{sample}.vcf.gz", ref=REF_DIR+"/GRCh38.d1.vd1.fa", stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", contam=MUTECT_DIR+"/{sample}.contamination.table", seg=MUTECT_DIR+"/{sample}.tum.seg", f1r2=MUTECT_DIR+"/{sample}_read-orientation-model.tar.gz"
+    output: vcf=MUTECT_DIR+"/{sample}.filtered.vcf.gz", stats=MUTECT_DIR+"/{sample}_filtering_stats.tsv"
+    singularity: GATK_SING
+    log: MUTECT_DIR+"/{sample}_filtering_stats.tsv.log"
+    shell:
+        """
+            gatk FilterMutectCalls -V {input.vcf} -O {output.vcf} -R {input.ref} --stats {input.stats} --contamination-table {input.contam} --tumor-segmentation={input.seg} --filtering-stats {output.stats} --ob-priors {input.f1r2} 2> {log}
+        """
+
+rule filtercallsinterval:
+    input: vcf=MUTECT_DIR+"/{sample}.vcf.gz", ref=REF_DIR+"/GRCh38.d1.vd1.fa", stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", contam=MUTECT_DIR+"/{sample}.contamination.table", seg=MUTECT_DIR+"/{sample}.tum.seg", interval=INTERVAL, f1r2=MUTECT_DIR+"/{sample}_read-orientation-model.tar.gz"
+    output: vcf=MUTECT_DIR+"/{sample}.filtered_limited.vcf.gz", stats=MUTECT_DIR+"/{sample}_filtering_limited_stats.tsv"
+    singularity: GATK_SING
+    log: MUTECT_DIR+"/{sample}_filtering_stats.tsv.log"
+    shell:
+        """
+            gatk FilterMutectCalls -V {input.vcf} -O {output.vcf} -R {input.ref} --stats {input.stats} --contamination-table {input.contam} --tumor-segmentation={input.seg} --filtering-stats {output.stats} -L {input.interval} --ob-priors {input.f1r2} 2> {log}
+        """
+
+# We remove the POP_AF=1, they are SNP where the reference is mutated, all gnomad has alternate allele, not a somatic mutation
+# I think. XXX check if they are still there or not
+rule passFilter:
+    input: MUTECT_DIR+"/{sample}.filtered_limited.vcf.gz"
+    output: MUTECT_DIR+"/{sample}.pass.vcf.gz"
+    shell:
+        """
+        zcat {input} |  awk '/^#/ || $7=="PASS"' | bgzip > {output}
+        tabix {output}
+        """ 
+
+rule single_table:
+    input: vcf=MUTECT_DIR+"/{sample}.pass.vcf.gz"
+    output: MUTECT_DIR+"/{sample}.pass.table.gz"
+    params: nsamples=1
+    shell:
+        """
+      zcat {input} | grep -v "^##" |  perl -ane '@gt=splice(@F,9,{params.nsamples}); $gt=""; foreach $g (@gt) {{ if ($.==1) {{$gt.=$g."\\t";}} else {{ @afs = split(":",$g); if ($afs[2] eq ".") {{$afs[2]=0;}} $gt.=$afs[2]."\\t";}} }} chop($gt) ; print $F[2]."\\t".$gt."\\n";' | grep -v "," | gzip > {output}
+        """
+
+rule neutral_sottoriva:
+    input: afmatrix=MUTECT_DIR+"/{sample}.pass.table.gz"
+    params: debug=DEBUG, afcolumn="{sample}"
+    output: hist="{sample}.hist.{loweraf}_{higheraf}.pdf", fit="{sample}.fit.{loweraf}_{higheraf}.pdf", r2="{sample}.fit.{loweraf}_{higheraf}.r2"
+    script: SRC_DIR+"/neutral_sottoriva.R"
+
+
+rule merge_targeted:
+    input: vcf=expand(MUTECT_DIR+"/{sample}.pass.vcf.gz", sample=SAMPLES), bed=SEXONS
+    output: MUTECT_DIR+"/merged_targeted.vcf"
+    shell:
+        """
+            bcftools merge --missing-to-ref -m none -o {output}.vcf.tmp {input.vcf}
+            bedtools intersect -header -u -a {output}.vcf.tmp -b {input.bed} > {output}
+            rm {output}.*.tmp
+        """
+
+
+rule VEP:
+    input: MUTECT_DIR+"/merged_targeted.vcf"
+    output: txt=MUTECT_DIR+"/merged.vep.txt", html=MUTECT_DIR+"/merged.vep.stats.html", vcf=MUTECT_DIR+"/merged.vcf.id"
+    params: cd=VEP_CACHE_DIR
+    shell:
+        """
+             bcftools annotate -I +'%CHROM:%POS:%REF:%ALT' {input} > {output.vcf}
+             vep -i {output.vcf}  --cache --dir_cache {params.cd} --output_file {output.txt} --stats_file {output.html} --pick
+        """
+
+rule vcf_to_aftable:
+    input: MUTECT_DIR+"/merged.vcf.id"
+    output: table=MUTECT_DIR+"/merged.table_nomultiallele"
+    params: nsamples=len(SAMPLES)
+    shell:
+        """
+             cat {input} | grep -v "^##" |  perl -ane '@gt=splice(@F,9,{params.nsamples}); $gt=""; foreach $g (@gt) {{ if ($.==1) {{$gt.=$g."\\t";}} else {{ @afs = split(":",$g); if ($afs[2] eq ".") {{$afs[2]=0;}} $gt.=$afs[2]."\\t";}} }} chop($gt) ; print $F[2]."\\t".$gt."\\n";' | grep -v "," > {output.table}
+        """
+
+### annovar
+rule merged_bed:
+    input: MUTECT_DIR+"/merged.table_nomultiallele"
+    output: MUTECT_DIR+"/merged.bed"
+    shell:
+        """
+            sed 1d {input} | tr ":" "\\t" | bawk '{{print $1,$2-1,$2,$3"-"$4}}' > {output}
+        """
+
+rule annovar:
+    input: MUTECT_DIR+"/merged.bed", ANNOVAR
+    output: MUTECT_DIR+"/merged.hg38_multianno.txt"
+    log: MUTECT_DIR+"/merged.hg38_multianno.log"
+    params: ver="hg38"
+    shell:
+        """
+        sed 's/chr//1;' < {input[0]} | tr "-" "\\t" | bawk '{{if($5=="") {{$5="-"}} if ($4==""){{$4="-"}} b=$2+1; e=b+length($4)-1; print $1,b,e,$4,$5,$6}}' > {output}.tmp
+        table_annovar.pl {output}.tmp {input[1]} --otherinfo -buildver {params.ver} -out merged -remove -protocol refGene,avsnp150,cosmic87_coding,nci60,dbnsfp35c,clinvar_20180603 -operation g,f,f,f,f,f -nastring . -polish &> {log}
+        rm {output}.tmp
+        mv merged.hg38_multianno.txt {output}
+        """
