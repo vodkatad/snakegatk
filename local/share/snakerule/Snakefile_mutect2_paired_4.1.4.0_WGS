@@ -19,10 +19,10 @@ if PON != "":
         output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", f1r2=MUTECT_DIR+"/{sample}_f1r2.tar.gz"
         singularity: GATK_SING
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
-        params: padding=PADDING, cores=CORES, normal=find_matched_normal_sample
+        params: cores=CORES, normal=find_matched_normal_sample
         shell: 
             """
-                gatk Mutect2 --native-pair-hmm-threads {params.cores} --independent-mates -normal {params.normal} -R {input.reference} -I {input.normal} -I {input.bam} -O {output.vcf} --interval-padding {params.padding} --germline-resource {input.gnomad} --panel-of-normals {input.pon} --f1r2-tar-gz {output.f1r2}  2> {log}
+                gatk Mutect2 --native-pair-hmm-threads {params.cores} --independent-mates -normal {params.normal} -R {input.reference} -I {input.normal} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --panel-of-normals {input.pon} --f1r2-tar-gz {output.f1r2}  2> {log}
             """
 else:
     rule mutect:
@@ -30,21 +30,20 @@ else:
         output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", f1r2=MUTECT_DIR+"/{sample}_f1r2.tar.gz"
         singularity: GATK_SING
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
-        params: padding=PADDING, cores=CORES, normal=find_matched_normal_sample
+        params: cores=CORES, normal=find_matched_normal_sample
         shell: 
             """
-                gatk Mutect2 --native-pair-hmm-threads {params.cores} --independent-mates -normal {params.normal} -R {input.reference} -I {input.normal} -I {input.bam} -O {output.vcf} --interval-padding {params.padding} --germline-resource {input.gnomad} --f1r2-tar-gz {output.f1r2} 2> {log}
+                gatk Mutect2 --native-pair-hmm-threads {params.cores} --independent-mates -normal {params.normal} -R {input.reference} -I {input.normal} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --f1r2-tar-gz {output.f1r2} 2> {log}
             """
 
 rule getpileup:
     input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/gnomad.forcontamination.exomes.vcf"
     output: temp(MUTECT_DIR+"/{sample}.pileup.table")
     singularity: GATK_SING
-    params: padding=PADDING
     log: MUTECT_DIR+"/{sample}.pileup.table.log"
     shell: 
         """
-            gatk GetPileupSummaries -I {input.bam} -V {input.gnomad} -O {output} --interval-padding {params.padding} 2> {log}
+            gatk GetPileupSummaries -I {input.bam} -V {input.gnomad} -O {output} -L {input.gnomad} 2> {log}
         """
 
 # note: if mutect will ever be called in // on different chr we will need to put back together things here (multiple -I)
@@ -104,8 +103,8 @@ rule passFilter:
     output: MUTECT_DIR+"/{sample}.pass.vcf.gz"
     shell:
         """
-        zcat {input} |  awk '/^#/ || $7=="PASS"' | bgzip > {output}
-        tabix {output}
+        zcat {input} |  awk '/^#/ || $7=="PASS"' | bgzip > {output};
+        tabix {output};
         """ 
 
 rule single_table:

@@ -158,3 +158,8 @@ rule all_single_something:
     input: expand("{{dir}}/{sample}.{{something}}", sample=SAMPLES)
     output: "{dir}/all_samples.{something}"
     shell: "mkdir -p {wildcards.dir}; touch {output}"
+
+
+# TODO threads duplicate from param
+# TODO sequenza
+# TODO
