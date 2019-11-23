@@ -12,9 +12,10 @@ if PON != "":
         singularity: GATK_SING
         docker: GATK_ODOCKER
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
+        params: cores=CORES
         shell: 
             """
-                gatk Mutect2 -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --panel-of-normals {input.pon} --f1r2-tar-gz {output.f1r2} --independent-mates 2> {log}
+                gatk Mutect2 --native-pair-hmm-threads {params.cores} -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --panel-of-normals {input.pon} --f1r2-tar-gz {output.f1r2} --independent-mates 2> {log}
             """
 else:
     rule mutect:
@@ -23,9 +24,10 @@ else:
         singularity: GATK_SING
         docker: GATK_ODOCKER
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
+        params: cores=CORES
         shell: 
             """
-                gatk Mutect2 -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --f1r2-tar-gz {output.f1r2} --independent-mates 2> {log}
+                gatk Mutect2 --native-pair-hmm-threads {params.cores} -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --f1r2-tar-gz {output.f1r2} --independent-mates 2> {log}
             """
 
 rule getpileup:
@@ -89,7 +91,7 @@ rule filtercallsinterval:
         """
 
 rule passFilter:
-    input: MUTECT_DIR+"/{sample}.filtered.vcf.gz"
+    input: MUTECT_DIR+"/{sample}.filtered_limited.vcf.gz"
     output: MUTECT_DIR+"/{sample}.pass.vcf.gz"
     docker: ALIGN_ODOCKER
     shell:

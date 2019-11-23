@@ -26,13 +26,13 @@ rule bwa_mem:
         id=$(echo $header | cut -f 1-4 -d":" | sed "s/^@//" | sed "s/:/_/g");
         smnh=$(echo $header | grep -Eo "[ATGCN\+]+$");
         sm={wildcards.sample};
-        bwa mem -R "@RG\\tID:$id\\tSM:$sm\\tLB:$sm"_"$id"_"$smnh\\tPL:ILLUMINA" -t {params.cores} -K 100000000 -Y {params.ref} {input.fastq1} {input.fastq2} 2> log | samtools view -Shb -o {output};
+        bwa mem -R "@RG\\tID:$id\\tSM:$sm\\tLB:$sm"_"$id"_"$smnh\\tPL:ILLUMINA" -t {params.cores} -K 100000000 -Y {params.ref} {input.fastq1} {input.fastq2} 2> {log} | samtools view -Shb -o {output};
         """
 
 rule mark_duplicates_picard:
     input: ALIGN_DIR+"/{sample}.bam"
     output: bam=temp(ALIGN_DIR+"/markedDup_{sample}.bam"), metrics=ALIGN_DIR+"/{sample}.dupMetrics.txt"
-    params: pixel_dist=PATTERNED
+    params: pixel_dist=PATTERNED, cores=CORES
     docker: ALIGN_ODOCKER
     log: ALIGN_DIR+"/markedDup_{sample}.bam.log"
     shell: 

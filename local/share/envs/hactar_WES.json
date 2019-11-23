@@ -20,140 +20,110 @@
     },
     "bwa_mem":
     {
-        "time": "10:00:00",
-        "mem": "9600",
-        "ntasks": "16"
+        "time": "07:00:00",
+        "mem": "8000",
+        "ntasks": "4"
     },
    "mark_duplicates_picard":
     {
-        "time": "06:00:00",
-        "mem": "10000",
+        "time": "01:00:00",
+        "mem": "11000",
         "ntasks": "12"
     },
     "recalibrate_quality": 
     {
-        "time": "240:00:00",
-        "mem": "20000",
+        "time": "02:00:00",
+        "mem": "1500",
         "ntasks": "1"
     },
     "recalibrate_plot": 
     {
-        "time": "30:00:00",
+        "time": "01:30:00",
         "mem": "1500",
         "ntasks": "1"
     },
     "sorted_bai": 
     {
-        "time": "12:00:00",
+        "time": "03:00:00",
         "mem": "10000",
         "ntasks": "8"
     },
     "all_coverage":
     {
-        "time": "01:30:00",
+        "time": "00:30:00",
         "mem": "10000",
         "ntasks": "12"
     },
     "split_coverage":
     {
-        "time": "01:30:00",
+        "time": "00:30:00",
         "mem": "400",
         "ntasks": "1"
     },
     "mutect":
     {
-        "time": "240:00:00",
-        "mem": "20000",
-        "ntasks": "1"
-    },
-    "mutectpaired":
-    {
-        "time": "240:00:00",
-        "mem": "20000",
-        "ntasks": "1"
-    },
-    "mutectall":
-    {
-        "time": "140:00:00",
+        "time": "08:00:00",
         "mem": "3500",
         "ntasks": "1"
     },
     "getpileup":
     {
-        "time": "06:00:00",
-        "mem": "10000",
+        "time": "01:30:00",
+        "mem": "2000",
         "ntasks": "1"
-    },
-    "subsample":
-    {
-        "time": "10:00:00",
-        "mem": "10000",
-        "ntasks": "12"
     },
     "calculatecontamination":
     {
-        "time": "03:00:00",
-        "mem": "10000",
+        "time": "00:30:00",
+        "mem": "2000",
         "ntasks": "1"
     },
     "filtercalls":
     {
-        "time": "03:00:00",
-        "mem": "5000",
-        "ntasks": "1"
-    },
-    "filtercallsinterval":
-    {
-        "time": "03:00:00",
-        "mem": "5000",
+        "time": "00:30:00",
+        "mem": "1000",
         "ntasks": "1"
     },
     "artifacts":
     {
-        "time": "06:00:00",
+        "time": "01:00:00",
         "mem": "3500",
-        "ntasks": "1"
-    },
-    "learnOrientationModel":
-    {
-        "time": "06:00:00",
-        "mem": "10000",
         "ntasks": "1"
     },
     "filterOrientation":
     {
-        "time": "03:00:00",
+        "time": "00:30:00",
         "mem": "400",
+        "ntasks": "1"
+    },
+    "learnOrientationModel":
+    {
+        "time": "01:00:00",
+        "mem": "2000",
         "ntasks": "1"
     },
     "VEP":
     {
-        "time": "03:00:00",
+        "time": "00:30:00",
         "mem": "2000",
         "ntasks": "1"
     },
     "xenome":
     {
-        "time": "12:00:00",
+        "time": "04:00:00",
         "mem": "18000",
         "ntasks": "8"
     },
     "repeated_muts":
     {
-        "time": "18:00:00",
+        "time": "4:00:00",
         "mem": "1000",
         "ntasks": "1"
     },
     "repeated_muts_thr":
     {
-        "time": "24:00:00",
+        "time": "3:00:00",
         "mem": "1000",
         "ntasks": "1"
-    },
-    "batch":
-    {
-        "time": "240:00:00",
-        "mem": "10000",
-        "ntasks": "16"
     }
 }   

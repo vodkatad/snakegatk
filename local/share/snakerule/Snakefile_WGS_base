@@ -1,8 +1,5 @@
 include: "conf.sk"
 
-rule all:
-    input: "multiqc_report.html","multiqc_report.coverage.html","multiqc_report.align.html","mutect/all_samples.pass.table.gz"
-
 rule all_ln:
     input: expand("{sample}_{pair}.fastq.gz", pair=PAIRS, sample=SAMPLES)
 
@@ -10,7 +7,7 @@ rule all_ln:
 def find_ln(wildcards):
     import os
     i = SAMPLES.index(wildcards.sample)
-    w = DATA+"/"+SAMPLES_ORIG[i]+"_"+wildcards.rep+".fastq.gz"
+    w = DATA+"/"+SAMPLES_ORIG[i]+"_"+wildcards.pair+".fastq.gz"
     print(w)
     if os.path.isfile(w) or FQ_REMOVED:
         return w
@@ -19,7 +16,7 @@ def find_ln(wildcards):
             
 rule ln:
     input: find_ln
-    output: "{sample}_{rep}.fastq.gz"
+    output: "{sample}_{pair}.fastq.gz"
     shell:
         """
             ln -s {input} {output}
@@ -140,6 +137,7 @@ rule murine_content:
                         ratio = float(tupl[1]) / float(tupl[0])
                     out.write('{}\t{}\n'.format(s, ratio))
     
+
 ### Alignment and calling are in separate Snakefiles that we include here following conf.sk:
 ALIGN_DIR="align"
 include: PRJ_ROOT+"/local/share/snakerule/Snakefile_align_calibrate_"+TYPE
@@ -148,13 +146,19 @@ include: PRJ_ROOT+"/local/share/snakerule/Snakefile_align_calibrate_"+TYPE
 if not PAIRED:
     MUTECT_DIR="mutect"
     include: PRJ_ROOT+"/local/share/snakerule/Snakefile_mutect2_4.1.4.0_"+TYPE
+    rule all:
+        input: "multiqc_report.html","multiqc_report.coverage.html","multiqc_report.align.html", MUTECT_DIR+"/all_samples.pass.table.gz"
 else:
     MUTECT_DIR="mutect_paired"
     include: PRJ_ROOT+"/local/share/snakerule/Snakefile_mutect2_paired_4.1.4.0_"+TYPE
-
+    rule all_single_paired:
+        input: expand("{{dir}}/{sample}.{{something}}", sample=TUMOR)
+        output: "{dir}/all_samples_paired.{something}"
+        shell: "mkdir -p {wildcards.dir}; touch {output}"
+    rule all:
+        input: "multiqc_report.html","multiqc_report.coverage.html","multiqc_report.align.html", MUTECT_DIR+"/all_samples_paired.pass.table.gz"
 
 rule all_single_something:
     input: expand("{{dir}}/{sample}.{{something}}", sample=SAMPLES)
     output: "{dir}/all_samples.{something}"
     shell: "mkdir -p {wildcards.dir}; touch {output}"
-    
