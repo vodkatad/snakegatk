@@ -162,4 +162,5 @@ rule all_single_something:
 
 # TODO threads duplicate from param
 # TODO sequenza
-# TODO
+# TODO SEQUENZA ON OCCAM!
+# TODO far partire conversione a fastq di WES

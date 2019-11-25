@@ -37,7 +37,7 @@ else:
             """
 
 rule getpileup:
-    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/gnomad.forcontamination.exomes.vcf"
+    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/gnomad.forcontamination.noalt.exomes.vcf"
     output: temp(MUTECT_DIR+"/{sample}.pileup.table")
     singularity: GATK_SING
     log: MUTECT_DIR+"/{sample}.pileup.table.log"
