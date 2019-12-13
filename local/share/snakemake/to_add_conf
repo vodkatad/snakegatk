@@ -1,0 +1,3 @@
+GCFILE=GNOMAD_TASK_DIR+'sequenza_gc_w200.wig.gz'
+SEQUENZA_ODOCKER="egrassi/occamsnakes/sequenza:1"
+# ADD docker: to sequenza rules!

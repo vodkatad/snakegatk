@@ -25,7 +25,7 @@ REF_DIR=GNOMAD_TASK_DIR
 GNOMAD=GNOMAD_TASK_DIR
 VEP_CACHE_DIR=ROOT+"/task/variant_annotations/dataset/VEP"
 ANNOVAR=ROOT+"/task/variant_annotations/dataset/annovar/hg38/humandb/"
-PON=GNOMAD+"/1000g_pon.hg38.vcf.gz"
+PON=GNOMAD_TASK_DIR+"/1000g_pon.hg38.vcf.gz"
 DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
 # Singularity containers and occam docker images
 GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
