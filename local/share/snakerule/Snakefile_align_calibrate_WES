@@ -31,11 +31,11 @@ rule bwa_mem:
 rule mark_duplicates_picard:
     input: ALIGN_DIR+"/{sample}.bam"
     output: bam=temp(ALIGN_DIR+"/markedDup_{sample}.bam"), metrics=ALIGN_DIR+"/{sample}.dupMetrics.txt"
-    params: pixel_dist=PATTERNED
+    params: pixel_dist=PATTERNED, cores=CORES
     log: ALIGN_DIR+"/markedDup_{sample}.bam.log"
     shell: 
         """
-        picard -Xmx10g -XX:ParallelGCThreads=11 MarkDuplicates INPUT="{input}" OUTPUT="{output.bam}" METRICS_FILE="{output.metrics}" \
+        picard -Xmx10g -XX:ParallelGCThreads={params.cores} MarkDuplicates INPUT="{input}" OUTPUT="{output.bam}" METRICS_FILE="{output.metrics}" \
         ASSUME_SORT_ORDER="queryname" OPTICAL_DUPLICATE_PIXEL_DISTANCE="{params.pixel_dist}" \
         ADD_PG_TAG_TO_READS=false VALIDATION_STRINGENCY="STRICT" 2> {log}
         """

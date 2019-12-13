@@ -169,6 +169,3 @@ def find_matched_normal_sample(wildcards):
         return NORMAL[index]
     except:
         raise ValueError("Check you TUMOR and NORMAL in conf.sk, cannot find matched normal for " + wildcards.sample)
-
-
-# TODO threads duplicate from param
