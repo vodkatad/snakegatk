@@ -1,4 +1,3 @@
-
 rule snp:
     input: bam=ALIGN_DIR+"/{sample}.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
     output: VARSCAN_DIR+"/{sample}.vcf.gz"

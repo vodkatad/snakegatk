@@ -12,16 +12,16 @@ rule allseqz:
         """
 
 def find_matched_normal_seq(wildcards):
-    return {'normal': ALIGN_DIR+"/"+find_matched_normal_sample(wildcards)+".bam"}
+    return {'normal': ALIGN_DIR+"/markedDup"+find_matched_normal_sample(wildcards)+"sorted.bam"}
     
 rule sseqz:
-    input:  unpack(find_matched_normal_seq), tumor=ALIGN_DIR+"/{sample}.bam", ref=REF_DIR+"/GRCh38.d1.vd1.fa", gc=GCFILE
+    input:  unpack(find_matched_normal_seq), tumor=ALIGN_DIR+"/markedDup_{sample}.sorted.bam", ref=REF_DIR+"/GRCh38.d1.vd1.fa", gc=GCFILE
     output: expand(CNV_DIR+"/{{sample}}_{ch}.seqz.gz", ch=CHRS)
     params: dir=CNV_DIR, ch=CHRS, n=len(CHRS)
     shell:
         """
             mkdir -p {params.dir};
-            sequenza-utils bam2seqz -C {params.ch} --parallel {params.n} --fasta {input.ref} -n {input.normal} -t {input.tumor} -gc {input.gc} -o {params.dir}/{wildcards.sample}.seqz.gz
+            sequenza-utils bam2seqz -C {params.ch} --parallel {params.n} --fasta {input.ref} -n {input.normal} -t {input.tumor} -gc {input.gc} -o {params.dir}/{wildcards.sample}.seqz.gz;
         """
 
 
@@ -37,7 +37,7 @@ rule bin_seqz:
 rule r_seqz:
     input: CNV_DIR+"/{sample}.all.bin.seqz.gz"
     output: directory(CNV_DIR+"/{sample}")
-    params: tool=BIN_DIR+"/sequenza", cores=12
+    params: tool=BIN_DIR+"/sequenza", cores=CORES
     shell:
         """
          {params.tool} {wildcards.sample} {input} {output}
