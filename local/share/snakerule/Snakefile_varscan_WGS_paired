@@ -21,3 +21,17 @@ rule mpileup:
         """
             samtools mpileup -q 1 -B -f {input.reference} {input.bam} | gzip > {output}
         """
+
+rule filter_snp:
+    input: snp=VARSCAN_DIR+"/{sample}.snp.vcf.gz", indel=VARSCAN_DIR+"/{sample}.indel.vcf.gz", bed=CALLABLE_BED
+    output: VARSCAN_DIR+"/{sample}.pass.vcf.gz"
+    params: cores=CORES
+    shell:
+        """
+            bcftools concat -d -a {input.snp} {input.indel} --threads {params.cores} \
+            | bctfools view -s TUMOR --threads {params.cores} -i'INFO/SS == 2 || INFO/SS==3' > {output}.tmp
+            bedtools intersect -header -u -a {output}.vcf.tmp -b {input.bed} | bgzip > {output}
+            rm {output}.tmp
+        """
+
+#merge snp and indel and intersect with our WGS alignable interval
