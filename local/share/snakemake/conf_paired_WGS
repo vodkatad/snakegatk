@@ -17,7 +17,7 @@ BIN_DIR=PRJ_ROOT+'/local/bin'
 FQ_REMOVED=False
 DEBUG="yes"
 TYPE="WGS"
-PAIRED=False
+PAIRED=True
 SUBSAMPLE=1 # if == 1 do not downsample (downsampling is done right after alignment and dup removal, not before calling, to also recalibrate on less data).
 
 # Needed references and annotations
@@ -26,23 +26,28 @@ REF_DIR=GNOMAD_TASK_DIR
 GNOMAD=GNOMAD_TASK_DIR
 VEP_CACHE_DIR=ROOT+"/task/variant_annotations/dataset/VEP"
 ANNOVAR=ROOT+"/task/variant_annotations/dataset/annovar/hg38/humandb/"
-PON="" # on hold for WGS
+PON=GNOMAD_TASK_DIR+"/1000g_pon.hg38.vcf.gz"
 DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
 INTERVAL=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.interval_list'
+GCFILE=GNOMAD_TASK_DIR+'sequenza_gc_w200.wig.gz'
 # Singularity containers and occam docker images
 GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
 GATK_ODOCKER="egrassi/occamsnakes/gatk:1"
 XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
-PLH_DOCKER="bubusettete"
 ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
+SEQUENZA_ODOCKER="egrassi/occamsnakes/sequenza:1"
+PLH_DOCKER="bubusettete"
+
 
 ## This dataset:
-DATA=PRJ_ROOT+"/local/share/data/WGS_biodiversa"
+DATA=PRJ_ROOT+"/local/share/data/example"
 FQ_XENOME_DIR="xenome"
 
 # sed 1d PJ1903090-SF-Integragen-Targeted-Seq.tsv  | cut -f 1 | tr "_" "\t" | cut -f 1 | tr "\n" "," | sed 's/,/","/g'
-SAMPLES_ORIG=["1740D-84-02_S52_L005"]
-SAMPLES=["CRC1307LMO"]
+SAMPLES_ORIG=["example1", "example2"]
+SAMPLES=["pippo", "pluto"]
+NORMAL=["pluto"]
+TUMOR=["pippo"]
 
 #REF=""
 #SAMPLESD=[]
@@ -50,6 +55,7 @@ SAMPLES=["CRC1307LMO"]
 
 XENOMED_SAMPLES=[]
 TRIMMED_SAMPLES=[]
+
 
 FASTQ_SUFFIX="_{pair}.fastq.gz"
 FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"

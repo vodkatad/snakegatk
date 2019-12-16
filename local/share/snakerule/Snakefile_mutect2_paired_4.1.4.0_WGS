@@ -1,14 +1,3 @@
-##Mutect2's orientation bias filter. This applies to all FFPE tumor samples and samples sequenced on Illumina Novaseq machines, among others
-# do we need it? TODO
-#https://gatkforums.broadinstitute.org/gatk/discussion/24057/how-to-call-somatic-mutations-using-gatk4-mutect2#latest
-def find_matched_normal_sample(wildcards):
-    try:
-        index = TUMOR.index(wildcards.sample)
-        return NORMAL[index]
-    except:
-        raise ValueError("Check you TUMOR and NORMAL in conf.sk, cannot find matched normal for " + wildcards.sample)
-    
-
 def find_matched_normal(wildcards):
     return {'normal': ALIGN_DIR+"/realigned_"+find_matched_normal_sample(wildcards)+".bam"}
     
@@ -20,11 +9,11 @@ if PON != "":
         singularity: GATK_SING
         docker: GATK_ODOCKER
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
-        params: cores=CORES, normal=find_matched_normal_sample
         benchmark: "bench/{sample}.vcf.gz.times"
+        params: cores=CORES, normal=find_matched_normal_sample, af=AFPARAM
         shell: 
             """
-                gatk Mutect2 --native-pair-hmm-threads {params.cores} --independent-mates -normal {params.normal} -R {input.reference} -I {input.normal} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --panel-of-normals {input.pon} --f1r2-tar-gz {output.f1r2}  2> {log}
+                gatk Mutect2 {params.af} --native-pair-hmm-threads {params.cores} --independent-mates -normal {params.normal} -R {input.reference} -I {input.normal} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --panel-of-normals {input.pon} --f1r2-tar-gz {output.f1r2}  2> {log}
             """
 else:
     rule mutect:
@@ -33,15 +22,15 @@ else:
         singularity: GATK_SING
         docker: GATK_ODOCKER
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
-        params: cores=CORES, normal=find_matched_normal_sample
         benchmark: "bench/{sample}.vcf.gz.times"
+        params: cores=CORES, normal=find_matched_normal_sample, af=AFPARAM
         shell: 
             """
-                gatk Mutect2 --native-pair-hmm-threads {params.cores} --independent-mates -normal {params.normal} -R {input.reference} -I {input.normal} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --f1r2-tar-gz {output.f1r2} 2> {log}
+                gatk Mutect2 {params.af} --native-pair-hmm-threads {params.cores} --independent-mates -normal {params.normal} -R {input.reference} -I {input.normal} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --f1r2-tar-gz {output.f1r2} 2> {log}
             """
 
 rule getpileup:
-    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/gnomad.forcontamination.exomes.vcf"
+    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/gnomad.forcontamination.noalt.exomes.vcf"
     output: temp(MUTECT_DIR+"/{sample}.pileup.table")
     singularity: GATK_SING
     docker: GATK_ODOCKER

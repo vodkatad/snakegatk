@@ -151,6 +151,8 @@ if not PAIRED:
 else:
     MUTECT_DIR="mutect_paired"
     include: PRJ_ROOT+"/local/share/snakerule/Snakefile_mutect2_paired_4.1.4.0_"+TYPE
+    VARSCAN_DIR="varscan_paired"
+    include: PRJ_ROOT+"/local/share/snakerule/Snakefile_varscan_"+TYPE"+_paired"
     rule all_single_paired:
         input: expand("{{dir}}/{sample}.{{something}}", sample=TUMOR)
         output: "{dir}/all_samples_paired.{something}"
@@ -158,7 +160,18 @@ else:
     rule all:
         input: "multiqc_report.html","multiqc_report.coverage.html","multiqc_report.align.html", MUTECT_DIR+"/all_samples_paired.pass.table.gz"
 
+
+CNV_DIR="sequenza"
+include: PRJ_ROOT+"/local/share/snakerule/Snakefile_sequenza_"+TYPE
+
 rule all_single_something:
     input: expand("{{dir}}/{sample}.{{something}}", sample=SAMPLES)
     output: "{dir}/all_samples.{something}"
     shell: "mkdir -p {wildcards.dir}; touch {output}"
+
+def find_matched_normal_sample(wildcards):
+    try:
+        index = TUMOR.index(wildcards.sample)
+        return NORMAL[index]
+    except:
+        raise ValueError("Check you TUMOR and NORMAL in conf.sk, cannot find matched normal for " + wildcards.sample)

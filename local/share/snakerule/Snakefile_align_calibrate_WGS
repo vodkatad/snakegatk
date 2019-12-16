@@ -39,7 +39,7 @@ rule mark_duplicates_picard:
     benchmark: "bench/markedDup_{sample}.bam.times"
     shell: 
         """
-        picard -Xmx10g -XX:ParallelGCThreads=11 MarkDuplicates INPUT="{input}" OUTPUT="{output.bam}" METRICS_FILE="{output.metrics}" \
+        picard -Xmx10g -XX:ParallelGCThreads={params.cores} MarkDuplicates INPUT="{input}" OUTPUT="{output.bam}" METRICS_FILE="{output.metrics}" \
         ASSUME_SORT_ORDER="queryname" OPTICAL_DUPLICATE_PIXEL_DISTANCE="{params.pixel_dist}" \
         ADD_PG_TAG_TO_READS=false VALIDATION_STRINGENCY="STRICT" 2> {log}
         """

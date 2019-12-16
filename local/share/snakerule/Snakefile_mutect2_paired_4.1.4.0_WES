@@ -1,14 +1,3 @@
-##Mutect2's orientation bias filter. This applies to all FFPE tumor samples and samples sequenced on Illumina Novaseq machines, among others
-# do we need it? TODO
-#https://gatkforums.broadinstitute.org/gatk/discussion/24057/how-to-call-somatic-mutations-using-gatk4-mutect2#latest
-def find_matched_normal_sample(wildcards):
-    try:
-        index = TUMOR.index(wildcards.sample)
-        return NORMAL[index]
-    except:
-        raise ValueError("Check you TUMOR and NORMAL in conf.sk, cannot find matched normal for " + wildcards.sample)
-    
-
 def find_matched_normal(wildcards):
     return {'normal': ALIGN_DIR+"/realigned_"+find_matched_normal_sample(wildcards)+".bam"}
     
@@ -37,7 +26,7 @@ else:
             """
 
 rule getpileup:
-    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/gnomad.forcontamination.exomes.vcf", bed=SEXONS
+    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/gnomad.forcontamination.noalt.exomes.vcf", bed=SEXONS
     output: temp(MUTECT_DIR+"/{sample}.pileup.table")
     singularity: GATK_SING
     params: padding=PADDING

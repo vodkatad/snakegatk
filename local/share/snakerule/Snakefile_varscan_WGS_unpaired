@@ -1,0 +1,52 @@
+rule snp:
+    input: bam=ALIGN_DIR+"/{sample}.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
+    output: VARSCAN_DIR+"/{sample}.vcf.gz"
+    log: VARSCAN_DIR+"/{sample}.log"
+    shell:
+        """
+            samtools mpileup -B -f {input.reference} {input.bam} | varscan mpileup2cns --variants 1  --p-value 0.05 --output-vcf 1 --vcf-sample-list {wildcards.sample} 2> {log} | bgzip > {output}
+        """
+
+#the minimum base quality (default: 20) from reads meeting the minimum mapping quality (default: 1) are considered.
+#The coverage (number of qualifying bases) is calculated. If this meets the minimum threshold (default: 20)
+
+#--output-vcf 1
+#--vcf-sample-list
+#rule cns:
+#    input: "{sample}.mpileup"
+#    output: "{sample}.cns"
+#    shell:
+#        """
+#            VarScan pileup2cns {input} --min-coverage 10 --min-var-freq 0.01 --p-value 0.05 > {output}
+#        """
+
+
+#rule cns:
+#    input: "{sample}.mpileup"
+#    output: "{sample}.cns"
+#    shell:
+#        """
+#           VarScan pileup2cns {input} --min-coverage 10 --min-var-freq 0.01 --p-value 0.05 > {output}
+#        """
+
+# USAGE: VarScan somatic [normal_pileup] [tumor_pileup] [Opt: output] OPTIONS
+#         normal_pileup - The SAMtools pileup file for Normal
+#         tumor_pileup - The SAMtools pileup file for Tumor
+#         output - Output base name for SNP and indel output
+
+# OPTIONS:
+#         --output-snp - Output file for SNP calls [output.snp]
+#         --output-indel - Output file for indel calls [output.indel]
+#         --min-coverage - Minimum coverage in normal and tumor to call variant [8]
+#         --min-coverage-normal - Minimum coverage in normal to call somatic [8]
+#         --min-coverage-tumor - Minimum coverage in tumor to call somatic [6]
+#         --min-var-freq - Minimum variant frequency to call a heterozygote [0.10]
+#         --min-freq-for-hom      Minimum frequency to call homozygote [0.75]
+#         --normal-purity - Estimated purity (non-tumor content) of normal sample [1.00]
+#         --tumor-purity - Estimated purity (tumor content) of tumor sample [1.00]
+#         --p-value - P-value threshold to call a heterozygote [0.99]
+#         --somatic-p-value - P-value threshold to call a somatic site [0.05]
+#         --strand-filter - If set to 1, removes variants with >90% strand bias [0]
+#         --validation - If set to 1, outputs all compared positions even if non-variant
+#         --output-vcf - If set to 1, output VCF instead of VarScan native format
+

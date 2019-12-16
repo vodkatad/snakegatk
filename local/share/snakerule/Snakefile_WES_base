@@ -169,4 +169,9 @@ rule all_single_something:
     output: "{dir}/all_samples.{something}"
     shell: "mkdir -p {wildcards.dir}; touch {output}"
 
-                
+def find_matched_normal_sample(wildcards):
+    try:
+        index = TUMOR.index(wildcards.sample)
+        return NORMAL[index]
+    except:
+        raise ValueError("Check you TUMOR and NORMAL in conf.sk, cannot find matched normal for " + wildcards.sample)
