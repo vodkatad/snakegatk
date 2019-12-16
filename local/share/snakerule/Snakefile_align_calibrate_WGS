@@ -104,8 +104,8 @@ rule sorted_bai:
 rule all_coverage:
     input: bam=ALIGN_DIR+"/realigned_{sample}.sorted.bam", bai=ALIGN_DIR+"/realigned_{sample}.sorted.bam.bai"
     output: "depth/{sample}.quantized.bed.gz"
-    params: prefix="depth/{sample}", thread=12
     docker: ALIGN_ODOCKER
+    params: prefix="depth/{sample}", thread=CORES
     shell: 
         """
             mkdir -p depth;
