@@ -11,6 +11,7 @@ def find_prj_root(path=os.getcwd()):
 
 
 PRJ_ROOT=find_prj_root()
+TMP="/scratch/home/egrassi/"
 
 SRC_DIR=PRJ_ROOT+'/local/src'
 BIN_DIR=PRJ_ROOT+'/local/bin'
@@ -31,7 +32,7 @@ DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
 INTERVAL=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.interval_list'
 # Singularity containers and occam docker images
 GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
-GATK_ODOCKER="egrassi/occamsnakes/gatk:1"
+GATK_ODOCKER="egrassi/occamsnakes/gatk_fixedov:1"
 XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
 PLH_DOCKER="bubusettete"
 ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
