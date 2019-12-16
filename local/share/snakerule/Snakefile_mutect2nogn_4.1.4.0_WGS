@@ -1,0 +1,122 @@
+##Mutect2's orientation bias filter. This applies to all FFPE tumor samples and samples sequenced on Illumina Novaseq machines, among others
+# do we need it? Yes, filter and artifacts are now off and this is needed for oxog!
+#https://gatkforums.broadinstitute.org/gatk/discussion/24057/how-to-call-somatic-mutations-using-gatk4-mutect2#latest
+
+#https://github.com/broadinstitute/gatk/issues/6230
+#https://gatkforums.broadinstitute.org/gatk/discussion/24492/mutect2-java-lang-illegalargumentexception-cannot-construct-fragment-from-more-than-two-reads#latest
+
+if PON != "":
+    rule mutect:
+        input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", reference=REF_DIR+"/GRCh38.d1.vd1.fa", pon=PON
+        output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", f1r2=MUTECT_DIR+"/{sample}_f1r2.tar.gz"
+        singularity: GATK_SING
+        docker: GATK_ODOCKER
+        log: MUTECT_DIR+"/{sample}.vcf.gz.log"
+        params: cores=CORES
+        benchmark: "bench/{sample}.vcf.gz.times"
+        shell: 
+            """
+                gatk Mutect2 --native-pair-hmm-threads {params.cores} -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --panel-of-normals {input.pon} --f1r2-tar-gz {output.f1r2} --independent-mates 2> {log}
+            """
+else:
+    rule mutect:
+        input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
+        output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", f1r2=MUTECT_DIR+"/{sample}_f1r2.tar.gz"
+        singularity: GATK_SING
+        docker: GATK_ODOCKER
+        log: MUTECT_DIR+"/{sample}.vcf.gz.log"
+        params: cores=CORES
+        benchmark: "bench/{sample}.vcf.gz.times"
+        shell: 
+            """
+                gatk Mutect2 --native-pair-hmm-threads {params.cores} -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --f1r2-tar-gz {output.f1r2} --independent-mates 2> {log}
+            """
+
+rule getpileup:
+    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/gnomad.forcontamination.noalt.exomes.vcf"
+    output: temp(MUTECT_DIR+"/{sample}.pileup.table")
+    singularity: GATK_SING
+    docker: GATK_ODOCKER
+    benchmark: "bench/{sample}.pileup.table.times"
+    log: MUTECT_DIR+"/{sample}.pileup.table.log"
+    shell: 
+        """
+            gatk GetPileupSummaries -I {input.bam} -V {input.gnomad} -O {output} -L {input.gnomad} 2> {log}
+        """
+
+# note: if mutect will ever be called in // on different chr we will need to put back together things here (multiple -I)
+rule learnOrientationModel:
+    input:  MUTECT_DIR+"/{sample}_f1r2.tar.gz"
+    output: MUTECT_DIR+"/{sample}_read-orientation-model.tar.gz"
+    singularity: GATK_SING
+    docker: GATK_ODOCKER
+    benchmark: "bench/{sample}_read-orientation-model.tar.gz.times"
+    log: MUTECT_DIR+"/{sample}_read-orientation-model.tar.gz.log"
+    shell:
+        """
+            gatk LearnReadOrientationModel -I {input} -O {output} 2> {log}
+        """
+
+rule calculatecontamination:
+    input: MUTECT_DIR+"/{sample}.pileup.table"
+    output: table=MUTECT_DIR+"/{sample}.contamination.table", seg=MUTECT_DIR+"/{sample}.tum.seg"
+    singularity: GATK_SING
+    docker: GATK_ODOCKER
+    benchmark: "bench/{sample}.contamination.table.times"
+    log: MUTECT_DIR+"/{sample}.contamination.table.log"
+    shell:
+        """
+            gatk CalculateContamination  -I {input} -O {output.table} --tumor-segmentation {output.seg} 2> {log}
+        """
+
+# New filtering strategy:
+# In order to tweak results in favor of more sensitivity users may set -f-score-beta to a value greater than its default of 1 (beta is the relative weight of sensitivity versus
+# precision in the harmonic mean). Setting it lower biases results toward greater precision. (https://gatkforums.broadinstitute.org/gatk/discussion/24057/how-to-call-somatic-mutations-using-gatk4-mutect2#latest)
+# -alleles force-call-alleles.vcf
+rule filtercalls:
+    input: vcf=MUTECT_DIR+"/{sample}.vcf.gz", ref=REF_DIR+"/GRCh38.d1.vd1.fa", stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", contam=MUTECT_DIR+"/{sample}.contamination.table", seg=MUTECT_DIR+"/{sample}.tum.seg", f1r2=MUTECT_DIR+"/{sample}_read-orientation-model.tar.gz"
+    output: vcf=MUTECT_DIR+"/{sample}.filtered.vcf.gz", stats=MUTECT_DIR+"/{sample}_filtering_stats.tsv"
+    singularity: GATK_SING
+    docker: GATK_ODOCKER
+    benchmark: "bench/{sample}.fitered.vcf.gz.times"
+    log: MUTECT_DIR+"/{sample}_filtering_stats.tsv.log"
+    shell:
+        """
+            gatk FilterMutectCalls -V {input.vcf} -O {output.vcf} -R {input.ref} --stats {input.stats} --contamination-table {input.contam} --tumor-segmentation={input.seg} --filtering-stats {output.stats} --ob-priors {input.f1r2} 2> {log}
+        """
+
+rule filtercallsinterval:
+    input: vcf=MUTECT_DIR+"/{sample}.vcf.gz", ref=REF_DIR+"/GRCh38.d1.vd1.fa", stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", contam=MUTECT_DIR+"/{sample}.contamination.table", seg=MUTECT_DIR+"/{sample}.tum.seg", interval=INTERVAL, f1r2=MUTECT_DIR+"/{sample}_read-orientation-model.tar.gz"
+    output: vcf=MUTECT_DIR+"/{sample}.filtered_limited.vcf.gz", stats=MUTECT_DIR+"/{sample}_filtering_limited_stats.tsv"
+    singularity: GATK_SING
+    docker: GATK_ODOCKER
+    benchmark: "bench/{sample}.fitered_limited.vcf.gz.times"
+    log: MUTECT_DIR+"/{sample}_filtering_stats.tsv.log"
+    shell:
+        """
+            gatk FilterMutectCalls -V {input.vcf} -O {output.vcf} -R {input.ref} --stats {input.stats} --contamination-table {input.contam} --tumor-segmentation={input.seg} --filtering-stats {output.stats} -L {input.interval} --ob-priors {input.f1r2} 2> {log}
+        """
+
+rule passFilter:
+    input: MUTECT_DIR+"/{sample}.filtered_limited.vcf.gz"
+    output: MUTECT_DIR+"/{sample}.pass.vcf.gz"
+    benchmark: "bench/{sample}.pass.vcf.gz.times"
+    docker: ALIGN_ODOCKER
+    shell:
+        """
+        zcat {input} |  awk '/^#/ || $7=="PASS"' | bgzip > {output};
+        tabix {output};
+        """ 
+
+
+rule single_table:
+    input: vcf=MUTECT_DIR+"/{sample}.pass.vcf.gz"
+    output: MUTECT_DIR+"/{sample}.pass.table.gz"
+    benchmark: "bench/{sample}.pass.table.gz.times"
+    params: nsamples=1
+    docker: ALIGN_ODOCKER
+    shell:
+        """
+            zcat {input} | grep -v "^##" |  perl -ane '@gt=splice(@F,9,{params.nsamples}); $gt=""; foreach $g (@gt) {{ if ($.==1) {{$gt.=$g."\\t";}} else {{ @afs = split(":",$g); if ($afs[2] eq ".") {{$afs[2]=0;}} $gt.=$afs[2]."\\t";}} }} chop($gt) ; print $F[2]."\\t".$gt."\\n";' | grep -v "," | gzip > {output}
+        """
+
