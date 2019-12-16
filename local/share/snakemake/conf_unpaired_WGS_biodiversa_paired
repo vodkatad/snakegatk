@@ -19,6 +19,7 @@ DEBUG="yes"
 TYPE="WGS"
 PAIRED=True
 SUBSAMPLE=1 # if == 1 do not downsample (downsampling is done right after alignment and dup removal, not before calling, to also recalibrate on less data).
+TMP="/scratch/home/egrassi/"
 
 # Needed references and annotations
 GNOMAD_TASK_DIR=ROOT+'/task/annotations/dataset/gnomad'
@@ -26,12 +27,12 @@ REF_DIR=GNOMAD_TASK_DIR
 GNOMAD=GNOMAD_TASK_DIR
 VEP_CACHE_DIR=ROOT+"/task/variant_annotations/dataset/VEP"
 ANNOVAR=ROOT+"/task/variant_annotations/dataset/annovar/hg38/humandb/"
-PON="" # on hold for WGS
+PON=GNOMAD_TASK_DIR+"/1000g_pon.hg38.vcf.gz" # on hold for WGS
 DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
 INTERVAL=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.interval_list'
 # Singularity containers and occam docker images
 GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
-GATK_ODOCKER="egrassi/occamsnakes/gatk:1"
+GATK_ODOCKER="egrassi/occamsnakes/gatk_fixedov:1"
 XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
 PLH_DOCKER="bubusettete"
 ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
@@ -58,7 +59,7 @@ FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
 
 PAIRS=['R1_001','R2_001']
 PAIRS_XENOME=['1','2']
-CORES=12
+CORES=6
 # TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
 PATTERNED=2500 
 # HiSeq4000, otherwise 100 for unpatterned
