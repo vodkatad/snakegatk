@@ -2,6 +2,7 @@ rule snp:
     input: bam=ALIGN_DIR+"/{sample}.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
     output: VARSCAN_DIR+"/{sample}.vcf.gz"
     log: VARSCAN_DIR+"/{sample}.log"
+    docker: VARSCAN_ODOCKER
     shell:
         """
             samtools mpileup -B -f {input.reference} {input.bam} | varscan mpileup2cns --variants 1  --p-value 0.05 --output-vcf 1 --vcf-sample-list {wildcards.sample} 2> {log} | bgzip > {output}
