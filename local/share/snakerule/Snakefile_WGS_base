@@ -146,6 +146,14 @@ def find_matched_normal_sample(wildcards):
     except:
         raise ValueError("Check you TUMOR and NORMAL in conf.sk, cannot find matched normal for " + wildcards.sample)
 
+#############################################
+def find_matched_normal_sample(wildcards):
+    try:
+        index = TUMOR.index(wildcards.sample)
+        return NORMAL[index]
+    except:
+        raise ValueError("Check you TUMOR and NORMAL in conf.sk, cannot find matched normal for " + wildcards.sample)
+
 ### Alignment and calling are in separate Snakefiles that we include here following conf.sk:
 ALIGN_DIR="align"
 include: PRJ_ROOT+"/local/share/snakerule/Snakefile_align_calibrate_"+TYPE
