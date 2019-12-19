@@ -7,6 +7,7 @@ from argparse import ArgumentParser
 # load everything then validate vs the schema rather than this "patching" of the
 # manually generated first portion of the json, but honestly not urgent.
 
+# TODO print stdout SAMPLES and SAMPLES_ORIG for conf.sk
 def main():
     args = get_args()
     with open(args.input, 'r') as tsv:
@@ -14,10 +15,14 @@ def main():
         fields = header.split("\t")
         with open(args.json, 'a') as json_meta:
             entries = []
+            samples = []
+            orig_samples = []
             for line in tsv.readlines():
                 line = line.rstrip()
                 values = line.split("\t")
                 entry = { "id": values[2], "LAS_Validation": values[3] == "TRUE", "files": get_files(values[0], args.fastq) }
+                samples.append(values[2])
+                orig_samples.append(values[0])
                 #if len(values) >= 4:
                 for i in range(4, len(values)):
                     if fields[i] == "cloning_date":
@@ -26,6 +31,8 @@ def main():
                         entry[fields[i]] = values[i]
                 entries.append(entry) # python triiiiicky indenting
                 #json_meta.write(json.dumps(entry) + "\n")     
+            print("ORIG_SAMPLES=" + str(orig_samples))
+            print("SAMPLES=" + str(samples))
             jsons = json.dumps({"samples_map": entries}, indent=4)
             json_meta.write(jsons.strip('{}'))
             json_meta.write("}\n")

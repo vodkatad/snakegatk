@@ -1,3 +1,9 @@
 GCFILE=GNOMAD_TASK_DIR+'sequenza_gc_w200.wig.gz'
 SEQUENZA_ODOCKER="egrassi/occamsnakes/sequenza:1"
+VARSCAN_ODOCKER="egrassi/occamsnakes/varscan:1"
+CORESMD=4
+# 4 seems the optimum: https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-019-3169-7
 # ADD docker: to sequenza rules!
+
+ORIG_SAMPLES=['ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6', 'ex7', 'ex8', 'ex9']
+SAMPLES=['CRC1307_02_0', 'CRC1307_08_0', 'CRC1307_09_0', 'CRC1307_02_1_0', 'CRC1307_02_1_1', 'CRC1307_02_1_2', 'CRC1307_08_1_0', 'CRC1307_08_1_1', 'CRC1307_08_1_2']
