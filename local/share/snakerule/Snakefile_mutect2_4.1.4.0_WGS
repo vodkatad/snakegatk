@@ -11,10 +11,10 @@ if PON != "":
         output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", f1r2=MUTECT_DIR+"/{sample}_f1r2.tar.gz"
         singularity: GATK_SING
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
-        params: cores=CORES
+        params: cores=CORES, af=AFPARAM
         shell: 
             """
-                gatk Mutect2 --native-pair-hmm-threads {params.cores} -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --panel-of-normals {input.pon} --f1r2-tar-gz {output.f1r2} --independent-mates 2> {log}
+                gatk Mutect2 {params.af} --native-pair-hmm-threads {params.cores} -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --panel-of-normals {input.pon} --f1r2-tar-gz {output.f1r2} --independent-mates 2> {log}
             """
 else:
     rule mutect:
@@ -22,10 +22,10 @@ else:
         output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", f1r2=MUTECT_DIR+"/{sample}_f1r2.tar.gz"
         singularity: GATK_SING
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
-        params: cores=CORES
+        params: cores=CORES, af=AFPARAM
         shell: 
             """
-                gatk Mutect2 --native-pair-hmm-threads {params.cores} -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --f1r2-tar-gz {output.f1r2} --independent-mates 2> {log}
+                gatk Mutect2 {params.af} --native-pair-hmm-threads {params.cores} -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --f1r2-tar-gz {output.f1r2} --independent-mates 2> {log}
             """
 
 rule getpileup:

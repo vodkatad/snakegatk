@@ -2,6 +2,7 @@ GCFILE=GNOMAD_TASK_DIR+'sequenza_gc_w200.wig.gz'
 SEQUENZA_ODOCKER="egrassi/occamsnakes/sequenza:1"
 VARSCAN_ODOCKER="egrassi/occamsnakes/varscan:1"
 CORESMD=4
+PARAMSAF="--default-af 0"
 # 4 seems the optimum: https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-019-3169-7
 # ADD docker: to sequenza rules!
 
