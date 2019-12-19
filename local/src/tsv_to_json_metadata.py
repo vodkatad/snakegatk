@@ -31,7 +31,7 @@ def main():
                         entry[fields[i]] = values[i]
                 entries.append(entry) # python triiiiicky indenting
                 #json_meta.write(json.dumps(entry) + "\n")     
-            print("ORIG_SAMPLES=" + str(orig_samples))
+            print("SAMPLES_ORIG=" + str(orig_samples))
             print("SAMPLES=" + str(samples))
             jsons = json.dumps({"samples_map": entries}, indent=4)
             json_meta.write(jsons.strip('{}'))

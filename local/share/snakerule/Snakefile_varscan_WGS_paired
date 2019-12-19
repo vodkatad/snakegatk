@@ -1,8 +1,8 @@
-def find_matched_normal_seq(wildcards):
+def find_matched_normal_mpileup(wildcards):
     return {'normal': VARSCAN_DIR+"/"+find_matched_normal_sample(wildcards)+".mpileup.gz"}
     
 rule paired_snp:
-    input: normal=unpack(find_matched_normal_mpileup), tumor=ALIGN_DIR+"/markedDup_{sample}.sorted.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
+    input: unpack(find_matched_normal_mpileup), tumor=ALIGN_DIR+"/markedDup_{sample}.sorted.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
     output: VARSCAN_DIR+"/{sample}.snp.vcf.gz", VARSCAN_DIR+"/{sample}.indel.vcf.gz"
     log: VARSCAN_DIR+"/{sample}.log"
     params: prefix=VARSCAN_DIR+"/{sample}", dir=VARSCAN_DIR
