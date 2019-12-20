@@ -5,12 +5,14 @@ def find_matched_normal(wildcards):
 #https://github.com/broadinstitute/gatk/issues/3061
 rule all_mutect:
     input: expand(MUTECT_DIR+"/{{sample}}.{spl}.vcf.gz", spl=SPLITS)
-    output: vcf=MUTECT_DIR+"/{sample}.vcf.gz", stats=MUTECT_DIR+"/{sample}.{spl}.vcf.gz.stats"
+    output: vcf=MUTECT_DIR+"/{sample}.vcf.gz", stats=MUTECT_DIR+"/{sample}.vcf.gz.stats"
+    singularity: GATK_SING
+    params: vcfs=lambda wildcards, input: ["-I " + x for x in input], stats= lambda wildcards, input: ["-stats " + x + ".stats" for x in input]
+    log: MUTECT_DIR+"/{sample}.vcf.gz.log"
     shell:
         """
-            gatk MergeVcfs -I ${sep=' -I ' input_vcfs} -O ${output_vcf_name}.vcf
-             gatk --java-options "-Xmx~{runtime_params.command_mem}m" MergeMutectStats \
-            -stats ~{sep=" -stats " stats} -O merged.stats
+            gatk MergeVcfs {params.vcfs} -O {output.vcf};
+            gatk MergeMutectStats -stats {params.stats} -O {output.stats};
         """
 
 
@@ -54,9 +56,10 @@ rule learnOrientationModel:
     output: MUTECT_DIR+"/{sample}_read-orientation-model.tar.gz"
     singularity: GATK_SING
     log: MUTECT_DIR+"/{sample}_read-orientation-model.tar.gz.log"
+    params: vcfs=lambda wildcards, input: ["-I " + x for x in input]
     shell:
         """
-            gatk LearnReadOrientationModel -I {input} -O {output} 2> {log}
+            gatk LearnReadOrientationModel {params.vcfs} -O {output} 2> {log}
         """
 
 def find_matched_normal_contable(wildcards):

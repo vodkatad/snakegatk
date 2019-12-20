@@ -84,7 +84,6 @@ rule sort_all_realigned:
 rule sorted_bai:
     input: ALIGN_DIR+"/{whatever}.bam"
     output: bai=ALIGN_DIR+"/{whatever}.sorted.bam.bai", bam=ALIGN_DIR+"/{whatever}.sorted.bam"
-    docker: ALIGN_ODOCKER
     params: threads=str(CORES), tmp=TMP
     benchmark: "bench/{whatever}.sorted.bam.times"
     shell: 
