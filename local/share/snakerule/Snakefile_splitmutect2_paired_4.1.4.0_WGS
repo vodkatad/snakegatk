@@ -127,18 +127,6 @@ rule neutral_sottoriva:
     output: hist="{sample}.hist.{loweraf}_{higheraf}.pdf", fit="{sample}.fit.{loweraf}_{higheraf}.pdf", r2="{sample}.fit.{loweraf}_{higheraf}.r2"
     script: SRC_DIR+"/neutral_sottoriva.R"
 
-
-rule merge_targeted:
-    input: vcf=expand(MUTECT_DIR+"/{sample}.pass.vcf.gz", sample=SAMPLES), bed=SEXONS
-    output: MUTECT_DIR+"/merged_targeted.vcf"
-    shell:
-        """
-            bcftools merge --missing-to-ref -m none -o {output}.vcf.tmp {input.vcf}
-            bedtools intersect -header -u -a {output}.vcf.tmp -b {input.bed} > {output}
-            rm {output}.*.tmp
-        """
-
-
 rule VEP:
     input: MUTECT_DIR+"/merged_targeted.vcf"
     output: txt=MUTECT_DIR+"/merged.vep.txt", html=MUTECT_DIR+"/merged.vep.stats.html", vcf=MUTECT_DIR+"/merged.vcf.id"
