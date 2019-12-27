@@ -9,7 +9,7 @@ rule paired_snp:
     shell:
         """
             mkdir -p {params.dir};
-            varscan somatic <(zcat {input.normal}) <(samtools mpileup -q 1 -B -f {input.reference} {input.tumor}) --strand-filter 1 --output-vcf 1  {params.prefix} 2> {log};
+            varscan somatic <(zcat {input.normal}) <(samtools mpileup -q 1 -B -f {input.reference} {input.tumor}) {params.prefix} --strand-filter 1 --output-vcf 1 2> {log};
             bgzip {params.prefix}.snp.vcf;
             bgzip {params.prefix}.indel.vcf;
         """
