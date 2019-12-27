@@ -12,8 +12,8 @@ rule paired_snp:
         """
             mkdir -p {params.dir};
             varscan somatic <(zcat {input.normal}) <(samtools mpileup -q 1 -B -f {input.reference} {input.tumor}) {params.prefix} --strand-filter 1 --output-vcf 1 2> {log};
-            bgzip {params.prefix}.snp.vcf;
-            bgzip {params.prefix}.indel.vcf;
+            bgzip {params.prefix}.snp.vcf.gz;
+            bgzip {params.prefix}.indel.vcf.gz;
         """
 
 rule mpileup:
@@ -34,9 +34,9 @@ rule filter_snp:
     docker: VARSCAN_ODOCKER
     shell:
         """
-            bcftools concat -d -a {input.snp} {input.indel} --threads {params.cores} \
-            | bcftools view -s TUMOR --threads {params.cores} -i'INFO/SS == 2 || INFO/SS==3' > {output}.tmp;
-            bedtools intersect -header -u -a {output}.vcf.tmp -b {input.bed} | bgzip > {output};
+            bcftools concat -D -a {input.snp} {input.indel} --threads {params.cores} \
+            | bcftools view -s TUMOR --threads {params.cores} -i'INFO/SS = "2"' - > {output}.tmp;
+            bedtools intersect -header -u -a {output}.tmp -b {input.bed} | bgzip > {output};
             rm {output}.tmp
         """
 
