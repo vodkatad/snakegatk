@@ -18,7 +18,7 @@ BIN_DIR=PRJ_ROOT+'/local/bin'
 FQ_REMOVED=False
 DEBUG="yes"
 TYPE="WGS"
-PAIRED=True
+PAIRED=False
 SUBSAMPLE=1 # if == 1 do not downsample (downsampling is done right after alignment and dup removal, not before calling, to also recalibrate on less data).
 
 # Needed references and annotations
@@ -30,7 +30,6 @@ ANNOVAR=ROOT+"/task/variant_annotations/dataset/annovar/hg38/humandb/"
 PON=GNOMAD_TASK_DIR+"/1000g_pon.hg38.vcf.gz"
 DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
 INTERVAL=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.interval_list'
-CALLABLE_BED=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.bed'
 GCFILE=GNOMAD_TASK_DIR+'sequenza_gc_w200.wig.gz'
 # Singularity containers and occam docker images
 GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
@@ -46,7 +45,7 @@ DATA=PRJ_ROOT+"/local/share/data/example"
 FQ_XENOME_DIR="xenome"
 
 # sed 1d PJ1903090-SF-Integragen-Targeted-Seq.tsv  | cut -f 1 | tr "_" "\t" | cut -f 1 | tr "\n" "," | sed 's/,/","/g'
-SAMPLES_ORIG=["example1", "example2"]
+SAMPLES_ORIG=["example", "examplen"]
 SAMPLES=["pippo", "pluto"]
 NORMAL=["pluto"]
 TUMOR=["pippo"]
@@ -58,13 +57,13 @@ TUMOR=["pippo"]
 XENOMED_SAMPLES=[]
 TRIMMED_SAMPLES=[]
 
-
 FASTQ_SUFFIX="_{pair}.fastq.gz"
 FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
 
-PAIRS=['R1_001','R2_001']
+PAIRS=['1','2']
 PAIRS_XENOME=['1','2']
 CORES=12
+CORESMD=4
 # TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
 PATTERNED=2500 
 # HiSeq4000, otherwise 100 for unpatterned
@@ -78,7 +77,12 @@ AFPARAM=""
 wildcard_constraints:
     sample="[a-zA-Z0-9]+"
 
-
 CALLABLE="5:10,10:50,50:100,100:150,150:inf"
 CALLABLE_STRICT="50:100,100:150,150:inf"
 
+SPLIT=12
+SPLIT_INTERVAL=GNOMAD_TASK_DIR+'/GRCh38.d1.vd1.n'+str(SPLIT)
+if SPLIT >= 10:
+    SPLITS=['000'+str(x) for x in range(0,10)] + ['00'+str(x) for x in range(10,SPLIT)]
+else:
+    SPLITS=['000'+str(x) for x in range(0, SPLIT)]
