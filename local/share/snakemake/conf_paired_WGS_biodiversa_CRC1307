@@ -86,3 +86,12 @@ wildcard_constraints:
 CALLABLE="5:10,10:50,50:100,100:150,150:inf"
 CALLABLE_STRICT="50:100,100:150,150:inf"
 
+SPLIT=12
+SPLIT_INTERVAL=GNOMAD_TASK_DIR+'/GRCh38.d1.vd1.n'+str(SPLIT)
+if SPLIT >= 10:
+    SPLITS=['000'+str(x) for x in range(0,10)] + ['00'+str(x) for x in range(10,SPLIT)]
+else:
+    SPLITS=['000'+str(x) for x in range(0, SPLIT)]
+
+#+'-scattered.interval_list'
+
