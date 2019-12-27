@@ -29,8 +29,8 @@ rule filter_snp:
     shell:
         """
             bcftools concat -d -a {input.snp} {input.indel} --threads {params.cores} \
-            | bctfools view -s TUMOR --threads {params.cores} -i'INFO/SS == 2 || INFO/SS==3' > {output}.tmp
-            bedtools intersect -header -u -a {output}.vcf.tmp -b {input.bed} | bgzip > {output}
+            | bcftools view -s TUMOR --threads {params.cores} -i'INFO/SS == 2 || INFO/SS==3' > {output}.tmp;
+            bedtools intersect -header -u -a {output}.vcf.tmp -b {input.bed} | bgzip > {output};
             rm {output}.tmp
         """
 
