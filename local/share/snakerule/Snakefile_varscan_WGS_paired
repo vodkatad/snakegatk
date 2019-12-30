@@ -10,8 +10,8 @@ rule paired_snp:
         """
             mkdir -p {params.dir};
             varscan somatic <(zcat {input.normal}) <(samtools mpileup -q 1 -B -f {input.reference} {input.tumor}) {params.prefix} --strand-filter 1 --output-vcf 1 2> {log};
-            bgzip {params.prefix}.snp.vcf.gz;
-            bgzip {params.prefix}.indel.vcf.gz;
+            bgzip {params.prefix}.snp.vcf;
+            bgzip {params.prefix}.indel.vcf;
         """
 
 rule mpileup:
