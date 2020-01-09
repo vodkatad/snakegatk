@@ -12,6 +12,8 @@ rule paired_snp:
             varscan somatic <(zcat {input.normal}) <(samtools mpileup -q 1 -B -f {input.reference} {input.tumor}) {params.prefix} --strand-filter 1 --output-vcf 1 2> {log};
             bgzip {params.prefix}.snp.vcf;
             bgzip {params.prefix}.indel.vcf;
+            tabix {params.prefix}.snp.vcf.gz;
+            tabix {params.prefix}.indel.vcf.gz;
         """
 
 rule mpileup:
@@ -31,7 +33,8 @@ rule filter_snp:
             bcftools concat -D -a {input.snp} {input.indel} --threads {params.cores} \
             | bcftools view -s TUMOR --threads {params.cores} -i'INFO/SS = "2"' - > {output}.tmp;
             bedtools intersect -header -u -a {output}.tmp -b {input.bed} | bgzip > {output};
-            rm {output}.tmp
+            rm {output}.tmp;
+            tabix {output};
         """
 
 #merge snp and indel and intersect with our WGS alignable interval
