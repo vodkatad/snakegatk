@@ -34,8 +34,12 @@ INTERVAL=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.interval_list'
 GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
 GATK_ODOCKER="egrassi/occamsnakes/gatk_fixedov:1"
 XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
+VARSCAN_ODOCKER="egrassi/occamsnakes/varscan:1"
+SEQUENZA_ODOCKER="egrassi/occamsnakes/sequenza:1"
 PLH_DOCKER="bubusettete"
 ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
+CALLABLE_BED=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.bed.gz'
+
 
 ## This dataset:
 DATA=PRJ_ROOT+"/local/share/data/WGS_biodiversa"
@@ -46,6 +50,8 @@ SAMPLES_ORIG=["1740D-84-01_S48_L004","1740D-84-02_S52_L005"]
 SAMPLES=["CRC1307NLH","CRC1307LMO"]
 NORMAL=["CRC1307NLH"]
 TUMOR=["CRC1307LMO"]
+
+AFPARAM=""
 
 #REF=""
 #SAMPLESD=[]
@@ -60,6 +66,7 @@ FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
 PAIRS=['R1_001','R2_001']
 PAIRS_XENOME=['1','2']
 CORES=6
+CORESMD=4
 # TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
 PATTERNED=2500 
 # HiSeq4000, otherwise 100 for unpatterned
@@ -75,4 +82,6 @@ wildcard_constraints:
 
 CALLABLE="5:10,10:50,50:100,100:150,150:inf"
 CALLABLE_STRICT="50:100,100:150,150:inf"
+
+GCFILE=GNOMAD_TASK_DIR+'/sequenza_gc_w200.wig.gz'
 

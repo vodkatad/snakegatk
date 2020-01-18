@@ -43,17 +43,16 @@ PLH_DOCKER="bubusettete"
 
 
 ## This dataset:
-DATA=PRJ_ROOT+"/local/share/data/WGS_biodiversa/test"
+DATA=PRJ_ROOT+"/local/share/data/CRC1307_clones"
 FQ_XENOME_DIR="xenome"
 
-# sed 1d PJ1903090-SF-Integragen-Targeted-Seq.tsv  | cut -f 1 | tr "_" "\t" | cut -f 1 | tr "\n" "," | sed 's/,/","/g'
-#SAMPLES_ORIG=['ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6', 'ex7', 'ex8', 'ex9']
-#SAMPLES=['CRC1307_02_0', 'CRC1307_08_0', 'CRC1307_09_0', 'CRC1307_02_1_0', 'CRC1307_02_1_1', 'CRC1307_02_1_2', 'CRC1307_08_1_0', 'CRC1307_08_1_1', 'CRC1307_08_1_2']
-SAMPLES_ORIG=["1740D-84-01_S48_L004","1740D-84-02_S52_L005"]
-SAMPLES=["CRC1307NLH","CRC1307LMO"]
+# data@rotpunkt:~/work/snakegatk$ python local/src/tsv_to_json_metadata.py -i ~/Dropbox/work/evol/MA/CRC1307/samples_sheet.tsv -j ~/Dropbox/work/evol/MA/CRC1307/metadata_partial.json
+SAMPLES_ORIG=['1740D-84-01_S48_L004','BD0005', 'BD0006', 'BD0007', 'BD0003', 'BD0004', 'BD0018', 'BD0016', 'BD0017', 'BD0008', 'BD0020', 'BD0019', 'BD0021']
+SAMPLES=['CRC1307NLH','CRC1307_02_0', 'CRC1307_08_0', 'CRC1307_09_0', 'CRC1307_02_1_A', 'CRC1307_02_1_B', 'CRC1307_02_1_E', 'CRC1307_08_1_B', 'CRC1307_08_1_D', 'CRC1307_08_1_E', 'CRC1307_09_1_B', 'CRC1307_09_1_C', 'CRC1307_09_1_E']
 
-NORMAL=["CRC1307NLH"]
-TUMOR=["CRC1307LMO"]
+NORMAL=["CRC1307NLH"]*(len(SAMPLES)-1)
+TUMOR=['CRC1307_02_0', 'CRC1307_08_0', 'CRC1307_09_0', 'CRC1307_02_1_A', 'CRC1307_02_1_B', 'CRC1307_02_1_E', 'CRC1307_08_1_B', 'CRC1307_08_1_D', 'CRC1307_08_1_E', 'CRC1307_09_1_B', 'CRC1307_09_1_C', 'CRC1307_09_1_E']
+
 
 #REF=""
 #SAMPLESD=[]
