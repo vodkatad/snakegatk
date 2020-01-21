@@ -104,7 +104,7 @@ rule all_coverage:
 
 # thresholds gotten from Mutect2 default parameters that we are adopting
 rule wgs_metrics:
-    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
+    input: bam=ALIGN_DIR+"/markedDup_{sample}.sorted.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
     output: txt=ALIGN_DIR+"/{sample}.wgsmetrics", sens=ALIGN_DIR+"/{sample}.sens"
     shell:
         """
