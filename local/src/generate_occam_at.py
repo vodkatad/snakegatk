@@ -2,7 +2,7 @@ def main():
     #args = get_args()
     SAMPLES=['CRC1307-02-0', 'CRC1307-08-0', 'CRC1307-09-0', 'CRC1307-02-1-A', 'CRC1307-02-1-B', 'CRC1307-02-1-E', 'CRC1307-08-1-B', 'CRC1307-08-1-D', 'CRC1307-08-1-E', 'CRC1307-09-1-B', 'CRC1307-09-1-C', 'CRC1307-09-1-E']    
     NODES=['RUN_NODE=node' + str(n) for n in range(10, 16)]
-    SH=['node' + str(n) + '_2at.sh' for n in range(10, 16)]
+    SH=['node' + str(n) + '_3at.sh' for n in range(10, 16)]
 #     at_command ="""
 # export {:s} && snakemake -j 2 --use-docker align/markedDup_{:s}.sorted.bam align/markedDup_{:s}.sorted.bam &> {:s}_align.slog;
 # export {:s} && snakemake -j 2 --use-docker sequenza/{:s} sequenza/{:s} &> {:s}_sequenza.slog;
@@ -11,8 +11,12 @@ def main():
 # export {:s} && snakemake -j 2 --use-docker align/{:s}.bam.flagstat align/{:s}.bam.flagstat &> {:s}_flagstat.slog;
 # export {:s} && snakemake -j 2 --use-docker align/{:s}.wgsmetrics align/{:s}.wgsmetrics &> {:s}_wgsmetrics.slog;
 # """
-    at_command ="""
-export {:s} && snakemake -j 2 --use-docker sequenza/{:s} sequenza/{:s} &> {:s}_sequenza.slog;
+#     at_command ="""
+# export {:s} && snakemake -j 2 --use-docker sequenza/{:s} sequenza/{:s} &> {:s}_sequenza.slog;
+# """
+# -j 24  sceeema ...faranno a botte con la RAM?
+    at_command="""
+export {:s} && snakemake --use-docker -j 24 --allowed-rules all_mutect calculatecontamination filtercallsinterval getpileup learnOrientationModel mutect passFilter recalibrate_quality --nt  mutect_paired/{:s}.pass.vcf.gz  mutect_paired/{:s}.pass.vcf.gz &> {:s}_mutect2.slog;
 """
     index_sample = 0
     for n in NODES:

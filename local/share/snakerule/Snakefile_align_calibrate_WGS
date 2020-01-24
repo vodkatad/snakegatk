@@ -30,7 +30,7 @@ rule bwa_mem:
 
 rule mark_duplicates_picard:
     input: ALIGN_DIR+"/{sample}.bam"
-    output: bam=temp(ALIGN_DIR+"/markedDup_{sample}.bam"), metrics=ALIGN_DIR+"/{sample}.dupMetrics.txt"
+    output: bam=ALIGN_DIR+"/markedDup_{sample}.bam", metrics=ALIGN_DIR+"/{sample}.dupMetrics.txt"
     params: pixel_dist=PATTERNED, cores=CORESMD
     log: ALIGN_DIR+"/markedDup_{sample}.bam.log"
     shell: 
