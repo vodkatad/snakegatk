@@ -11,7 +11,7 @@ def produce_pairs(wildcards):
 
 rule bwa_mem:
     input: unpack(produce_pairs)
-    output: temp(ALIGN_DIR+"/{sample}.bam")
+    output: ALIGN_DIR+"/{sample}.bam"
     params: cores=CORES, ref=REF_DIR+"/GRCh38.d1.vd1.fa", dir=ALIGN_DIR
     log: ALIGN_DIR+"/{sample}.bam.log"
     shell: 

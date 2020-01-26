@@ -12,7 +12,7 @@ rule all_mutect:
     shell:
         """
             gatk MergeVcfs {params.vcfs} -O {output.vcf};
-            gatk MergeMutectStats -stats {params.stats} -O {output.stats};
+            gatk MergeMutectStats {params.stats} -O {output.stats};
         """
 
 
