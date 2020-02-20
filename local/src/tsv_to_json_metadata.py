@@ -34,8 +34,8 @@ def main():
             print("SAMPLES_ORIG=" + str(orig_samples))
             print("SAMPLES=" + str(samples))
             jsons = json.dumps({"samples_map": entries}, indent=4)
-            json_meta.write(jsons.strip('{}'))
-            json_meta.write("}\n")
+            #json_meta.write(jsons.strip('{}'))
+            #json_meta.write("}\n")
 
 def get_files(vendor_id, fq_dir):
     return [os.path.join(fq_dir, f) for f in [vendor_id+"S1_L004_R1_001.fastq.gz", vendor_id+"S1_L004_R2_001.fastq.gz"]]

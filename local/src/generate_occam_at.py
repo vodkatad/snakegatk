@@ -1,8 +1,10 @@
 def main():
     #args = get_args()
-    SAMPLES=['CRC1307-02-0', 'CRC1307-08-0', 'CRC1307-09-0', 'CRC1307-02-1-A', 'CRC1307-02-1-B', 'CRC1307-02-1-E', 'CRC1307-08-1-B', 'CRC1307-08-1-D', 'CRC1307-08-1-E', 'CRC1307-09-1-B', 'CRC1307-09-1-C', 'CRC1307-09-1-E']    
-    NODES=['RUN_NODE=node' + str(n) for n in range(10, 16)]
-    SH=['node' + str(n) + '_3at.sh' for n in range(10, 16)]
+    #SAMPLES=['CRC1307-02-0', 'CRC1307-08-0', 'CRC1307-09-0', 'CRC1307-02-1-A', 'CRC1307-02-1-B', 'CRC1307-02-1-E', 'CRC1307-08-1-B', 'CRC1307-08-1-D', 'CRC1307-08-1-E', 'CRC1307-09-1-B', 'CRC1307-09-1-C', 'CRC1307-09-1-E']    
+    SAMPLES= ['CRC1307-08-MA-A', 'CRC1307-08-MA-C', 'CRC1307-08-MA-F', 'CRC1307-08-MC-D', 'CRC1307-08-MC-E', 'CRC1307-08-MC-F', 'CRC1307-08-MI-A', 'CRC1307-08-MI-B', 'CRC1307-08-MI-F']
+
+    NODES=['RUN_NODE=node' + str(n) for n in range(10, 14)]
+    SH=['mutect_mice_node' + str(n) + '.sh' for n in range(10, 14)]
 #     at_command ="""
 # export {:s} && snakemake -j 2 --use-docker align/markedDup_{:s}.sorted.bam align/markedDup_{:s}.sorted.bam &> {:s}_align.slog;
 # export {:s} && snakemake -j 2 --use-docker sequenza/{:s} sequenza/{:s} &> {:s}_sequenza.slog;
@@ -11,18 +13,22 @@ def main():
 # export {:s} && snakemake -j 2 --use-docker align/{:s}.bam.flagstat align/{:s}.bam.flagstat &> {:s}_flagstat.slog;
 # export {:s} && snakemake -j 2 --use-docker align/{:s}.wgsmetrics align/{:s}.wgsmetrics &> {:s}_wgsmetrics.slog;
 # """
-#     at_command ="""
-# export {:s} && snakemake -j 2 --use-docker sequenza/{:s} sequenza/{:s} &> {:s}_sequenza.slog;
-# """
-# -j 24  sceeema ...faranno a botte con la RAM?
-    at_command="""
-export {:s} && snakemake --use-docker -j 24 --allowed-rules all_mutect calculatecontamination filtercallsinterval getpileup learnOrientationModel mutect passFilter recalibrate_quality --nt  mutect_paired/{:s}.pass.vcf.gz  mutect_paired/{:s}.pass.vcf.gz &> {:s}_mutect2.slog;
-"""
+    at_command ="""
+    export {:s} && snakemake -j 24 --use-docker mutect_paired/{:s}.pass.vcf.gz mutect_paired/{:s}.pass.vcf.gz &> {:s}_mutect_paired_mice.slog;
+    export {:s} && snakemake -j 2 --use-docker fastqc_{:s} fastqc_{:s} &> {:s}_fastqc_mice.slog;
+    export {:s} && snakemake -j 2 --use-docker align/{:s}.bam.flagstat align/{:s}.bam.flagstat &> {:s}_flagstat_mice.slog;
+    export {:s} && snakemake -j 2 --use-docker align/{:s}.wgsmetrics align/{:s}.wgsmetrics &> {:s}_wgsmetrics_mice.slog;
+    """
+# at_command="""
+#export {:s} && snakemake --use-docker -j 2 sequenza/{:s} sequenza/{:s} &> {:s}_sequenza.slog;
+#"""
     index_sample = 0
     for n in NODES:
         with open(SH[index_sample/2], 'w') as atsh:
-            atsh.write(at_command.format(*(n, SAMPLES[index_sample], SAMPLES[index_sample+1], SH[index_sample/2])*3))
-
+            #if (index_sample+1 < len(SAMPLES)):
+                #print('sequenza/'+SAMPLES[index_sample])
+                #print('sequenza/'+SAMPLES[index_sample+1])
+            atsh.write(at_command.format(*(n, SAMPLES[index_sample], SAMPLES[index_sample+1], SH[index_sample/2])*4))
             index_sample = index_sample + 2
 
         
@@ -43,3 +49,5 @@ export {:s} && snakemake --use-docker -j 24 --allowed-rules all_mutect calculate
 
 if __name__ == '__main__':
     main()
+
+# book occam 4 nodes 24h - from wednesday to friday for sequenza, then if free mutect 
