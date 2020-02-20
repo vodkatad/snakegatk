@@ -13,7 +13,7 @@ rule all_mutect:
     shell:
         """
             gatk MergeVcfs {params.vcfs} -O {output.vcf};
-            gatk MergeMutectStats -stats {params.stats} -O {output.stats};
+            gatk MergeMutectStats {params.stats} -O {output.stats};
         """
 
 
@@ -44,7 +44,7 @@ else:
 
 rule getpileup:
     input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/gnomad.forcontamination.noalt.exomes.vcf"
-    output: temp(MUTECT_DIR+"/{sample}.pileup.table")
+    output: MUTECT_DIR+"/{sample}.pileup.table"
     singularity: GATK_SING
     docker: GATK_ODOCKER
     log: MUTECT_DIR+"/{sample}.pileup.table.log"

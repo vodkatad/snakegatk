@@ -11,7 +11,7 @@ def produce_pairs(wildcards):
 
 rule bwa_mem:
     input: unpack(produce_pairs)
-    output: temp(ALIGN_DIR+"/{sample}.bam")
+    output: ALIGN_DIR+"/{sample}.bam"
     params: cores=CORES, ref=REF_DIR+"/GRCh38.d1.vd1.fa", dir=ALIGN_DIR
     docker: ALIGN_ODOCKER
     log: ALIGN_DIR+"/{sample}.bam.log"
@@ -32,7 +32,7 @@ rule bwa_mem:
 
 rule mark_duplicates_picard:
     input: ALIGN_DIR+"/{sample}.bam"
-    output: bam=temp(ALIGN_DIR+"/markedDup_{sample}.bam"), metrics=ALIGN_DIR+"/{sample}.dupMetrics.txt"
+    output: bam=ALIGN_DIR+"/markedDup_{sample}.bam", metrics=ALIGN_DIR+"/{sample}.dupMetrics.txt"
     params: pixel_dist=PATTERNED, cores=CORESMD
     docker: ALIGN_ODOCKER
     log: ALIGN_DIR+"/markedDup_{sample}.bam.log"
@@ -159,7 +159,7 @@ rule multiqc_align:
 
 
 rule multiqc_coverage:
-    input: expand(ALIGN_DIR+"/{sample}.wgsmetrics", sample=SAMPLES) 
+    input: expand(ALIGN_DIR+"/{sample}.wgsmetrics", sample=SAMPLES[1:]) 
     output: "multiqc_report.coverage.html"
     docker: ALIGN_ODOCKER
     shell: 
