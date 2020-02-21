@@ -1,0 +1,90 @@
+ROOT='/home/egrassi'
+import os
+def find_prj_root(path=os.getcwd()):
+    if os.path.isfile(os.path.join(path,".PRJ_ROOT")):
+        return path
+    else:
+        if path:
+            return find_prj_root(os.path.dirname(path))
+        else:
+            raise Exception("Can not find the PRJ_ROOT directory")
+
+
+PRJ_ROOT=find_prj_root()
+
+SRC_DIR=PRJ_ROOT+'/local/src'
+BIN_DIR=PRJ_ROOT+'/local/bin'
+DATA_DIR=PRJ_ROOT+'/local/share/data'
+
+# Needed references and annotations
+REF_DIR='/home/egrassi/strata/local/share/data'
+GNOMAD=ROOT+"/common/task/annotations/dataset/gnomad" 
+VEP_CACHE_DIR=ROOT+"/common/task/variant_annotations/dataset/VEP"
+ANNOVAR_HUMANDB=ROOT+"/common/task/variant_annotations/dataset/annovar/hg38/humandb/"
+DBSNP="/work/egrassi/WXS/local/share/data/All_20180418.vcf.gz"
+PON=GNOMAD+"/1000g_pon.hg38.vcf.gznono"
+# Singularity containers
+GATK_SING=ROOT+"/gatk4140/gatk.img"
+DEBUG="yes"
+
+## This dataset:
+DATA="/home/egrassi/WXS_SNV/local/share/data/targeted_hr"
+#FQ_DIR=PRJ_ROOT+"/dataset/v1"
+FQ_XENOME_DIR="xenome"
+EXONS=DATA+'/targeted.bed'
+SEXONS='targeted_sorted.bed'
+
+# sed 1d PJ1903090-SF-Integragen-Targeted-Seq.tsv  | cut -f 1 | tr "_" "\t" | cut -f 1 | tr "\n" "," | sed 's/,/","/g'
+SAMPLES_ORIG=["1174064016"]
+SAMPLES=["CRC0291LMX0A02201TUMD01000"]
+REF=""
+SAMPLESD=[]
+SAMPS=",".join(SAMPLESD)
+XENOMED_SAMPLES=SAMPLES
+TRIMMED_SAMPLES=[]
+
+FASTQ_SUFFIX="_{pair}.fastq.gz"
+FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
+
+PAIRS=['R1','R2']
+PAIRS_XENOME=['1','2']
+CORES=8
+MEM=4
+# TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
+PATTERNED=2500 
+# HiSeq4000, otherwise 100 for unpatterned
+#–o recal.bam
+
+#LOWERAF="0.0000025"
+#Starting with v4.0.4.0, GATK recommends the default setting of --af-of-alleles-not-in-resource, which the tool dynamically adjusts for different modes. tumor-only calling sets the default to 5e-8, tumor-normal calling sets it to 1e-6 and mitochondrial mode sets it to 4e-3.
+#https://software.broadinstitute.org/gatk/documentation/tooldocs/current/org_broadinstitute_hellbender_tools_walkers_mutect_Mutect2.php
+
+wildcard_constraints:
+    sample="[a-zA-Z0-9]+"
+
+# Used references
+#https://gdc.cancer.gov/about-data/data-harmonization-and-generation/gdc-reference-files based on
+#ftp://ftp.ncbi.nlm.nih.gov/genomes/archive/old_genbank/Eukaryotes/vertebrates_mammals/Homo_sapiens/GRCh38/seqs_for_alignment_pipelines/README_ANALYSIS_SETS
+# DBSNP 151 ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606_b151_GRCh38p7/VCF/All_20180418.vcf.gz
+ANNOTATIONS=ROOT+"/common/task/annotations/dataset/gdc"
+
+CALLABLE="5:10,10:50,50:100,100:150,150:inf"
+CALLABLE_STRICT="50:100,100:150,150:inf"
+
+PADDING=100
+
+
+rule all_single_something:
+    input: expand("{{dir}}/{sample}.{{something}}", sample=SAMPLES)
+    output: "{dir}/all_samples_{something}"
+    shell: "mkdir -p {wildcards.dir}; touch {output}"
+
+
+# Other phases Snakefiles are included here without symbolic links: in this way the right ones need to be
+# plugged in the base conf.sk
+ALIGN_DIR="align"
+include: PRJ_ROOT+"/local/share/snakerule/Snakefile_align_calibrate_WES_basedir"
+
+# then mutect
+MUTECT_DIR="mutect"
+include: PRJ_ROOT+"/local/share/snakerule/Snakefile_mutect2_4.1.4.0_WES_basedir"

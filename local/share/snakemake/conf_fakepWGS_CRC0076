@@ -11,14 +11,15 @@ def find_prj_root(path=os.getcwd()):
 
 
 PRJ_ROOT=find_prj_root()
+TMP="/work/egrassi/tmp"
 
 SRC_DIR=PRJ_ROOT+'/local/src'
 BIN_DIR=PRJ_ROOT+'/local/bin'
 FQ_REMOVED=False
 DEBUG="yes"
-TYPE="WES"
+TYPE="WGS"
 PAIRED=True
-
+SUBSAMPLE=1
 # Needed references and annotations
 GNOMAD_TASK_DIR=ROOT+'/task/annotations/dataset/gnomad'
 REF_DIR=GNOMAD_TASK_DIR
@@ -27,13 +28,16 @@ VEP_CACHE_DIR=ROOT+"/task/variant_annotations/dataset/VEP"
 ANNOVAR=ROOT+"/task/variant_annotations/dataset/annovar/hg38/humandb/"
 PON=GNOMAD+"/1000g_pon.hg38.vcf.gz"
 DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
-GCFILE=GNOMAD_TASK_DIR+'/sequenza_gc_w50.wig.gz'
-CORESMD=4
+INTERVAL=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.interval_list'
+CALLABLE_BED=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.bed.gz'
+GCFILE=GNOMAD_TASK_DIR+'/sequenza_gc_w200.wig.gz'
 # Singularity containers and occam docker images
 GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
 GATK_ODOCKER="egrassi/occamsnakes/gatk:1"
 XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
 ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
+SEQUENZA_ODOCKER="egrassi/occamsnakes/sequenza:1"
+VARSCAN_ODOCKER="egrassi/occamsnakes/varscan:1"
 PLH_DOCKER="bubusettete"
 
 
@@ -54,20 +58,22 @@ SEXONS='targeted_sorted.bed'
 #SAMPS=",".join(SAMPLESD)
 
 #XENOMED_SAMPLES=SAMPLES
-XENOMED_SAMPLES=["CRC0076"]
+XENOMED_SAMPLES=[]
 TRIMMED_SAMPLES=[]
 
-NORMAL=["normalCRC0076"]
 TUMOR=["CRC0076"]
+NORMAL=["normalCRC0076"]
 
-FASTQ_SUFFIX=".{pair}.fastq.gz"
-FASTQ_PRE="."
-FASTQ_POST=".fastq.gz"
+#FASTQ_PRE="_"
+#FASTQ_POST="_fastq.gz"
+FASTQ_SUFFIX="_{pair}.fastq.gz"
 FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
 
-PAIRS=['1','2']
+PAIRS=['R1_001','R2_001']
 PAIRS_XENOME=['1','2']
+
 CORES=12
+CORESMD=4
 # TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
 PATTERNED=2500 
 # HiSeq4000, otherwise 100 for unpatterned
@@ -85,3 +91,11 @@ wildcard_constraints:
 CALLABLE="5:10,10:50,50:100,100:150,150:inf"
 CALLABLE_STRICT="50:100,100:150,150:inf"
 PADDING=100
+
+SPLIT=12
+SPLIT_INTERVAL=GNOMAD_TASK_DIR+'/GRCh38.d1.vd1.n'+str(SPLIT)
+if SPLIT >= 10:
+    SPLITS=['000'+str(x) for x in range(0,10)] + ['00'+str(x) for x in range(10,SPLIT)]
+else:
+    SPLITS=['000'+str(x) for x in range(0, SPLIT)]
+

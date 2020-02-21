@@ -144,6 +144,13 @@ rule sort_targeted:
         """
 
 ### Alignment and calling are in separate Snakefiles that we include here following conf.sk:
+def find_matched_normal_sample(wildcards):
+    try:
+        index = TUMOR.index(wildcards.sample)
+        return NORMAL[index]
+    except:
+        raise ValueError("Check you TUMOR and NORMAL in conf.sk, cannot find matched normal for " + wildcards.sample)
+
 ALIGN_DIR="align"
 include: PRJ_ROOT+"/local/share/snakerule/Snakefile_align_calibrate_"+TYPE
 
@@ -163,14 +170,6 @@ else:
     rule all:
         input: "multiqc_report.html","multiqc_report.coverage.html","multiqc_report.align.html", MUTECT_DIR+"/all_samples_paired.pass.table.gz"
 
-rule all_single_something:
-    input: expand("{{dir}}/{sample}.{{something}}", sample=SAMPLES)
-    output: "{dir}/all_samples.{something}"
-    shell: "mkdir -p {wildcards.dir}; touch {output}"
+CNV_DIR="sequenza"
+include: PRJ_ROOT+"/local/share/snakerule/Snakefile_sequenza_"+TYPE
 
-def find_matched_normal_sample(wildcards):
-    try:
-        index = TUMOR.index(wildcards.sample)
-        return NORMAL[index]
-    except:
-        raise ValueError("Check you TUMOR and NORMAL in conf.sk, cannot find matched normal for " + wildcards.sample)
