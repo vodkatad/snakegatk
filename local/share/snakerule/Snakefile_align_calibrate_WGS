@@ -103,7 +103,11 @@ rule all_coverage:
             rm depth/{params.prefix}.mosdepth.global.dist.txt;
         """
 
-
+# default skip 1796
+#     read unmapped (0x4)
+#         not primary alignment (0x100)
+#             read fails platform/vendor quality checks (0x200)
+#                 read is PCR or optical duplicate (0x400)
 #(snakemake) [egrassi@occam CRC1307_clones]>zcat depth/CRC1307-08-1-D.quantized.bed.gz | cut -f 4 | sort | uniq 
 #1:inf
 rule intersect_1x:
@@ -121,20 +125,6 @@ rule intersect_callable:
     shell:
         """
             bedtools intersect -a {input.callable} -b {input.covered} | gzip > {output}
-        """
-# default skip 1796
-#     read unmapped (0x4)
-#         not primary alignment (0x100)
-#             read fails platform/vendor quality checks (0x200)
-#                 read is PCR or optical duplicate (0x400)
-rule coverage_1x_20q:
-    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", bai=ALIGN_DIR+"/realigned_{sample}.bai", callable=CALLABLE_BED
-    output: "depth/{sample}.thresholds.bed.gz"
-    params: prefix="depth/{sample}", thread=CORES
-    shell: 
-        """
-            mkdir -p depth;
-            mosdepth -t {params.thread} --by {input.callable} --thresholds 1 -Q 20 {params.prefix} {input.bam};
         """
 
 # thresholds gotten from Mutect2 default parameters that we are adopting
