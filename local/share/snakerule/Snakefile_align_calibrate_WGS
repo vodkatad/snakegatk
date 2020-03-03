@@ -110,7 +110,6 @@ rule all_coverage:
 rule coverage_1x_20q:
     input: bam=ALIGN_DIR+"/realigned_{sample}.bam", bai=ALIGN_DIR+"/realigned_{sample}.bai", callable=CALLABLE_BED
     output: "depth/{sample}.1x_20q.thresholds.bed.gz"
-    docker: ALIGN_ODOCKER
     params: prefix="depth/{sample}", thread=CORES
     shell: 
         """
