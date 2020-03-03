@@ -93,7 +93,7 @@ rule sorted_bai:
         """
 
 rule all_coverage:
-    input: bam=ALIGN_DIR+"/realigned_{sample}.sorted.bam", bai=ALIGN_DIR+"/realigned_{sample}.sorted.bam.bai"
+    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", bai=ALIGN_DIR+"/realigned_{sample}.bai"
     output: "depth/{sample}.quantized.bed.gz"
     params: prefix="depth/{sample}", thread=CORES
     shell: 
@@ -113,10 +113,10 @@ rule all_coverage:
 rule intersect_1x:
     input: expand("depth/{sample}.quantized.bed.gz", sample=TUMOR)
     output: "depth/callable_1x_20q.bed.gz"
-    params: nsamples=length(TUMOR)
+    params: nsamples=len(TUMOR)
     shell:
         """
-            bedtools multiinter -i {input.bed} | awk -F'\\t' -v OFS='\\t' '$4=={params.nsamples}' | gzip > {output}
+            bedtools multiinter -i {input} | awk -F'\\t' -v OFS='\\t' '$4=={params.nsamples}' | gzip > {output}
         """
 
 rule intersect_callable:
