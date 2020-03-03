@@ -109,7 +109,8 @@ rule all_coverage:
     shell: 
         """
             mkdir -p depth;
-            mosdepth -t {params.thread} -n --quantize 0:1:5:10:50:100:150: {params.prefix} {input.bam};
+            mosdepth -t {params.thread} -n --quantize 1: -Q 20 {params.prefix} {input.bam};
+            rm depth/{params.prefix}.mosdepth.global.dist.txt;
         """
 
 # default skip 1796
@@ -117,15 +118,25 @@ rule all_coverage:
 #         not primary alignment (0x100)
 #             read fails platform/vendor quality checks (0x200)
 #                 read is PCR or optical duplicate (0x400)
-rule coverage_1x_20q:
-    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", bai=ALIGN_DIR+"/realigned_{sample}.bai", callable=CALLABLE_BED
-    output: "depth/{sample}.1x_20q.thresholds.bed.gz"
+#(snakemake) [egrassi@occam CRC1307_clones]>zcat depth/CRC1307-08-1-D.quantized.bed.gz | cut -f 4 | sort | uniq 
+#1:inf
+rule intersect_1x:
+    input: expand("depth/{sample}.quantized.bed.gz", sample=TUMOR)
+    output: "depth/callable_1x_20q.bed.gz"
+    params: nsamples=length(TUMOR)
     docker: ALIGN_ODOCKER
-    params: prefix="depth/{sample}", thread=CORES
-    shell: 
+    shell:
         """
-            mkdir -p depth;
-            mosdepth -t {params.thread} --by {input.callable} --thresholds 1 -Q 20 {params.prefix} {input.bam};
+            bedtools multiinter -i {input.bed} | awk -F'\\t' -v OFS='\\t' '$4=={params.nsamples}' | gzip > {output}
+        """
+
+rule intersect_callable:
+    input: callable=CALLABLE_BED, covered="depth/callable_1x_20q.bed.gz"
+    output: "depth/callable_covered.bed.gz"
+    docker: ALIGN_ODOCKER
+    shell:
+        """
+            bedtools intersect -a {input.callable} -b {input.covered} | gzip > {output}
         """
 
 # thresholds gotten from Mutect2 default parameters that we are adopting
