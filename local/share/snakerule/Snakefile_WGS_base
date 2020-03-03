@@ -181,6 +181,6 @@ CNV_DIR="sequenza"
 include: PRJ_ROOT+"/local/share/snakerule/Snakefile_sequenza_"+TYPE
 
 rule all_single_something:
-    input: expand("{{dir}}/{sample}.{{something}}", sample=SAMPLES)
+    input: expand("{{dir}}/{sample}.{{something}}", sample=SAMPLES[1:])
     output: "{dir}/all_samples.{something}"
     shell: "mkdir -p {wildcards.dir}; touch {output}"
