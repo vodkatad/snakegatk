@@ -102,6 +102,22 @@ rule all_coverage:
             mosdepth -t {params.thread} -n --quantize 0:1:5:10:50:100:150: {params.prefix} {input.bam};
         """
 
+# default skip 1796
+#     read unmapped (0x4)
+#         not primary alignment (0x100)
+#             read fails platform/vendor quality checks (0x200)
+#                 read is PCR or optical duplicate (0x400)
+rule coverage_1x_20q:
+    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", bai=ALIGN_DIR+"/realigned_{sample}.bai", callable=CALLABLE_BED
+    output: "depth/{sample}.1x_20q.thresholds.bed.gz"
+    docker: ALIGN_ODOCKER
+    params: prefix="depth/{sample}", thread=CORES
+    shell: 
+        """
+            mkdir -p depth;
+            mosdepth -t {params.thread} --by {input.callable} --thresholds 1 -Q 20 {params.prefix} {input.bam};
+        """
+
 # thresholds gotten from Mutect2 default parameters that we are adopting
 rule wgs_metrics:
     input: bam=ALIGN_DIR+"/markedDup_{sample}.sorted.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa"

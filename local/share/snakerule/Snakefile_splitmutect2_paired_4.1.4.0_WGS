@@ -22,7 +22,7 @@ if PON != "":
         output: vcf=protected(MUTECT_DIR+"/{sample}.{spl}.vcf.gz"), stats=MUTECT_DIR+"/{sample}.{spl}.vcf.gz.stats", f1r2=MUTECT_DIR+"/{sample}.{spl}_f1r2.tar.gz"
         singularity: GATK_SING
         log: MUTECT_DIR+"/{sample}.{spl}.vcf.gz.log"
-        params: cores=CORES, normal=find_matched_normal_sample, af=AFPARAM
+        params: cores=1, normal=find_matched_normal_sample, af=AFPARAM
         shell: 
             """
                 gatk Mutect2 -L {input.interval} {params.af} --native-pair-hmm-threads {params.cores} --independent-mates -normal {params.normal} -R {input.reference} -I {input.normal} -I {input.bam} -O {output.vcf} --germline-resource {input.gnomad} --panel-of-normals {input.pon} --f1r2-tar-gz {output.f1r2}  2> {log}
