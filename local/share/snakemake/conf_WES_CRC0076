@@ -27,6 +27,8 @@ VEP_CACHE_DIR=ROOT+"/task/variant_annotations/dataset/VEP"
 ANNOVAR=ROOT+"/task/variant_annotations/dataset/annovar/hg38/humandb/"
 PON=GNOMAD+"/1000g_pon.hg38.vcf.gz"
 DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
+GCFILE=GNOMAD_TASK_DIR+'/sequenza_gc_w50.wig.gz'
+CORESMD=4
 # Singularity containers and occam docker images
 GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
 GATK_ODOCKER="egrassi/occamsnakes/gatk:1"
@@ -55,8 +57,8 @@ SEXONS='targeted_sorted.bed'
 XENOMED_SAMPLES=["CRC0076"]
 TRIMMED_SAMPLES=[]
 
-NORMAL=["CRC0076"]
-TUMOR=["normalCRC0076"]
+NORMAL=["normalCRC0076"]
+TUMOR=["CRC0076"]
 
 FASTQ_SUFFIX=".{pair}.fastq.gz"
 FASTQ_PRE="."
