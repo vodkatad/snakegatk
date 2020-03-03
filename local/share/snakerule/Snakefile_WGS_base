@@ -168,6 +168,9 @@ else:
 CNV_DIR="sequenza"
 include: PRJ_ROOT+"/local/share/snakerule/Snakefile_sequenza_"+TYPE
 
+PLATYPUS_DIR="platypus"
+include: PRJ_ROOT+"/local/share/snakerule/Snakefile_platypus_"+TYPE
+
 rule all_single_something:
     input: expand("{{dir}}/{sample}.{{something}}", sample=SAMPLES[1:])
     output: "{dir}/all_samples.{something}"
