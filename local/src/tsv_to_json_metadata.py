@@ -22,7 +22,7 @@ def main():
                 values = line.split("\t")
                 entry = { "id": values[2], "LAS_Validation": values[3] == "TRUE", "files": get_files(values[0], args.fastq) }
                 samples.append(values[2])
-                orig_samples.append(values[0])
+                orig_samples.append(values[0]+'_SA_L001')
                 #if len(values) >= 4:
                 for i in range(4, len(values)):
                     if fields[i] == "cloning_date":
