@@ -100,7 +100,7 @@ rule all_coverage:
         """
             mkdir -p depth;
             mosdepth -t {params.thread} -n --quantize 1: -Q 20 {params.prefix} {input.bam};
-            rm depth/{params.prefix}.mosdepth.global.dist.txt;
+            rm {params.prefix}.mosdepth.global.dist.txt;
         """
 
 # default skip 1796
