@@ -20,15 +20,15 @@ rule merge_vcf:
     docker: ALIGN_ODOCKER
     shell:
         """
-            bcftools merge --force-samples --missing-to-ref -o {input} -O {input};
-            tabix {output}
+            bcftools merge --force-samples --missing-to-ref -o {output} -O z {input};
+            tabix {output};
         """
 
 rule platypus:
     input: PLATYPUS_DIR+"/merged.vcf.gz", REF_DIR+"/GRCh38.d1.vd1.fa", expand(ALIGN_DIR+"/realigned_{sample}.bam", sample=TUMOR)
-    output: PLATYPUS_DIR"/platypus.vcf"
-    log: PLATYPUS_DIR"/platypus.log"
-    params: bam= lambda wildcards, input: ','.join(input[2:]), cores = CORES
+    output: PLATYPUS_DIR+"/platypus.vcf"
+    log: PLATYPUS_DIR+"/platypus.log"
+    params: bam = lambda wildcards, input: ','.join(input[2:]), cores = CORES
     docker: PLATYPUS_ODOCKER
     shell:
         """
@@ -49,13 +49,16 @@ rule pass_platypus:
 #             thisQual = int(infoThisVar.get('PP', [0])[0]) (row 1575 of vcfutils.pyx
 ##INFO=<ID=PP,Number=.,Type=Float,Description="Posterior probability (phred scaled) that this variant segregates">
 rule filter_platypus:
-    input: vcf=PLATYPUS_DIR"/platypus.vcf", keep=PLATYPUS_DIR+"/pass"
-    output: PLATYPUS_DIR+/"platypus_filtered.gz"
+    input: vcf=PLATYPUS_DIR+"/platypus.vcf", keep=PLATYPUS_DIR+"/pass"
+    output: PLATYPUS_DIR+"/platypus_filtered.vcf.gz"
     params: f1c=SRC_DIR+"/filter_1col.pl"
     docker: ALIGN_ODOCKER
     shell:
         """
-            cat {input.pass} | {params.f1c} 4 {input.keep} | grep -v '\./\.' | bgzip > {output}
+            cat {input.vcf} | grep -v "^#"| {params.f1c} 7 {input.keep} | grep -v '\./\.' > {output}.tmp;
+            cat <(cat {input.vcf} | grep "^#") {output}.tmp | bgzip > {output};
+	    tabix {output};
+	    rm {output}.tmp;
         """
 
 #(base) [CRC1307_clones_mutect]egrassi@hactarlogin$ zcat platypus.vcf.gz | grep -v '\./\.' | bgzip  > platypus_filtered.vcf.gz
