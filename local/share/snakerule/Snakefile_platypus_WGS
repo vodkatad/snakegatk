@@ -50,7 +50,7 @@ rule pass_platypus:
 ##INFO=<ID=PP,Number=.,Type=Float,Description="Posterior probability (phred scaled) that this variant segregates">
 rule filter_platypus:
     input: vcf=PLATYPUS_DIR+"/platypus.vcf", keep=PLATYPUS_DIR+"/pass"
-    output: PLATYPUS_DIR+"/ platypus_filtered.vcf.gz"
+    output: PLATYPUS_DIR+"/platypus_filtered.vcf.gz"
     params: f1c=SRC_DIR+"/filter_1col.pl"
     docker: ALIGN_ODOCKER
     shell:
