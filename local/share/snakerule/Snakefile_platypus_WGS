@@ -1,0 +1,79 @@
+#bcftools merge --force-samples --missing-to-ref -o platypus/merged.vcf.gz -O z mutect_paired/*pass.vcf.gz
+# --force-samples needed cause the normal is repeated everywhere
+# [egrassi@node22-c platypus]>ls ../align/realigned*bam | grep -v NLH | tr "\n" ","
+
+# time platypus callVariants --bamFiles=../align/realigned_CRC1307-02-0.bam,../align/realigned_CRC1307-02-1-A.bam,../align/realigned_CRC1307-02-1-B.bam,../align/realigned_CRC1307-02-1-E.bam,../align/realigned_CRC1307-08-0.bam,../align/realigned_CRC1307-08-1-B.bam,../align/realigned_CRC1307-08-1-D.bam,../align/realigned_CRC1307-08-1-E.bam,../align/realigned_CRC1307-08-MA-A.bam,../align/realigned_CRC1307-08-MA-C.bam,../align/realigned_CRC1307-08-MA-F.bam,../align/realigned_CRC1307-08-MC-D.bam,../align/realigned_CRC1307-08-MC-E.bam,../align/realigned_CRC1307-08-MC-F.bam,../align/realigned_CRC1307-08-MI-A.bam,../align/realigned_CRC1307-08-MI-B.bam,../align/realigned_CRC1307-09-0.bam,../align/realigned_CRC1307-09-1-B.bam,../align/realigned_CRC1307-09-1-C.bam,../align/realigned_CRC1307-09-1-E.bam --output=platypus.vcf --refFile=~/bit/task/annotations/dataset/gnomad/GRCh38.d1.vd1.fa --source=merged.vcf.gz --minPosterior=0 --getVariantsFromBAMs=0 --minReads 1 --nCPU 6 &> platypus.log
+
+# started at 1152 on saturday
+
+# real    140m44.520s
+# user    786m37.547s
+# sys     26m8.695s
+# [egrassi@node22-c platypus]>date
+# Sat Feb 15 13:12:30 UTC 2020
+
+# ci ha messo meno di 1h30'
+
+rule merge_vcf:
+    input: expand(MUTECT_DIR+"/{sample}.pass.vcf.gz", sample=TUMOR)
+    output: PLATYPUS_DIR+"/merged.vcf.gz"
+    docker: ALIGN_ODOCKER
+    shell:
+        """
+            bcftools merge --force-samples --missing-to-ref -o {input} -O {input};
+            tabix {output}
+        """
+
+rule platypus:
+    input: PLATYPUS_DIR+"/merged.vcf.gz", REF_DIR+"/GRCh38.d1.vd1.fa", expand(ALIGN_DIR+"/realigned_{sample}.bam", sample=TUMOR)
+    output: PLATYPUS_DIR"/platypus.vcf"
+    log: PLATYPUS_DIR"/platypus.log"
+    params: bam= lambda wildcards, input: ','.join(input[2:]), cores = CORES
+    docker: PLATYPUS_ODOCKER
+    shell:
+        """
+            platypus callVariants --bamFiles={params.bam} --output={output} --refFile={input[1]} --source={input[0]} --minPosterior=0 --getVariantsFromBAMs=0 --minReads 1 --nCPU {params.cores} &> {log}
+        """
+
+rule pass_platypus:
+    output: PLATYPUS_DIR+"/pass"
+    params: keep="PASS,Q20,alleleBias"
+    docker: ALIGN_ODOCKER
+    shell:
+        """
+            echo {params.keep} | tr "," "\\n" > {output}
+        """
+
+# we keep only mutations that are pass or are only filtered by Q20 or allele_bias
+# Q20 refers to variant quality posterior prob and not fastq quality:
+#             thisQual = int(infoThisVar.get('PP', [0])[0]) (row 1575 of vcfutils.pyx
+##INFO=<ID=PP,Number=.,Type=Float,Description="Posterior probability (phred scaled) that this variant segregates">
+rule filter_platypus:
+    input: vcf=PLATYPUS_DIR"/platypus.vcf", keep=PLATYPUS_DIR+"/pass"
+    output: PLATYPUS_DIR+/"platypus_filtered.gz"
+    params: f1c=SRC_DIR+"/filter_1col.pl"
+    docker: ALIGN_ODOCKER
+    shell:
+        """
+            cat {input.pass} | {params.f1c} 4 {input.keep} | grep -v '\./\.' | bgzip > {output}
+        """
+
+#(base) [CRC1307_clones_mutect]egrassi@hactarlogin$ zcat platypus.vcf.gz | grep -v '\./\.' | bgzip  > platypus_filtered.vcf.gz
+#(base) [CRC1307_clones_mutect]egrassi@hactarlogin$ tabix platypus_filtered.vcf.gz
+
+###FILTER=<ID=GOF,Description="Variant fails goodness-of-fit test.">
+##FILTER=<ID=hp10,Description="Flanking sequence contains homopolymer of length 10 or greater">
+##FILTER=<ID=REFCALL,Description="This line represents a homozygous reference call">
+##FILTER=<ID=badReads,Description="Variant supported only by reads with low quality bases close to variant position, and not present on both strands.">
+##FILTER=<ID=alleleBias,Description="Variant frequency is lower than expected for het"> ----> QUESTO " it rejects variants if (i) the fraction of reads supporting the variant allele is less than the minimum of 0.5" +the p value under a binomial model less than 0.001
+##FILTER=<ID=Q20,Description="Variant quality is below 20."> ------------> anche QUESTO, anche se dubito cambi molto essendo che e` il max tra tutte le call
+##FILTER=<ID=HapScore,Description="Too many haplotypes are supported by the data in this region.">
+##FILTER=<ID=MQ,Description="Root-mean-square mapping quality across calling region is low.">
+##FILTER=<ID=QD,Description="Variants fail quality/depth filter.">
+##FILTER=<ID=SC,Description="Variants fail sequence-context filter. Surrounding sequence is low-complexity">
+##FILTER=<ID=QualDepth,Description="Variant quality/Read depth ratio is low.">
+##FILTER=<ID=strandBias,Description="Variant fails strand-bias filter">
+
+
+#Q20 lo toglierei per pignoleria, alleleBias lo toglierei di sicuro
+#il resto sono triggerati solo se tutte le varianti son ko (per tutti i sample), quindi lo terrei.
