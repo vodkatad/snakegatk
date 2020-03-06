@@ -50,3 +50,12 @@ rule r_seqz:
         """
          {params.tool} {wildcards.sample} {input} {output}
         """
+
+rule r_seqz_fixed:
+    input: CNV_DIR+"/{sample}.all.bin.seqz.gz"
+    output: directory(CNV_DIR+"/{sample}.fixed")
+    params: tool=BIN_DIR+"/sequenza_fixed", cores=1, ploidy=PLOIDY, purity=PURITY
+    shell:
+        """
+         {params.tool} {wildcards.sample} {input} {output} {params.cores} {params.purity} {params.ploidy}
+	"""
