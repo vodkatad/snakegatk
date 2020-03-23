@@ -44,7 +44,7 @@ rule filter_platypus:
     params: exclude=EXCLUDE_PLATY
     shell:
         """
-            bcftools filter -e'FILTER="{params.exclude}"' -e'GT="./"' {input.vcf} | bgzip > {output};
+            bcftools filter -e'FILTER="{params.exclude}"' -e'GT="./."' {input.vcf} | bgzip > {output};
             tabix {output};
         """
 
