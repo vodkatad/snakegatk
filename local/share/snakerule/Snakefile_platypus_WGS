@@ -35,7 +35,7 @@ rule platypus:
 
 rule pass_platypus:
     output: PLATYPUS_DIR+"/pass"
-    params: keep="PASS,Q20,alleleBias"
+    params: keep="PASS,alleleBias"
     shell:
         """
             echo {params.keep} | tr "," "\\n" > {output}
