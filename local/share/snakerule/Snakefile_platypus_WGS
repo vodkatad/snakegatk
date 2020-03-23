@@ -33,34 +33,24 @@ rule platypus:
             platypus callVariants --bamFiles={params.bam} --output={output} --refFile={input[1]} --source={input[0]} --minPosterior=0 --getVariantsFromBAMs=0 --minReads 1 --nCPU {params.cores} &> {log}
         """
 
-rule pass_platypus:
-    output: PLATYPUS_DIR+"/pass"
-    params: keep="PASS,Q20,alleleBias"
+EXCLUDE_PLATY="REFCALL"
+
+rule filter_platypus:
+    input: vcf=PLATYPUS_DIR+"/platypus.vcf"
+    output: PLATYPUS_DIR+"/platypus_filtered.vcf.gz"
+    params: exclude=EXCLUDE_PLATY
     shell:
         """
-            echo {params.keep} | tr "," "\\n" > {output}
+            bcftools filter -e'FILTER="{params.exclude}" -e'GT="./"' {input.vcf} | bgzip > {output};
+            tabix {output};
         """
 
 # we keep only mutations that are pass or are only filtered by Q20 or allele_bias
 # Q20 refers to variant quality posterior prob and not fastq quality:
 #             thisQual = int(infoThisVar.get('PP', [0])[0]) (row 1575 of vcfutils.pyx
 ##INFO=<ID=PP,Number=.,Type=Float,Description="Posterior probability (phred scaled) that this variant segregates">
-rule filter_platypus:
-    input: vcf=PLATYPUS_DIR+"/platypus.vcf", keep=PLATYPUS_DIR+"/pass"
-    output: PLATYPUS_DIR+"/platypus_filtered.vcf.gz"
-    params: f1c=SRC_DIR+"/filter_1col.pl"
-    shell:
-        """
-            cat {input.vcf} | grep -v "^#"| {params.f1c} 7 {input.keep} | grep -v '\./\.' > {output}.tmp;
-            cat <(cat {input.vcf} | grep -v "^#") {output}.tmp | bgzip > {output};
-            tabix {output};
-            rm {output}.tmp;
-        """
-
-#(base) [CRC1307_clones_mutect]egrassi@hactarlogin$ zcat platypus.vcf.gz | grep -v '\./\.' | bgzip  > platypus_filtered.vcf.gz
-#(base) [CRC1307_clones_mutect]egrassi@hactarlogin$ tabix platypus_filtered.vcf.gz
-
-###FILTER=<ID=GOF,Description="Variant fails goodness-of-fit test.">
+#
+##FILTER=<ID=GOF,Description="Variant fails goodness-of-fit test.">
 ##FILTER=<ID=hp10,Description="Flanking sequence contains homopolymer of length 10 or greater">
 ##FILTER=<ID=REFCALL,Description="This line represents a homozygous reference call">
 ##FILTER=<ID=badReads,Description="Variant supported only by reads with low quality bases close to variant position, and not present on both strands.">
@@ -76,3 +66,7 @@ rule filter_platypus:
 
 #Q20 lo toglierei per pignoleria, alleleBias lo toglierei di sicuro
 #il resto sono triggerati solo se tutte le varianti son ko (per tutti i sample), quindi lo terrei.
+# dopo aver letto metodi del paper di Ba ho deciso di tenerli tutti -1:
+# filtered per GOF come atteso non ce ne sono, gli altri son tutte qualita` sue che a me non interessano, vorrei
+# che chiamasse qualsiasi cosa abbia almeno un read e stop. tengo solo REFCALL che come tipo di varianti rogue
+# mi pare che ogni tanto a mutect (vecchie versioni, ma vabbe`) scappassero.
