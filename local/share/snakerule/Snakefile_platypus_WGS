@@ -35,16 +35,16 @@ rule platypus:
             platypus callVariants --bamFiles={params.bam} --output={output} --refFile={input[1]} --source={input[0]} --minPosterior=0 --getVariantsFromBAMs=0 --minReads 1 --nCPU {params.cores} &> {log}
         """
 
-EXCLUDE_PLATY="REFCALL"
+INCLUDE_PLATY="REFCALL"
 
 rule filter_platypus:
     input: vcf=PLATYPUS_DIR+"/platypus.vcf"
     output: PLATYPUS_DIR+"/platypus_filtered.vcf.gz"
     docker: ALIGN_ODOCKER
-    params: exclude=EXCLUDE_PLATY
+    params: include=INCLUDE_PLATY
     shell:
         """
-            bcftools filter -e'FILTER="{params.exclude}"' -e'GT="./."' {input.vcf} | bgzip > {output};
+            bcftools filter -i'FILTER="PASS"' -i'FILTER="{params.include}"' -e'GT="./."' {input.vcf} | bgzip > {output};
             tabix {output};
         """
 
