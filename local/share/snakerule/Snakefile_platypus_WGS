@@ -33,19 +33,27 @@ rule platypus:
             platypus callVariants --bamFiles={params.bam} --output={output} --refFile={input[1]} --source={input[0]} --minPosterior=0 --getVariantsFromBAMs=0 --minReads 1 --nCPU {params.cores} &> {log}
         """
 
-INCLUDE_PLATY="REFCALL"
-
-rule filter_platypus:
-    input: vcf=PLATYPUS_DIR+"/platypus.vcf"
-    output: PLATYPUS_DIR+"/platypus_filtered.vcf.gz"
-    params: include=INCLUDE_PLATY
+rule pass_platypus:
+    output: PLATYPUS_DIR+"/pass"
+    params: keep="PASS,alleleBias"
     shell:
         """
-            bcftools filter -i'FILTER="PASS"' -i'FILTER="{params.exclude}"' -e'GT="./."' {input.vcf} | bgzip > {output};
-            tabix {output};
+            echo {params.keep} | tr "," "\\n" > {output}
         """
 
-# we keep only mutations that are pass or are only filtered by Q20 or allele_bias
+rule filter_platypus:
+    input: vcf=PLATYPUS_DIR+"/platypus.vcf", keep=PLATYPUS_DIR+"/pass"
+    output: PLATYPUS_DIR+"/platypus_filtered.vcf.gz"
+    params: f1c=SRC_DIR+"/filter_1col.pl"
+    shell:
+        """
+            cat {input.vcf} | grep -v "^#"| {params.f1c} 7 {input.keep} | grep -v '\./\.' > {output}.tmp;
+            cat <(cat {input.vcf} | grep -v "^#") {output}.tmp | bgzip > {output};
+            tabix {output};
+            rm {output}.tmp;
+        """
+
+# we keep only mutations that a_e pass or are only filtered by Q20 or allele_bias
 # Q20 refers to variant quality posterior prob and not fastq quality:
 #             thisQual = int(infoThisVar.get('PP', [0])[0]) (row 1575 of vcfutils.pyx
 ##INFO=<ID=PP,Number=.,Type=Float,Description="Posterior probability (phred scaled) that this variant segregates">
