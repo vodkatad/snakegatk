@@ -20,7 +20,8 @@ def main():
             for line in tsv.readlines():
                 line = line.rstrip()
                 values = line.split("\t")
-                entry = { "id": values[2], "LAS_Validation": values[3] == "TRUE", "files": get_files(values[0], args.fastq) }
+                id = values[2]#.replace('-','Y')
+                entry = { "id": id, "LAS_Validation": values[3] == "TRUE", "files": get_files(values[0], args.fastq) }
                 samples.append(values[2])
                 orig_samples.append(values[0]+'_SA_L001')
                 #if len(values) >= 4:
@@ -34,11 +35,11 @@ def main():
             print("SAMPLES_ORIG=" + str(orig_samples))
             print("SAMPLES=" + str(samples))
             jsons = json.dumps({"samples_map": entries}, indent=4)
-            #json_meta.write(jsons.strip('{}'))
-            #json_meta.write("}\n")
+            json_meta.write(jsons.strip('{}'))
+            json_meta.write("}\n")
 
 def get_files(vendor_id, fq_dir):
-    return [os.path.join(fq_dir, f) for f in [vendor_id+"S1_L004_R1_001.fastq.gz", vendor_id+"S1_L004_R2_001.fastq.gz"]]
+    return [os.path.join(fq_dir, f) for f in [vendor_id+"_SA_L001_R1_001.fastq.gz", vendor_id+"_SA_L001_R2_001.fastq.gz"]]
 
 def get_args():
     parser = ArgumentParser(description="From a sample sheet in excel format to the json samples_map for las mdam")
