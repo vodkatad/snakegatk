@@ -48,7 +48,7 @@ rule filter_platypus:
     shell:
         """
             cat {input.vcf} | grep -v "^#"| {params.f1c} 7 {input.keep} | grep -v '\./\.' > {output}.tmp;
-            cat <(cat {input.vcf} | grep -v "^#") {output}.tmp | bgzip > {output};
+            cat <(cat {input.vcf} | grep "^#") {output}.tmp | bgzip > {output};
             tabix {output};
             rm {output}.tmp;
         """
