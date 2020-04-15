@@ -141,7 +141,7 @@ rule all_coverage_wild:
 
 
 rule intersect_wild:
-    input: expand("depth/{sample}.quantized{cov}.bed.gz", sample=TUMOR)
+    input: expand("depth/{sample}.quantized{{cov}}.bed.gz", sample=TUMOR)
     output: "depth/callable_{cov}x_20q.bed.gz"
     params: nsamples=len(TUMOR)
     shell:
