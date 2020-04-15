@@ -139,6 +139,40 @@ rule intersect_callable:
             bedtools intersect -a {input.callable} -b {input.covered} | gzip > {output}
         """
 
+############### test 20x
+rule all_coverage10x:
+    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", bai=ALIGN_DIR+"/realigned_{sample}.bai"
+    output: "depth/{sample}.quantized20.bed.gz"
+    params: prefix="depth/{sample}", thread=CORES
+    shell: 
+        """
+            mkdir -p depth;
+            mosdepth -t {params.thread} -n --quantize 20: {params.prefix} {input.bam};
+            rm {params.prefix}.mosdepth.global.dist.txt;
+        """
+
+
+rule intersect_10x:
+    input: expand("depth/{sample}.quantized10bed.gz", sample=TUMOR)
+    output: "depth/callable_20x_20q.bed.gz"
+    params: nsamples=len(TUMOR)
+    shell:
+        """
+            bedtools multiinter -i {input} | awk -F'\\t' -v OFS='\\t' '$4=={params.nsamples}' | gzip > {output}
+        """
+
+rule intersect_callable_10x:
+    input: callable=CALLABLE_BED, covered="depth/callable_20x_20q.bed.gz"
+    output: "depth/callable_20xcovered.bed.gz"
+    shell:
+        """
+            bedtools intersect -a {input.callable} -b {input.covered} | gzip > {output}
+        """
+
+#####################3
+
+
+
 # thresholds gotten from Mutect2 default parameters that we are adopting
 #input: bam=ALIGN_DIR+"/realigned_{sample}.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
 rule wgs_metrics:
