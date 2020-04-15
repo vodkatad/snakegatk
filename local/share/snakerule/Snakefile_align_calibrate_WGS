@@ -128,30 +128,30 @@ rule intersect_callable:
         """
 
 ############### test 20x
-rule all_coverage10x:
+rule all_coverage_wild:
     input: bam=ALIGN_DIR+"/realigned_{sample}.bam", bai=ALIGN_DIR+"/realigned_{sample}.bai"
-    output: "depth/{sample}.quantized20.bed.gz"
+    output: "depth/{sample}.quantized{cov}.bed.gz"
     params: prefix="depth/{sample}", thread=CORES
     shell: 
         """
             mkdir -p depth;
-            mosdepth -t {params.thread} -n --quantize 20: {params.prefix} {input.bam};
+            mosdepth -t {params.thread} -n --quantize {wildcards.cov}: {params.prefix} {input.bam};
             rm {params.prefix}.mosdepth.global.dist.txt;
         """
 
 
-rule intersect_10x:
-    input: expand("depth/{sample}.quantized10bed.gz", sample=TUMOR)
-    output: "depth/callable_20x_20q.bed.gz"
+rule intersect_wild:
+    input: expand("depth/{sample}.quantized{cov}.bed.gz", sample=TUMOR)
+    output: "depth/callable_{cov}x_20q.bed.gz"
     params: nsamples=len(TUMOR)
     shell:
         """
             bedtools multiinter -i {input} | awk -F'\\t' -v OFS='\\t' '$4=={params.nsamples}' | gzip > {output}
         """
 
-rule intersect_callable_10x:
-    input: callable=CALLABLE_BED, covered="depth/callable_20x_20q.bed.gz"
-    output: "depth/callable_20xcovered.bed.gz"
+rule intersect_callable_wild:
+    input: callable=CALLABLE_BED, covered="depth/callable_{cov}x_20q.bed.gz"
+    output: "depth/callable_{cov}x.covered.bed.gz"
     shell:
         """
             bedtools intersect -a {input.callable} -b {input.covered} | gzip > {output}
