@@ -39,11 +39,12 @@ XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
 ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
 SEQUENZA_ODOCKER="egrassi/occamsnakes/sequenza:1"
 VARSCAN_ODOCKER="egrassi/occamsnakes/varscan:1"
+PLATYPUS_ODOCKER="egrassi/occamsnakes/platypus:1"
 PLH_DOCKER="bubusettete"
 
 
 ## This dataset:
-DATA=PRJ_ROOT+"/local/share/data/CRC1307_clones"
+DATA=PRJ_ROOT+"/local/share/data/second_shipment"
 FQ_XENOME_DIR="xenome"
 
 #data@rotpunkt:~/work/snakegatk/local/src$ ./tsv_to_json_metadata.py -i ~/Dropbox/work/evol/MA/second_shipment/samples/ss_282.txt -j /tmp/test
