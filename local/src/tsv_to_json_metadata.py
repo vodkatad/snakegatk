@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import json
 import os
 import datetime
@@ -27,7 +28,10 @@ def main():
                 #if len(values) >= 4:
                 for i in range(4, len(values)):
                     if fields[i] == "cloning_date":
-                        entry[fields[i]] = str(datetime.datetime.strptime(values[i], '%Y/%m/%d').date())
+                        if values[i] != "NA":
+                            entry[fields[i]] = str(datetime.datetime.strptime(values[i], '%Y/%m/%d').date())
+                        else:
+                            entry[fields[i]] = None
                     else:
                         entry[fields[i]] = values[i]
                 entries.append(entry) # python triiiiicky indenting
