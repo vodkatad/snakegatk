@@ -1,24 +1,26 @@
 def main():
     #args = get_args()
-    #SAMPLES=['CRC1307-02-0', 'CRC1307-08-0', 'CRC1307-09-0', 'CRC1307-02-1-A', 'CRC1307-02-1-B', 'CRC1307-02-1-E', 'CRC1307-08-1-B', 'CRC1307-08-1-D', 'CRC1307-08-1-E', 'CRC1307-09-1-B', 'CRC1307-09-1-C', 'CRC1307-09-1-E']    
-    SAMPLES= ['CRC1307-08-MA-A', 'CRC1307-08-MA-C', 'CRC1307-08-MA-F', 'CRC1307-08-MC-D', 'CRC1307-08-MC-E', 'CRC1307-08-MC-F', 'CRC1307-08-MI-A', 'CRC1307-08-MI-B', 'CRC1307-08-MI-F']
+    # 12 in vitro + normal
+    SAMPLES=['CRC0282-01-0', 'CRC0282-05-0', 'CRC0282-07-0', 'CRC0282-01-1-A', 'CRC0282-01-1-B', 'CRC0282-01-1-E', 'CRC0282-05-1-A', 'CRC0282-05-1-C', 'CRC0282-05-1-D', 'CRC0282-07-1-A', 'CRC0282-07-1-B', 'CRC0282-07-1-E']
+    # 9 in vivo
+    #SAMPLES=['CRC0282-01-MI-A', 'CRC0282-01-MI-D', 'CRC0282-01-MI-E', 'CRC0282-01-MA-C', 'CRC0282-01-MA-D', 'CRC0282-01-MA-G', 'CRC0282-01-MC-D', 'CRC0282-01-MC-E', 'CRC0282-01-MA-F']
 
-    NODES=['RUN_NODE=node' + str(n) for n in range(10, 14)]
-    SH=['mutect_mice_node' + str(n) + '.sh' for n in range(10, 14)]
-#     at_command ="""
-# export {:s} && snakemake -j 2 --use-docker align/markedDup_{:s}.sorted.bam align/markedDup_{:s}.sorted.bam &> {:s}_align.slog;
-# export {:s} && snakemake -j 2 --use-docker sequenza/{:s} sequenza/{:s} &> {:s}_sequenza.slog;
-# export {:s} && snakemake -j 2 --use-docker varscan_paired/{:s}.pass.vcf.gz varscan_paired/{:s}.pass.vcf.gz &> {:s}_varscan.slog;
-# export {:s} && snakemake -j 2 --use-docker fastqc_{:s} fastqc_{:s} &> {:s}_fastqc.slog;
-# export {:s} && snakemake -j 2 --use-docker align/{:s}.bam.flagstat align/{:s}.bam.flagstat &> {:s}_flagstat.slog;
-# export {:s} && snakemake -j 2 --use-docker align/{:s}.wgsmetrics align/{:s}.wgsmetrics &> {:s}_wgsmetrics.slog;
-# """
-    at_command ="""
-    export {:s} && snakemake -j 24 --use-docker mutect_paired/{:s}.pass.vcf.gz mutect_paired/{:s}.pass.vcf.gz &> {:s}_mutect_paired_mice.slog;
-    export {:s} && snakemake -j 2 --use-docker fastqc_{:s} fastqc_{:s} &> {:s}_fastqc_mice.slog;
-    export {:s} && snakemake -j 2 --use-docker align/{:s}.bam.flagstat align/{:s}.bam.flagstat &> {:s}_flagstat_mice.slog;
-    export {:s} && snakemake -j 2 --use-docker align/{:s}.wgsmetrics align/{:s}.wgsmetrics &> {:s}_wgsmetrics_mice.slog;
-    """
+    NODES=['RUN_NODE=node' + str(n) for n in range(23, 27)]
+    SH=['282_vitro_node' + str(n) + '.sh' for n in range(23, 27)]
+    at_command = """
+ export {:s} && snakemake -j 2 --use-docker align/markedDup_{:s}.sorted.bam align/markedDup_{:s}.sorted.bam &> {:s}_align.slog;
+ export {:s} && snakemake -j 2 --use-docker sequenza/{:s} sequenza/{:s} &> {:s}_sequenza.slog;
+ export {:s} && snakemake -j 2 --use-docker fastqc_{:s} fastqc_{:s} &> {:s}_fastqc.slog;
+ export {:s} && snakemake -j 2 --use-docker align/{:s}.bam.flagstat align/{:s}.bam.flagstat &> {:s}_flagstat.slog;
+ export {:s} && snakemake -j 2 --use-docker align/{:s}.wgsmetrics align/{:s}.wgsmetrics &> {:s}_wgsmetrics.slog;
+ export {:s} && snakemake -j 24 --use-docker mutect_paired/{:s}.pass.vcf.gz mutect_paired/{:s}.pass.vcf.gz &> {:s}_mutect_paired_mice.slog;
+ """
+#export {:s} && snakemake -j 24 --use-docker platypus/platypus_filtered.vcf.gz;
+#    at_command ="""
+#    export {:s} && snakemake -j 2 --use-docker fastqc_{:s} fastqc_{:s} &> {:s}_fastqc_mice.slog;
+#    export {:s} && snakemake -j 2 --use-docker align/{:s}.bam.flagstat align/{:s}.bam.flagstat &> {:s}_flagstat_mice.slog;
+#    export {:s} && snakemake -j 2 --use-docker align/{:s}.wgsmetrics align/{:s}.wgsmetrics &> {:s}_wgsmetrics_mice.slog;
+#    """
 # at_command="""
 #export {:s} && snakemake --use-docker -j 2 sequenza/{:s} sequenza/{:s} &> {:s}_sequenza.slog;
 #"""
