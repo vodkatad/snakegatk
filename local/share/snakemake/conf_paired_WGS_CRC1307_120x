@@ -48,9 +48,9 @@ DATA=PRJ_ROOT+"/local/share/data/second_shipment"
 FQ_XENOME_DIR="xenome"
 
 #data@rotpunkt:~/work/snakegatk/local/src$ ./tsv_to_json_metadata.py -i ~/Dropbox/work/evol/MA/second_shipment/samples/ss_282.txt -j /tmp/test
-SAMPLES_ORIG=['1740D-109-02_S30_L003','PRJ0003S66_SA_L001','PRJ0003S63_SA_L001']
-SAMPLES=['CRC1502','CRC1502-03-1-A','CRC1502-03-0']
-NORMAL=["CRC1502"]*(len(SAMPLES)-1)
+SAMPLES_ORIG=['1740D-84-01_S48_L004', 'BD0018_SA_L001','BD0020_SA_L001']
+SAMPLES=['CRC1307NLH-0-B','CRC1307-02-1-E','CRC1307-09-1-B']
+NORMAL=["CRC1307NLH-0-B"]*(len(SAMPLES)-1)
 TUMOR=SAMPLES[1:]
 
 #REF=""
