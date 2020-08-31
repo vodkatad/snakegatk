@@ -157,6 +157,14 @@ rule intersect_callable_wild:
             bedtools intersect -a {input.callable} -b {input.covered} | gzip > {output}
         """
 
+rule intersect_callable_singlesample:
+    input: callable=CALLABLE_BED, covered="depth/{sample}_{cov}.quantized.bed.gz"
+    output: "depth/{sample}_callable_{cov}x.covered.bed.gz"
+    shell:
+        """
+            bedtools intersect -a {input.callable} -b {input.covered} | gzip > {output}
+        """
+
 #####################3
 
 
