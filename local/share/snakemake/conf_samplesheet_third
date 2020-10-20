@@ -1,0 +1,26 @@
+ROOT='/home/egrassi'
+import os
+def find_prj_root(path=os.getcwd()):
+    if os.path.isfile(os.path.join(path,".PRJ_ROOT")):
+        return path
+    else:
+        if path:
+            return find_prj_root(os.path.dirname(path))
+        else:
+            raise Exception("Can not find the PRJ_ROOT directory")
+
+
+PRJ_ROOT=find_prj_root()
+TMP="/tmp"
+
+SRC_DIR=PRJ_ROOT+'/local/src'
+BIN_DIR=PRJ_ROOT+'/local/bin'
+DATA_DIR=PRJ_ROOT+'/local/share/data'
+
+SS=DATA_DIR+"/samples_sheet.txt"
+#data@rotpunkt:~/work/snakegatk/local/share/data$ cut -f3 samples_sheet.txt | sed 1d | sort | uniq | tr "\n" "," | sed 's/,/","/g
+HSAMPLES=["CRC0282","CRC0322","CRC0441","CRC1307","CRC1502","CRC1599LM","CRC1599PR", "bulk"]
+RANGE=range(1,7)
+
+# snakemake -j1  -f CRC1307_1_4
+# snakemake -j1 bulk_3_6 # then need to manually fix! they start at half.. one script has to be split in half, the 3 goes to 5 and for 4 we comment out mutect/sequenza because we still lack the normal sample alignment

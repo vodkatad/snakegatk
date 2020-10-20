@@ -1,0 +1,76 @@
+include: "conf.sk"
+
+rule samples_sheet:
+    input: SS
+    output: "{sample}_conf_def.py"
+    params: tool=SRC_DIR+"/tsv_to_json_metadata.py"
+    shell: 
+        """
+            bawk -v s={wildcards.sample} '$3=="sample" || $3==s' {input} | cut -f 3,4 --complement > {output}.tmp
+            {params.tool} -i {output}.tmp -j {output}.tmp2 > {output}
+            rm {output}.tmp*
+        """
+
+#rule json_metadata: TODO
+
+rule all_ss:
+    input: expand("{sample}_conf_def.py", sample=HSAMPLES)
+
+wildcard_constraints:
+    n1="\d"
+
+wildcard_constraints:
+    n2="\d"
+
+rule occam_sh:
+    input: "{sample}_conf_def.py"
+    output: directory("{sample}_{n1}_{n2}")
+    run:
+        import os 
+        import importlib
+        import shutil
+        import sys
+
+        #HERE = os.path.dirname(os.path.abspath(__file__))
+        #sys.path.insert(0, HERE)
+        m = wildcards.sample + "_conf_def"
+        importlib.invalidate_caches()
+        module = importlib.import_module(m, package=None)
+        at_command = """
+export {:s} && snakemake -j 2 --use-docker align/realigned_{:s}.bam align/realigned_{:s}.bam &> {:s}_align.slog;
+export {:s} && snakemake -j 6 --use-docker mutect_paired/{:s}.pass.vcf.gz mutect_paired/{:s}.pass.vcf.gz &> {:s}_mutect_paired.slog;
+export {:s} && snakemake -j 2 --use-docker sequenza/{:s} sequenza/{:s} &> {:s}_sequenza.slog;
+export {:s} && snakemake -j 2 --use-docker fastqc_{:s} fastqc_{:s} &> {:s}_fastqc.slog;
+export {:s} && snakemake -j 2 --use-docker align/{:s}.bam.flagstat align/{:s}.bam.flagstat &> {:s}_flagstat.slog;
+export {:s} && snakemake -j 2 --use-docker align/{:s}.wgsmetrics align/{:s}.wgsmetrics &> {:s}_wgsmetrics.slog;
+"""
+        half_at_command = """
+export {:s} && snakemake -j 2 --use-docker align/realigned_{:s}.bam &> {:s}_align.slog;
+export {:s} && snakemake -j 6 --use-docker mutect_paired/{:s}.pass.vcf.gz &> {:s}_mutect_paired.slog;
+export {:s} && snakemake -j 2 --use-docker sequenza/{:s} &> {:s}_sequenza.slog;
+export {:s} && snakemake -j 2 --use-docker fastqc_{:s} &> {:s}_fastqc.slog;
+export {:s} && snakemake -j 2 --use-docker align/{:s}.bam.flagstat &> {:s}_flagstat.slog;
+export {:s} && snakemake -j 2 --use-docker align/{:s}.wgsmetrics &> {:s}_wgsmetrics.slog;
+"""
+        # def touch(fname, times=None):
+        #     with open(fname, 'a'):
+        #         os.utime(fname, times)
+
+        # touch(output.plh)
+        shutil.rmtree(output[0], ignore_errors=True)
+        wd = os.getcwd()
+        os.mkdir(output[0])
+        os.chdir(output[0])
+        n1 = int(wildcards.n1)
+        n2 = int(wildcards.n2)
+        NODES=['RUN_NODE=node' + str(n) for n in range(n1, n2)]
+        SH=['bulk_node' + str(n) + '.sh' for n in range(n1, n2)]
+        index_sample = 0
+        for n in NODES:
+            with open(SH[int(index_sample/2)], 'w') as atsh:
+                if index_sample+1 < len(module.SAMPLES):
+                    atsh.write(at_command.format(*(n, module.SAMPLES[index_sample], module.SAMPLES[index_sample+1], SH[int(index_sample/2)])*24))
+                elif index_sample < len(module.SAMPLES):
+                    atsh.write(half_at_command.format(*(n, module.SAMPLES[index_sample], SH[int(index_sample/2)])*24))
+                index_sample = index_sample + 2
+        os.chdir(wd)

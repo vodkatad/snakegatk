@@ -29,7 +29,11 @@ def main():
                 for i in range(4, len(values)):
                     if fields[i] == "cloning_date":
                         if values[i] != "NA":
-                            entry[fields[i]] = str(datetime.datetime.strptime(values[i], '%Y/%m/%d').date())
+                            #entry[fields[i]] = str(datetime.datetime.strptime(values[i], '%Y/%m/%d').date())
+                            try:
+                                entry[fields[i]] = str(datetime.datetime.strptime(values[i], '%d-%m-%y').date())
+                            except: # hurry and hate
+                                entry[fields[i]] = None
                         else:
                             entry[fields[i]] = None
                     else:
