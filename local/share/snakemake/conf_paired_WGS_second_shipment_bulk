@@ -76,7 +76,7 @@ PATTERNED=2500
 
 
 ### TODO REMOVE ME FOR BULK!
-AFPARAM="--default-af 0"
+#AFPARAM="--default-af 0" # warning this has run with this flag set! need to rerun or at least check
 # https://gatkforums.broadinstitute.org/gatk/discussion/24633/mutect2-4-1-4-0-stats-file-with-a-negative-number#latest
 # use --default-af 0 to avoid 0.5 AF calls filtering 
 
