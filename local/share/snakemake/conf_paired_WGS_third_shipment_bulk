@@ -47,12 +47,12 @@ PLH_DOCKER="bubusettete"
 DATA=PRJ_ROOT+"/local/share/data/third_shipment"
 FQ_XENOME_DIR="xenome"
 
-SAMPLES_ORIG=['PRJ004S2_SA_L001', 'PRJ004S15_SA_L001', 'PRJ004S61_SA_L001', 'PRJ004S78_SA_L001']
-SAMPLES=['CRC0441LMO-0-B', 'CRC1599LMO-0-B', 'CRC0322-0-B', 'CRC0322-0-B1']
+SAMPLES_ORIG=['nplh', 'nplh', 'PRJ004S2_SA_L001', 'PRJ004S15_SA_L001']#, 'PRJ004S61_SA_L001', 'PRJ004S78_SA_L001']
+SAMPLES=['CRC0441NLH0000000000D05000','CRC1599NLH0000000000D03000','CRC0441LMO-0-B', 'CRC1599LMO-0-B']#, 'CRC0322-0-B', 'CRC0322-0-B1']
 # NOTE TODO link like second_shipment the realigned bam and markedDup bam and bai
-NORMAL=['CRC0441NLH0000000000D05000','CRC1599NLH0000000000D03000','plh','plh'] #for now we only align 0322 bulk samples
+NORMAL=['CRC0441NLH0000000000D05000','CRC1599NLH0000000000D03000']#,'plh','plh'] #for now we only align 0322 bulk samples
 # NOTE: still missing 1599PR baseline
-TUMOR=['CRC0441LMO-0-B', 'CRC1599LMO-0-B', 'CRC0322-0-B', 'CRC0322-0-B1']
+TUMOR=['CRC0441LMO-0-B', 'CRC1599LMO-0-B']#, 'CRC0322-0-B', 'CRC0322-0-B1']
 
 #REF=""
 #SAMPLESD=[]
@@ -77,6 +77,7 @@ PATTERNED=2500
 
 ### TODO REMOVE ME FOR BULK!
 #AFPARAM="--default-af 0"
+AFPARAM=""
 # https://gatkforums.broadinstitute.org/gatk/discussion/24633/mutect2-4-1-4-0-stats-file-with-a-negative-number#latest
 # use --default-af 0 to avoid 0.5 AF calls filtering 
 

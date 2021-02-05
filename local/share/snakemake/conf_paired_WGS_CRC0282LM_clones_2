@@ -44,13 +44,13 @@ PLH_DOCKER="bubusettete"
 
 
 ## This dataset:
-DATA=PRJ_ROOT+"/local/share/data/second_shipment"
+DATA=PRJ_ROOT+"/local/share/data/last_shipment"
 FQ_XENOME_DIR="xenome"
 
-#data@rotpunkt:~/work/snakegatk/local/src$ ./tsv_to_json_metadata.py -i ~/Dropbox/work/evol/MA/second_shipment/samples/ss_282.txt -j /tmp/test
-SAMPLES_ORIG=['1740D-84-01_S48_L004', 'BD0018_SA_L001','BD0020_SA_L001']
-SAMPLES=['CRC1307NLH-0-B','CRC1307-02-1-E','CRC1307-09-1-B']
-NORMAL=["CRC1307NLH-0-B"]*(len(SAMPLES)-1)
+SAMPLES_ORIG=['plh','Biodiversa-6_SA_L001', 'Biodiversa-5_SA_L001', 'Biodiversa-4_SA_L001', 'Biodiversa-3_SA_L001', 'Biodiversa-2_SA_L001', 'Biodiversa-1_SA_L001']
+SAMPLES=['CRC0282NMH0000000000D07000','CRC0282-07E-2-4', 'CRC0282-07E-2-3', 'CRC0282-07E-2-2', 'CRC0282-01A-2-4', 'CRC0282-01A-2-3', 'CRC0282-01A-2-2']
+
+NORMAL=[SAMPLES[0]]*(len(SAMPLES)-1)
 TUMOR=SAMPLES[1:]
 
 #REF=""
@@ -80,7 +80,7 @@ AFPARAM="--default-af 0"
 # use --default-af 0 to avoid 0.5 AF calls filtering 
 
 wildcard_constraints:
-    sample="[a-zA-Z0-9]+-?[0-9]+-?[A-Z0-9]+-?[A-Z0-9]?"
+    sample="[a-zA-Z0-9]+-?[0-9A-Z]+-?[A-Z0-9]+-?[A-Z0-9]?"
 
 
 CALLABLE="5:10,10:50,50:100,100:150,150:inf"
@@ -95,9 +95,5 @@ else:
 
 #+'-scattered.interval_list'
 
-PLOIDY=3
+PLOIDY=2
 PURITY=1
-
-
-rule all_covered:
-    input: expand("depth/{sample}_callable_{depth}.covered.bed.gz", sample=TUMOR, depth=['10x','20x','30x','40x','50x', '60x', '70x', '80x', '90x', '100x','150x','200x'])

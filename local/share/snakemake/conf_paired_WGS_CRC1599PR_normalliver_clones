@@ -44,13 +44,16 @@ PLH_DOCKER="bubusettete"
 
 
 ## This dataset:
-DATA=PRJ_ROOT+"/local/share/data/second_shipment"
+DATA=PRJ_ROOT+"/local/share/data/third_shipment"
 FQ_XENOME_DIR="xenome"
 
-#data@rotpunkt:~/work/snakegatk/local/src$ ./tsv_to_json_metadata.py -i ~/Dropbox/work/evol/MA/second_shipment/samples/ss_282.txt -j /tmp/test
-SAMPLES_ORIG=['1740D-84-01_S48_L004', 'BD0018_SA_L001','BD0020_SA_L001']
-SAMPLES=['CRC1307NLH-0-B','CRC1307-02-1-E','CRC1307-09-1-B']
-NORMAL=["CRC1307NLH-0-B"]*(len(SAMPLES)-1)
+# we have doubts on the normal mucosa so we go on using the normal liver as the matched normal for the PR too, will check that things are similar on one clone!
+#SAMPLES_ORIG=['PRJ004S28_SA_L001', 'PRJ004S29_SA_L001', 'PRJ004S30_SA_L001', 'PRJ004S31_SA_L001', 'PRJ004S32_SA_L001', 'PRJ004S33_SA_L001', 'PRJ004S34_SA_L001', 'PRJ004S35_SA_L001']
+#SAMPLES=['CRC1599NMH0000000000D03000', 'CRC1599PR-01-0', 'CRC1599PR-10-0', 'CRC1599PR-01-1-L', 'CRC1599PR-01-1-F', 'CRC1599PR-01-1-E', 'CRC1599PR-10-1-F', 'CRC1599PR-10-1-E']
+SAMPLES_ORIG=['plh', 'PRJ004S29_SA_L001', 'PRJ004S30_SA_L001', 'PRJ004S31_SA_L001', 'PRJ004S32_SA_L001', 'PRJ004S33_SA_L001', 'PRJ004S34_SA_L001', 'PRJ004S35_SA_L001']
+SAMPLES=['CRC1599NLH0000000000D03000', 'CRC1599PR-01-0', 'CRC1599PR-10-0', 'CRC1599PR-01-1-L', 'CRC1599PR-01-1-F', 'CRC1599PR-01-1-E', 'CRC1599PR-10-1-F', 'CRC1599PR-10-1-E']
+
+NORMAL=[SAMPLES[0]]*(len(SAMPLES)-1)
 TUMOR=SAMPLES[1:]
 
 #REF=""
@@ -95,9 +98,5 @@ else:
 
 #+'-scattered.interval_list'
 
-PLOIDY=3
+PLOIDY=2
 PURITY=1
-
-
-rule all_covered:
-    input: expand("depth/{sample}_callable_{depth}.covered.bed.gz", sample=TUMOR, depth=['10x','20x','30x','40x','50x', '60x', '70x', '80x', '90x', '100x','150x','200x'])

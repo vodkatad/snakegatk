@@ -100,5 +100,5 @@ else:
 
 #+'-scattered.interval_list'
 
-PLOIDY=2
+PLOIDY=3
 PURITY=1

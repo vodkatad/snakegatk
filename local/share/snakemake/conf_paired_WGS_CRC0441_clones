@@ -66,7 +66,7 @@ FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
 
 PAIRS=['R1_001','R2_001']
 PAIRS_XENOME=['1','2']
-CORES=12
+CORES=3
 CORESMD=4
 # TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
 PATTERNED=2500 
