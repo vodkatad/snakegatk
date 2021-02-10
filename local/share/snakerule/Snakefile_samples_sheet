@@ -38,7 +38,7 @@ rule occam_sh:
         module = importlib.import_module(m, package=None)
         at_command = """
 export {:s} && snakemake -j 2 --use-docker align/realigned_{:s}.bam align/realigned_{:s}.bam &> {:s}_align.slog;
-export {:s} && snakemake -j 6 --use-docker mutect_paired/{:s}.pass.vcf.gz mutect_paired/{:s}.pass.vcf.gz &> {:s}_mutect_paired.slog;
+export {:s} && snakemake -j 8 --use-docker --latency-wait 20 mutect_paired/{:s}.pass.vcf.gz mutect_paired/{:s}.pass.vcf.gz &> {:s}_mutect_paired.slog;
 export {:s} && snakemake -j 2 --use-docker sequenza/{:s} sequenza/{:s} &> {:s}_sequenza.slog;
 export {:s} && snakemake -j 2 --use-docker fastqc_{:s} fastqc_{:s} &> {:s}_fastqc.slog;
 export {:s} && snakemake -j 2 --use-docker align/{:s}.bam.flagstat align/{:s}.bam.flagstat &> {:s}_flagstat.slog;
@@ -46,7 +46,7 @@ export {:s} && snakemake -j 2 --use-docker align/{:s}.wgsmetrics align/{:s}.wgsm
 """
         half_at_command = """
 export {:s} && snakemake -j 2 --use-docker align/realigned_{:s}.bam &> {:s}_align.slog;
-export {:s} && snakemake -j 6 --use-docker mutect_paired/{:s}.pass.vcf.gz &> {:s}_mutect_paired.slog;
+export {:s} && snakemake -j 4 --use-docker --latency-wait 20 mutect_paired/{:s}.pass.vcf.gz &> {:s}_mutect_paired.slog;
 export {:s} && snakemake -j 2 --use-docker sequenza/{:s} &> {:s}_sequenza.slog;
 export {:s} && snakemake -j 2 --use-docker fastqc_{:s} &> {:s}_fastqc.slog;
 export {:s} && snakemake -j 2 --use-docker align/{:s}.bam.flagstat &> {:s}_flagstat.slog;
