@@ -44,11 +44,11 @@ PLH_DOCKER="bubusettete"
 
 
 ## This dataset:
-DATA=PRJ_ROOT+"/local/share/data/third_shipment"
+DATA=PRJ_ROOT+"/local/share/data/last_shipment"
 FQ_XENOME_DIR="xenome"
 
-SAMPLES_ORIG=['PRJ004S28_SA_L001', 'PRJ004S29_SA_L001', 'PRJ004S30_SA_L001', 'PRJ004S31_SA_L001', 'PRJ004S32_SA_L001', 'PRJ004S33_SA_L001', 'PRJ004S34_SA_L001', 'PRJ004S35_SA_L001','Biodiversa-10_SA_L001']
-SAMPLES=['CRC1599NMH0000000000D03000', 'CRC1599PR-01-0', 'CRC1599PR-10-0', 'CRC1599PR-01-1-L', 'CRC1599PR-01-1-F', 'CRC1599PR-01-1-E', 'CRC1599PR-10-1-F', 'CRC1599PR-10-1-E', 'CRC1599PR-10-1-G']
+SAMPLES_ORIG=['plh','Biodiversa-24_SA_L001', 'Biodiversa-23_SA_L001', 'Biodiversa-22_SA_L001', 'Biodiversa-21_SA_L001', 'Biodiversa-20_SA_L001', 'Biodiversa-19_SA_L001']
+SAMPLES=['CRC0327NLH0000000000D04000','CRC0327-02-MC2-D', 'CRC0327-02-MC2-C', 'CRC0327-02-MC2-B', 'CRC0327-02-MA2-G', 'CRC0327-02-MA2-E', 'CRC0327-02-MA2-B']
 
 NORMAL=[SAMPLES[0]]*(len(SAMPLES)-1)
 TUMOR=SAMPLES[1:]
@@ -80,7 +80,7 @@ AFPARAM="--default-af 0"
 # use --default-af 0 to avoid 0.5 AF calls filtering 
 
 wildcard_constraints:
-    sample="[a-zA-Z0-9]+-?[0-9]+-?[A-Z0-9]+-?[A-Z0-9]?"
+    sample="[a-zA-Z0-9]+-?[0-9A-Z]+-?[A-Z0-9]+-?[A-Z0-9]?"
 
 
 CALLABLE="5:10,10:50,50:100,100:150,150:inf"

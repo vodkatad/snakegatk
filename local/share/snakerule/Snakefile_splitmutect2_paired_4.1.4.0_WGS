@@ -23,6 +23,7 @@ if PON != "":
         output: vcf=protected(MUTECT_DIR+"/{sample}.{spl}.vcf.gz"), stats=MUTECT_DIR+"/{sample}.{spl}.vcf.gz.stats", f1r2=MUTECT_DIR+"/{sample}.{spl}_f1r2.tar.gz"
         singularity: GATK_SING
         docker: GATK_ODOCKER
+        benchmark: "bench/{sample}.{spl}.vcf.gz.times"
         log: MUTECT_DIR+"/{sample}.{spl}.vcf.gz.log"
         params: cores=1, normal=find_matched_normal_sample, af=AFPARAM
         shell: 
@@ -35,7 +36,8 @@ else:
         output: vcf=protected(MUTECT_DIR+"/{sample}.{spl}.vcf.gz"), stats=MUTECT_DIR+"/{sample}.{spl}.vcf.gz.stats", f1r2=MUTECT_DIR+"/{sample}.{spl}_f1r2.tar.gz"
         singularity: GATK_SING
         docker: GATK_ODOCKER
-        log: MUTECT_DIR+"/{sample}.spl.vcf.gz.log"
+        log: MUTECT_DIR+"/{sample}.{spl}.vcf.gz.log"
+        benchmark: "bench/{sample}.{spl}.vcf.gz.times"
         params: cores=CORES, normal=find_matched_normal_sample, af=AFPARAM
         shell: 
             """
