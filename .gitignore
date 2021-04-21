@@ -1,3 +1,4 @@
 dataset/*
 local/share/data/*
 .snakemake
+local/src/gossamer/*

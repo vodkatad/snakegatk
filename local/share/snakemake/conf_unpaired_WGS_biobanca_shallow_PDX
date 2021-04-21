@@ -45,7 +45,7 @@ PLH_DOCKER="bubusettete"
 DATA=ROOT+'/prj/biobanca/local/share/data/shallowseq/fastq'
 FQ_XENOME_DIR="xenome"
 
-MAP=ROOT+'/prj/biobanca/local/share/data/shallowseq/map_lmo_withS.tsv'
+MAP=ROOT+'/prj/biobanca/local/share/data/shallowseq/map_lmx_withS.tsv'
 
 def get_orig_samples():
     o = []
@@ -71,14 +71,14 @@ TUMOR=[] # why is this needed?
 #SAMPLESD=[]
 #SAMPS=",".join(SAMPLESD)
 
-XENOMED_SAMPLES=[]
+XENOMED_SAMPLES=SAMPLES
 TRIMMED_SAMPLES=[]
 
 FASTQ_SUFFIX="_{pair}.fastq.gz"
 FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
-XENOME_PREFIX=''
-XENOME_TOOL=''
-XENOME_WAIT=''
+XENOME_PREFIX=ROOT+'/task/sequences/sequences/dataset/gdc/xenomidx'
+XENOME_TOOL=PRJ_ROOT+'/local/src/gossamer/build/src/xenome'
+XENOME_WAIT=2700
 
 PAIRS=['L001_R1_001','L001_R2_001']
 PAIRS_XENOME=['1','2']
@@ -112,13 +112,5 @@ rule all_markedDup:
     input: expand("align/markedDup_{sample}.sorted.bam", sample=SAMPLES)
 
 
-rule all_deDup_flagstat:
-    input: expand("align/deDup_{sample}.sorted.bam.flagstat", sample=SAMPLES)
-
-rule flagstat_dup:
-    input: "align/markedDup_{sample}.sorted.bam"
-    output: "align/deDup_{sample}.sorted.bam.flagstat"
-    shell:
-        """
-            samtools view -b -F 1024 {input} | samtools flagstat - > {output}
-        """
+rule all_markedDup_flagstat:
+    input: expand("align/markedDup_{sample}.sorted.bam.flagstat", sample=SAMPLES)
