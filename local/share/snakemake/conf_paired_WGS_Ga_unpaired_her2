@@ -1,0 +1,101 @@
+import os
+ROOT=os.environ.get('BIOINFO_ROOT')
+def find_prj_root(path=os.getcwd()):
+    if os.path.isfile(os.path.join(path,".PRJ_ROOT")):
+        return path
+    else:
+        if path:
+            return find_prj_root(os.path.dirname(path))
+        else:
+            raise Exception("Can not find the PRJ_ROOT directory")
+
+
+PRJ_ROOT=find_prj_root()
+TMP="/tmp"
+
+SRC_DIR=PRJ_ROOT+'/local/src'
+BIN_DIR=PRJ_ROOT+'/local/bin'
+FQ_REMOVED=True
+DEBUG="yes"
+TYPE="WGS"
+PAIRED=False
+SUBSAMPLE=1 # if == 1 do not downsample (downsampling is done right after alignment and dup removal, not before calling, to also recalibrate on less data).
+
+# Needed references and annotations
+GNOMAD_TASK_DIR=ROOT+'/task/annotations/dataset/gnomad'
+REF_DIR=GNOMAD_TASK_DIR
+GNOMAD=GNOMAD_TASK_DIR
+VEP_CACHE_DIR=ROOT+"/task/variant_annotations/dataset/VEP"
+ANNOVAR=ROOT+"/task/variant_annotations/dataset/annovar/hg38/humandb/"
+PON=GNOMAD_TASK_DIR+"/1000g_pon.hg38.vcf.gz"
+DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
+INTERVAL=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.interval_list'
+CALLABLE_BED=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.bed.gz'
+GCFILE=GNOMAD_TASK_DIR+'/sequenza_gc_w200.wig.gz'
+# Singularity containers and occam docker images
+GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
+GATK_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/gatk_fixedov:1"
+XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
+ALIGN_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/align_recalibrate:1"
+SEQUENZA_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/sequenza:1"
+VARSCAN_ODOCKER="egrassi/occamsnakes/varscan:1"
+PLATYPUS_ODOCKER="egrassi/occamsnakes/platypus:1"
+PLH_DOCKER="bubusettete"
+
+
+## This dataset:
+DATA=PRJ_ROOT+"/local/share/data/last_shipment"
+FQ_XENOME_DIR="xenome"
+
+SAMPLES_ORIG=['Biodiversa-26_SA_L001', 'Biodiversa-25_SA_L001']
+SAMPLES=['CRC1430LMO0B04008001D02000', 'CRC0124LMO0B04019001D02000']
+#SAMPLES_ORIG=['Biodiversa-28_SA_L001', 'Biodiversa-27_SA_L001']
+#SAMPLES=['CRC1629NMH0000000000D03000', 'CRC1629LMO0A04014001D02000']
+
+#NORMAL=[SAMPLES[0]]*(len(SAMPLES)-1)
+TUMOR=SAMPLES[1:]
+
+#REF=""
+#SAMPLESD=[]
+#SAMPS=",".join(SAMPLESD)
+
+XENOMED_SAMPLES=[]
+TRIMMED_SAMPLES=[]
+
+
+FASTQ_SUFFIX="_{pair}.fastq.gz"
+FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
+
+PAIRS=['R1_001','R2_001']
+PAIRS_XENOME=['1','2']
+CORES=4
+CORESMD=4
+# TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
+PATTERNED=2500 
+# HiSeq4000, otherwise 100 for unpatterned
+#–o recal.bam
+
+
+### TODO REMOVE ME FOR BULK!
+AFPARAM=""
+# https://gatkforums.broadinstitute.org/gatk/discussion/24633/mutect2-4-1-4-0-stats-file-with-a-negative-number#latest
+# use --default-af 0 to avoid 0.5 AF calls filtering 
+
+wildcard_constraints:
+    sample="[a-zA-Z0-9]+-?[0-9A-Z]+-?[A-Z0-9]+-?[A-Z0-9]?"
+
+
+CALLABLE="5:10,10:50,50:100,100:150,150:inf"
+CALLABLE_STRICT="50:100,100:150,150:inf"
+
+SPLIT=12
+SPLIT_INTERVAL=GNOMAD_TASK_DIR+'/GRCh38.d1.vd1.n'+str(SPLIT)
+if SPLIT >= 10:
+    SPLITS=['000'+str(x) for x in range(0,10)] + ['00'+str(x) for x in range(10,SPLIT)]
+else:
+    SPLITS=['000'+str(x) for x in range(0, SPLIT)]
+
+#+'-scattered.interval_list'
+
+PLOIDY=2
+PURITY=1
