@@ -122,3 +122,19 @@ rule flagstat_dup:
         """
             samtools view -b -F 1024 {input} | samtools flagstat - > {output}
         """
+
+rule all_aligned_reads_coverage:
+    input: expand("align/deDup_{sample}.sorted.bam.flagstat", sample=SAMPLES)
+    output: "all_aligned_dedup.tsv"
+    shell:
+        """
+            for f in {input}; do 
+                grep -m1 mapped $f | tr -s " " "\\t" | cut -f 1 | bawk -v f=$f '{{print f,$1}}' | sed 's/align\/deDup_//1' | sed 's/\.sorted\.bam\.flagstat//1'
+            done | sort -k1,1 > {output}.tmp
+            for f in align/*wgsmetrics; do
+                grep -A2 picard.analysis.CollectWgsMetrics $f | tail -n1 | cut -f 2 | bawk -v f=$f '{{print f,$1}}' | sed 's/align\///1' | sed 's/\.wgsmetrics//1'
+            done | sort -k1,1 > {output}.tmp.2
+            join -t$'\\t' {output}.tmp {output}.tmp.2 > {output}
+            rm {output}.tmp*
+        """
+    
