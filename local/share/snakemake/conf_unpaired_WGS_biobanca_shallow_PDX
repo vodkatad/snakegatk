@@ -119,14 +119,18 @@ rule all_markedDup_flagstat:
 rule all_deDup_flagstat:
     input: expand("align/deDup_{sample}.sorted.bam.flagstat", sample=SAMPLES)
 
+
 rule flagstat_dup:
     input: "align/markedDup_{sample}.sorted.bam"
     output: "align/deDup_{sample}.sorted.bam.flagstat"
     shell:
         """
-            samtools view -b -F 1024 {input} | samtools flagstat - > {output}
+            samtools view -q 37 -b -F 1024 {input} | samtools flagstat - > {output}
         """
 
+#https://www.biostars.org/p/304614/
+#Finally, they were aligned withBWAallowing two mismatches and end-trimming of baseswith qualities below 40 (options-n2-q40).
+# -n and -q 40 are not in my bwa, -q does something different.
 rule all_aligned_reads_coverage:
     input: expand("align/deDup_{sample}.sorted.bam.flagstat", sample=SAMPLES)
     output: "all_aligned_dedup.tsv"
@@ -142,3 +146,7 @@ rule all_aligned_reads_coverage:
             rm {output}.tmp*
         """
     
+rule passed_qc:
+    input: "all_aligned_dedup.tsv"
+    output: "passed_qc.tsv"
+    shell: "ln -s {input} {output}"

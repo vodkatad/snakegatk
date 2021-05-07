@@ -144,4 +144,7 @@ rule all_aligned_reads_coverage:
 rule passed_qc:
     input: "all_aligned_dedup.tsv"
     output: "passed_qc.tsv"
-    shell: "ln -s {input} {output}"
+    shell: 
+        """
+            grep -v "\-" {input} > {output}
+        """
