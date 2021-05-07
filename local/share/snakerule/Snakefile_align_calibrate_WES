@@ -31,11 +31,11 @@ rule bwa_mem:
 rule mark_duplicates_picard:
     input: ALIGN_DIR+"/{sample}.bam"
     output: bam=temp(ALIGN_DIR+"/markedDup_{sample}.bam"), metrics=ALIGN_DIR+"/{sample}.dupMetrics.txt"
-    params: pixel_dist=PATTERNED, cores=CORESMD
+    params: pixel_dist=PATTERNED, cores=CORESMD, picard=PICARD
     log: ALIGN_DIR+"/markedDup_{sample}.bam.log"
     shell: 
         """
-        picard -Xmx10g -XX:ParallelGCThreads={params.cores} MarkDuplicates INPUT="{input}" OUTPUT="{output.bam}" METRICS_FILE="{output.metrics}" \
+        {params.picard} MarkDuplicates INPUT="{input}" OUTPUT="{output.bam}" METRICS_FILE="{output.metrics}" \
         ASSUME_SORT_ORDER="queryname" OPTICAL_DUPLICATE_PIXEL_DISTANCE="{params.pixel_dist}" \
         ADD_PG_TAG_TO_READS=false VALIDATION_STRINGENCY="STRICT" 2> {log}
         """
@@ -127,9 +127,10 @@ rule coverage_plot_all:
 rule interval:
     input: bed=SEXONS, sd=REF_DIR+"/GRCh38.d1.vd1.fa"
     output: "target.interval_list"
+    params: picard=PICARD
     shell:
         """
-            picard BedToIntervalList \
+            {params.picard} BedToIntervalList \
               I={input.bed} \
               O={output} \
               SD={input.sd}
@@ -139,9 +140,10 @@ rule interval:
 rule hsmetrics:
     input: bam=ALIGN_DIR+"/realigned_{sample}.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa", il="target.interval_list"
     output: ALIGN_DIR+"/{sample}.hsmetrics"
+    params: picard=PICARD
     shell:
         """
-            picard -Xmx2g  CollectHsMetrics \
+            {params.picard} -Xmx2g  CollectHsMetrics \
             I={input.bam} \
             O={output} \
             R={input.reference} \

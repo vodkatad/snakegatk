@@ -1,12 +1,12 @@
 include: "conf.sk"
 
 rule all_ln:
-    input: expand("{sample}"+FASTQ_PRE+"{pair}.fastq.gz", pair=PAIRS, sample=SAMPLES)
+    input: expand("{sample}_{pair}.fastq.gz", pair=PAIRS, sample=SAMPLES)
 
 def find_ln(wildcards):
     import os
     i = SAMPLES.index(wildcards.sample)
-    w = DATA+"/"+SAMPLES_ORIG[i]+FASTQ_PRE+wildcards.pair+FASTQ_POST
+    w = DATA+"/"+SAMPLES_ORIG[i]+"_"+wildcards.pair+".fastq.gz"
     print(w)
     if os.path.isfile(w) or FQ_REMOVED:
         return w
@@ -15,7 +15,7 @@ def find_ln(wildcards):
             
 rule ln:
     input: find_ln
-    output: "{sample}"+FASTQ_PRE+"{pair}.fastq.gz"
+    output: "{sample}_{pair}.fastq.gz"
     shell:
         """
             ln -s {input} {output}
@@ -25,7 +25,7 @@ rule all_fastqc:
     input: expand("fastqc_{sample}", sample=SAMPLES)
 
 rule fastqc:
-    input: expand("{{sample}}"+FASTQ_PRE+"{pair}.fastq.gz", pair=PAIRS)
+    input: expand("{{sample}}_{pair}.fastq.gz", pair=PAIRS)
     output: directory("fastqc_{sample}")
     shell: "mkdir -p {output}; fastqc --extract -t " + str(CORES) + " -o {output} {input}; rm {output}/*_fastqc.zip"
 

@@ -154,7 +154,7 @@ rule merged_bed:
         """
 
 rule annovar:
-    input: MUTECT_DIR+"/merged.bed", ANNOVAR_HUMANDB
+    input: MUTECT_DIR+"/merged.bed", ANNOVAR
     output: MUTECT_DIR+"/merged.hg38_multianno.txt"
     log: MUTECT_DIR+"/merged.hg38_multianno.log"
     params: ver="hg38"
