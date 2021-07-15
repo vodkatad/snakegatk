@@ -61,20 +61,26 @@ def produce_pairs(wildcards):
 
 rule xenome:
     input: unpack(produce_pairs)
-    output: "xenome/{sample}.xenome.placeholder"
-    params: cores=8, mem=20, xenome="/home/egrassi/common/task/sequences/dataset/gdc/xenomidx"
+    #output: "xenome/{sample}.xenome.placeholder"
+    params: cores=8, mem=20, xenome=XENOME_PREFIX, tool=XENOME_TOOL, wait=XENOME_WAIT #xenome="/home/egrassi/common/task/sequences/dataset/gdc/xenomidx"
     log: "{sample}.xenome"
-    singularity: "/home/egrassi/gossamer/gossamer.img"
+    singularity: ROOT+"/gossamer/gossamer.img"
     shell: 
         """
+            set +e
             mkdir -p xenome
-            xenome classify -v -T {params.cores} -M {params.mem} -P {params.xenome} --graft-name human --host-name mouse -l {log}\\
-            --pairs --output-filename-prefix xenome/{wildcards.sample} -i {input.fastq1} -i {input.fastq2}
+            {params.tool} classify -v -T {params.cores} -M {params.mem} -P {params.xenome} --graft-name human --host-name mouse -l {log} \\
+            --pairs --output-filename-prefix xenome/{wildcards.sample} -i {input.fastq1} -i {input.fastq2} &
+            PID=$!
+            sleep {params.wait}
+            kill $PID
+            touch {output}
         """
+
 
 rule checkxenome:
     input: unpack(produce_pairs)
-    #output: "xenome/{sample}.xenome.placeholder"
+    output: "xenome/{sample}.xenome.placeholder"
     shell:
        """
         tot1=$(zcat {input.fastq2} {input.fastq1} | wc -l);
@@ -173,3 +179,8 @@ else:
 CNV_DIR="sequenza"
 include: PRJ_ROOT+"/local/share/snakerule/Snakefile_sequenza_"+TYPE
 
+
+rule all_single_something:
+    input: expand("{{dir}}/{sample}.{{something}}", sample=SAMPLES)
+    output: "{dir}/all_samples.{something}"
+    shell: "mkdir -p {wildcards.dir}; touch {output}"
