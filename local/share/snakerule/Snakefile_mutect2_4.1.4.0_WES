@@ -165,3 +165,32 @@ rule annovar:
         rm {output}.tmp
         mv merged.hg38_multianno.txt {output}
         """
+
+## PCGR
+# TODO move to conf.sk
+rule all_pcgr:
+    input: expand(MUTECT_DIR+"/{sample}.pcgr_acmg.grch38.snvs_indels.tiers.tsv", sample=SAMPLES)
+
+PCGR='/mnt/trcanmed/snaketree/prj/snakegatk/local/src/pcgr/'
+rule pcgr:
+    input: MUTECT_DIR+"/{sample}.pass.vcf.gz"
+    output: MUTECT_DIR+"/{sample}.pcgr_acmg.grch38.snvs_indels.tiers.tsv"
+    params: pcgr=PCGR, size=0.4, assay='TARGETED', mdir=MUTECT_DIR
+    shell:
+        """
+            python3 {params.pcgr}/pcgr.py --pcgr_dir {params.pcgr} \
+            --output_dir {params.mdir} \
+            --sample_id {wildcards.sample} \
+            --genome_assembly grch38 \
+            --conf {params.pcgr}/examples/example_COAD.toml \
+            --input_vcf {input} \
+            --tumor_site 9 \
+            --tumor_purity 1 \
+            --include_trials \
+            --assay {params.assay} \
+            --estimate_msi_status \
+            --estimate_tmb \
+            --tumor_only \
+            --no_vcf_validate \
+            --target_size_mb {params.size}
+        """
