@@ -194,3 +194,13 @@ rule pcgr:
             --no_vcf_validate \
             --target_size_mb {params.size}
         """
+
+rule pcgr_tiers_af:
+    input: MUTECT_DIR+'/merged.table_nomultiallele'
+    output: MUTECT_DIR+'/merged.table_nomultiallele_wtiers'
+    params: mdir=MUTECT_DIR, tool=BIN_DIR+'/AFmatrix_filter_pcgr'
+    shell:
+        """
+            {params.tool} -m {input} -o {output}
+        """
+
