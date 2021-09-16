@@ -27,11 +27,12 @@ af_table_out_f <- opt$output_af
 genes_table_out_f <- opt$output_gene
 
 af <- read.table(af_table_f, sep="\t", header=TRUE, row.names = 1)
-genes <- as.data.frame(matrix('', nrow=nrow(af), ncol=1), stringsAsFactors=FALSE)
+#genes <- as.data.frame(matrix('', nrow=nrow(af), ncol=1), stringsAsFactors=FALSE)
+genes <- data.frame()
 samples <- colnames(af)
 samples <- gsub('.','-', samples, fixed=TRUE) # so sad, for CRC0282-
-colnames(genes) <- 'gene'
-rownames(genes) <- rownames(af)
+#colnames(genes) <- 'gene'
+#rownames(genes) <- rownames(af)
 
 
 load_filter_pcgr <- function(sample) {
@@ -41,15 +42,24 @@ load_filter_pcgr <- function(sample) {
   d <- d[d$TIER %in% W_TIERS,]
   list(ids=paste0('chr', d$id), genes=d$SYMBOL)
 }
-#save.image('pippo.Rdata')
+save.image('pippo.Rdata')
 for (i in seq(1, length(samples))) {
   keep <- load_filter_pcgr(samples[i])
-  keepid <- intersect(rownames(af),keep[['ids']]) # our af matrix has out of target variants filtered, pcgr do not
+  keepid <- intersect(keep[['ids']], rownames(af)) # our af matrix has out of target variants filtered, pcgr do not
+  # the order of the first one is kept:
+  #> intersect(c(1,2,3), c(3,2))
+  #[1] 2 3
+  #> intersect(c(3,2), c(1,2,3))
+  #[1] 3 2
   igenes <- keep[['genes']]
   igenes <- igenes[keep[['ids']] %in% keepid]
+  kg <- data.frame(row.names=keepid, genes=igenes) # is order mantained this way? TODO check for an example where we remove smt
   af[!rownames(af) %in% keepid, i] <- 0
-  genes[rownames(genes) %in% keepid,'gene'] <- igenes
+  #genes[rownames(genes) %in% keepid,'gene'] <- igenes
+  #tgenes <- merge(genes, kg, by='ids', all.x=TRUE)
+  genes <- rbind(genes, kg)
 }
+genes <- unique(genes)
 
 r <- rowSums(af) == 0
 print(table(r))
