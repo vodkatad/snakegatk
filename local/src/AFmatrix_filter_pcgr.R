@@ -28,7 +28,7 @@ genes_table_out_f <- opt$output_gene
 
 af <- read.table(af_table_f, sep="\t", header=TRUE, row.names = 1)
 #genes <- as.data.frame(matrix('', nrow=nrow(af), ncol=1), stringsAsFactors=FALSE)
-genes <- data.frame()
+genes <- data.frame(stringsAsFactors=FALSE)
 samples <- colnames(af)
 samples <- gsub('.','-', samples, fixed=TRUE) # so sad, for CRC0282-
 #colnames(genes) <- 'gene'
@@ -43,9 +43,12 @@ load_filter_pcgr <- function(sample) {
   list(ids=paste0('chr', d$id), genes=d$SYMBOL)
 }
 save.image('pippo.Rdata')
+keepids <- c()
 for (i in seq(1, length(samples))) {
   keep <- load_filter_pcgr(samples[i])
-  keepid <- intersect(keep[['ids']], rownames(af)) # our af matrix has out of target variants filtered, pcgr do not
+  keepid <- intersect(keep[['ids']], rownames(af)) 
+  # our af matrix has out of target variants filtered, pcgr do not ??
+  keepids <- c(keepids, keepid)
   # the order of the first one is kept:
   #> intersect(c(1,2,3), c(3,2))
   #[1] 2 3
@@ -53,18 +56,29 @@ for (i in seq(1, length(samples))) {
   #[1] 3 2
   igenes <- keep[['genes']]
   igenes <- igenes[keep[['ids']] %in% keepid]
-  kg <- data.frame(row.names=keepid, genes=igenes) # is order mantained this way? TODO check for an example where we remove smt
-  af[!rownames(af) %in% keepid, i] <- 0
+  kg <- data.frame(symbol=keepid, genes=igenes) # is order mantained this way? TODO check for an example where we remove smt
+  
+  #af[!rownames(af) %in% keepid, i] <- 0 # no! # YES! we need to remove the variants not in the right tiers! TODO
+  
   #genes[rownames(genes) %in% keepid,'gene'] <- igenes
   #tgenes <- merge(genes, kg, by='ids', all.x=TRUE)
-  genes <- rbind(genes, kg)
+  if (i != 1) {
+    genes <- rbind(genes, kg, stringsAsFactors=FALSE)
+  } else {
+    genes <- kg
+  }
 }
-genes <- unique(genes)
-
+save.image('pippo.Rdata')
+genes <- unique(genes) # what's the difference
+#genes <- genes[genes$symbol %in% unique(genes$symbol),, drop=FALSE]
+print(length(unique(keepids)))
+# We never remove anything cause it was not in af to start with...
+af[!rownames(af) %in% keepids,] <- rep(0, ncol(af))
 r <- rowSums(af) == 0
 print(table(r))
 af <- af[!r,]
-genes <- genes[!r,, drop=FALSE]
+#genes <- genes[!r,, drop=FALSE]
+save.image('pippa.Rdata')
 
 write.table(af, file=af_table_out_f, sep="\t", quote=FALSE)
-write.table(genes, file=genes_table_out_f, sep="\t", quote=FALSE)
+write.table(genes, file=genes_table_out_f, sep="\t", quote=FALSE, row.names = FALSE)
