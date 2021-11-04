@@ -1,0 +1,154 @@
+import os
+ROOT=os.environ.get('SNAKE_ROOT')
+def find_prj_root(path=os.getcwd()):
+    if os.path.isfile(os.path.join(path,".PRJ_ROOT")):
+        return path
+    else:
+        if path:
+            return find_prj_root(os.path.dirname(path))
+        else:
+            raise Exception("Can not find the PRJ_ROOT directory")
+
+
+PRJ_ROOT=find_prj_root()
+TMP="/tmp"
+
+SRC_DIR=PRJ_ROOT+'/local/src'
+BIN_DIR=PRJ_ROOT+'/local/bin'
+FQ_REMOVED=False
+DEBUG="yes"
+TYPE="WES"
+PAIRED=False
+SUBSAMPLE=1 # if == 1 do not downsample (downsampling is done right after alignment and dup removal, not before calling, to also recalibrate on less data).
+
+# Needed references and annotations
+GNOMAD_TASK_DIR=ROOT+'/task/annotations/dataset/gnomad'
+REF_DIR=GNOMAD_TASK_DIR
+GNOMAD=GNOMAD_TASK_DIR
+VEP_CACHE_DIR=ROOT+"/task/variant_annotations/dataset/VEP"
+ANNOVAR=ROOT+"/task/variant_annotations/dataset/annovar/hg38/humandb/"
+PON=""
+DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
+INTERVAL=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.interval_list'
+GCFILE=GNOMAD_TASK_DIR+'sequenza_gc_w200.wig.gz'
+CALLABLE_BED=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.bed.gz'
+# Singularity containers and occam docker images
+GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
+GATK_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/gatk_fixedov:1"
+XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
+ALIGN_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/align_recalibrate:1"
+SEQUENZA_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/sequenza:1"
+VARSCAN_ODOCKER="egrassi/occamsnakes/varscan:1"
+PLATYPUS_ODOCKER="egrassi/occamsnakes/platypus:1"
+
+## This dataset:
+DATA=PRJ_ROOT+'/local/share/data/WES_100x_Marika'
+FQ_XENOME_DIR="xenome"
+
+
+#egrassi@ulisse:/mnt/cold1/snaketree/data/WES_marika$ sed 1d Sequencing\ report\ 1740-223\ 32\ WES\ Grassi.tsv | cut -f 1 | tr "\n" "," | sed 's/,/","/g'
+#SAMPLES_ORIG=["1740D-223-1","1740D-223-2","1740D-223-3","1740D-223-4","1740D-223-5","1740D-223-6","1740D-223-7","1740D-223-8","1740D-223-9","1740D-223-10","1740D-223-11","1740D-223-12","1740D-223-13","1740D-223-14","1740D-223-15","1740D-223-16","1740D-223-17","1740D-223-18","1740D-223-19","1740D-223-20","1740D-223-21","1740D-223-22","1740D-223-23","1740D-223-24","1740D-223-25","1740D-223-26","1740D-223-27","1740D-223-28","1740D-223-29","1740D-223-30","1740D-223-31","1740D-223-32"]
+#SAMPLES=["CRC0031LMO0A04012001D02000","CRC0125LMO0A04016001D02000","CRC0134LMO0A04009001D03000","CRC0148LMO0A04008001D02000","CRC0169LMO0A04014001D01000","CRC0464LMO0A01003001D02000","CRC0568LMO0A01003001D02000","CRC1078LMO0A02009002D03000","CRC1090LMO0A04011001D02000","CRC1139LMO0A04007001D02000","CRC1307LMO0A02008004D02000","CRC1314LMO0A04016001D02000","CRC1359LMO0B04008001D01000","CRC1360LMO0B04012001D02000","CRC1390LMO0B04024002D02000","CRC1451LMO0A04010001D03000","CRC1477LMO0A04011001D02000","CRC1502LMO0A04010001D02000","CRC1523LMO0A01005001D02000","CRC1568LMO0A04009001D02000","CRC1588LMO0A04008001D02000","CRC1589LMO0B04015001D02000","CRC1598LMO0A04011001D01000","CRC1620LMO0B01004001D02000","CRC1729LMO0A04011001D01000","CRC0544LMO0C04018001D01000","CRC1245LMO0A04029001D02000","CRC1251LMO0A02010003D03000","CRC1566LMO0A04010001D01000","CRC1744LMO0A02005001D01000","CRC1961LMO0A01005001D02000","CRC1979LMO0A01003001D01000"]
+# cannot do like this due to the f* biodiversa naming, resorting to glob
+MAP=DATA+'/map.tsv'
+
+def get_orig_samples():
+    import glob
+    import os
+    o = []
+    s = []
+    with open(MAP, 'r') as map:
+        for line in map.readlines():
+            line = line.rstrip('\n')
+            elems = line.split('\t')
+            lookfor = elems[0]
+	    pathlook = os.path.join(DATA, lookfor+"_*R1*")
+	    found = glob.glob(pathlook)
+	    if len(found) == 1:
+                basename = os.path.basename(found[0])
+		# remove _R1_001.fastq.gz from found
+                f = basename.replace('_R1_001.fastq.gz','')
+                o.append(f)
+                s.append(elems[1])
+            else:
+                raise Exception(elems[1]+" not found! " + pathlook)
+    assert(len(o) == len(s))
+    print(len(o))
+    print(len(s))
+    return (o, s)
+
+SAMPLES_PAIRS = get_orig_samples()
+
+SAMPLES_ORIG=SAMPLES_PAIRS[0]
+SAMPLES=SAMPLES_PAIRS[1]
+
+TUMOR=[] # why is this needed?
+#REF=""
+#SAMPLESD=[]
+#SAMPS=",".join(SAMPLESD)
+
+XENOMED_SAMPLES=[]
+TRIMMED_SAMPLES=[]
+
+FASTQ_SUFFIX="_{pair}.fastq.gz"
+FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
+XENOME_PREFIX=''
+XENOME_TOOL=''
+XENOME_WAIT=''
+
+EXONS=DATA+'/S31285117_Regions.bed' # agilent sureselect v7, https://earray.chem.agilent.com/suredesign/search.htm
+SEXONS=DATA+'/S31285117_Regions_sorted.bed'
+PADDING=100
+
+
+PAIRS=['R1_001','R2_001']
+PAIRS_XENOME=['1','2']
+CORES=8
+CORESMD=4
+# TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
+PATTERNED=2500 
+# HiSeq4000, otherwise 100 for unpatterned
+#–o recal.bam
+
+AFPARAM=""
+#AFPARAM="--default-af 0"
+# https://gatkforums.broadinstitute.org/gatk/discussion/24633/mutect2-4-1-4-0-stats-file-with-a-negative-number#latest
+# use --default-af 0 to avoid 0.5 AF calls filtering 
+
+wildcard_constraints:
+    sample="[a-zA-Z0-9\-]+"
+
+
+CALLABLE="5:10,10:50,50:100,100:150,150:inf"
+CALLABLE_STRICT="50:100,100:150,150:inf"
+PLOIDY='plh'
+PURITY='plh'
+
+#PICARD="picard -Xmx10g -XX:ParallelGCThreads={params.cores}"
+PICARD="picard-tools"
+
+
+rule all_markedDup:
+    input: expand("align/markedDup_{sample}.sorted.bam", sample=SAMPLES)
+
+
+rule all_deDup_flagstat:
+    input: expand("align/deDup_{sample}.sorted.bam.flagstat", sample=SAMPLES)
+
+rule flagstat_dup:
+    input: "align/markedDup_{sample}.sorted.bam"
+    output: "align/deDup_{sample}.sorted.bam.flagstat"
+    shell:
+        """
+            samtools view -b -F 1024 {input} | samtools flagstat - > {output}
+        """
+
+rule all_recalibrate:
+    input: expand("align/realigned_{sample}.bam", sample=SAMPLES)
+
+### version notes
+#bwa 0.7.17-r1188  (godot & ulisse)
+#picard 2.18.25 (godot & ulisse, picard-tools)
+#fastqc 0.11.8 (godot, & ulisse)
+#multiqc 1.8 (godot rnabioinfotree conda env)
+
