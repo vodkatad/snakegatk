@@ -11,7 +11,7 @@ def find_ln(wildcards):
     if os.path.isfile(w) or FQ_REMOVED:
         return w
     else:
-        raise ValueError("Check you SAMPLES_ORIG and SAMPLES in conf.sk!")
+        raise ValueError("Check you SAMPLES_ORIG and SAMPLES in conf.sk! " +  w)
             
 rule ln:
     input: find_ln
@@ -48,6 +48,12 @@ rule all_xenome:
             touch {output}
         """
 
+def produce_pairs_base(wildcards):
+        # we depend on normal fastqs
+        fastqs = expand(wildcards.sample+FASTQ_SUFFIX, pair=PAIRS)
+        return { 'fastq1': fastqs[0], 'fastq2': fastqs[1] }
+
+
 
 def produce_pairs(wildcards):
         if wildcards.sample in TRIMMED_SAMPLES:
@@ -58,6 +64,16 @@ def produce_pairs(wildcards):
             fastqs = expand(wildcards.sample+FASTQ_SUFFIX, pair=PAIRS)
         return { 'fastq1': fastqs[0], 'fastq2': fastqs[1] }
 
+rule trim:
+    input: unpack(produce_pairs_base)
+    output: expand(FQ_TRIM_DIR+'/{{sample}}'+FASTQ_SUFFIX, pair=PAIRS), FQ_TRIM_DIR+'/{sample}.summary'
+    docker: ALIGN_ODOCKER
+    params: dir=FQ_TRIM_DIR, cores=CORES, adapters=ADAPTERS
+    shell:
+        """
+            mkdir -p {params.dir}
+            trimmomatic PE -summary {output[2]} -threads {params.cores} {input.fastq1} {input.fastq2} {output[0]} {output[0]}.unpaired.fq.gz {output[1]} {output[1]}.unpaired.fq.gz ILLUMINACLIP:{params.adapters}:2:30:10:2:keepBothReads MINLEN:70
+        """
 
 rule xenome:
     input: unpack(produce_pairs)

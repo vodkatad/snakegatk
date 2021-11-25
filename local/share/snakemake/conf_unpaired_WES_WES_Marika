@@ -35,6 +35,7 @@ CALLABLE_BED=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.bed.gz'
 # Singularity containers and occam docker images
 GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
 GATK_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/gatk_fixedov:1"
+ALIGN_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/align_recalibrate:1"
 XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
 ALIGN_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/align_recalibrate:1"
 SEQUENZA_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/sequenza:1"
@@ -88,7 +89,11 @@ TUMOR=[] # why is this needed?
 #SAMPS=",".join(SAMPLESD)
 
 XENOMED_SAMPLES=[]
-TRIMMED_SAMPLES=[]
+TRIMMED_SAMPLES=[SAMPLES[0]]
+#ADAPTERS=DATA+'/adapters.fa' #https://support.illumina.com/content/dam/illumina-support/help/Illumina_DRAGEN_Bio_IT_Platform_v3_7_1000000141465/Content/SW/Informatics/Dragen/FastQC_Adapter_Kmer_files_fDG.htm
+# these did not work, not suitable to TRIMMOMATIC expectations on adapter fasta.
+ADAPTERS='TruSeq3-PE' #https://support.illumina.com/content/dam/illumina-support/help/Illumina_DRAGEN_Bio_IT_Platform_v3_7_1000000141465/Content/SW/Informatics/Dragen/FastQC_Adapter_Kmer_files_fDG.htm
+FQ_TRIM_DIR="trim"
 
 FASTQ_SUFFIX="_{pair}.fastq.gz"
 FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
@@ -99,7 +104,7 @@ XENOME_WAIT=''
 EXONS=DATA+'/S31285117_Regions.bed' # agilent sureselect v7, https://earray.chem.agilent.com/suredesign/search.htm
 SEXONS=DATA+'/S31285117_Regions_sorted.bed'
 PADDING=100
-
+BAIT=DATA+'/S31285117_MergedProbes_sorted.bed'
 
 PAIRS=['R1_001','R2_001']
 PAIRS_XENOME=['1','2']
@@ -150,5 +155,21 @@ rule all_recalibrate:
 #bwa 0.7.17-r1188  (godot & ulisse)
 #picard 2.18.25 (godot & ulisse, picard-tools)
 #fastqc 0.11.8 (godot, & ulisse)
-#multiqc 1.8 (godot rnabioinfotree conda env)
+#This is MultiQC v1.11 (ulisse conda env)
 
+# --fast-mode is not available in conda's version
+#CRC1390_manualTCF7.regions.bed.gz
+rule all_tcf7l2:
+    input: expand("depth/{sample}_manualTCF7L2.regions.bed.gz", sample=SAMPLES)
+
+ALIGN_DIR="align"
+rule tcf7l2_coverage:
+    input: bam=ALIGN_DIR+"/realigned_{sample}.sorted.bam", bai=ALIGN_DIR+"/realigned_{sample}.sorted.bam.bai", bed="depth/tcf7l2.bed"
+    output: "depth/{sample}_manualTCF7L2.regions.bed.gz"
+    params: prefix="depth/{sample}", thread=12
+    #docker: ALIGN_ODOCKER
+    shell: 
+        """
+            mkdir -p depth;
+            mosdepth -b {input.bed} -t {params.thread} {params.prefix}_manualTCF7L2 {input.bam};
+	"""

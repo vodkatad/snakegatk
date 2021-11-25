@@ -4,7 +4,10 @@ def produce_pairs(wildcards):
         if wildcards.sample in XENOMED_SAMPLES:
             # we need depend on xenome fastqs (xenos)
             fastqs = expand('xenome/'+wildcards.sample+FASTQ_SUFFIX_XENOME, pair=PAIRS_XENOME)
-        else:
+        elif wildcards.sample in TRIMMED_SAMPLES:
+            # we need depend on trimmed fastqs (decided looking at fastqc)
+            fastqs = expand(FQ_TRIM_DIR+'/'+wildcards.sample+FASTQ_SUFFIX, pair=PAIRS)
+        else:   
             # we depend on normal fastqs (normal samples, organoids)
             fastqs = expand(wildcards.sample+FASTQ_SUFFIX, pair=PAIRS)
         return { 'fastq1': fastqs[0], 'fastq2': fastqs[1] }
@@ -43,6 +46,7 @@ rule mark_duplicates_picard:
 rule recalibrate_quality:
     input: bam=ALIGN_DIR+"/markedDup_{sample}.sorted.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa", snps=DBSNP, bed=SEXONS, bai=ALIGN_DIR+"/markedDup_{sample}.sorted.bam.bai"
     singularity: GATK_SING
+    docker: GATK_ODOCKER
     output: bam=protected(ALIGN_DIR+"/realigned_{sample}.bam"), table=ALIGN_DIR+"/{sample}.table"
     params: padding=PADDING
     log: bam=ALIGN_DIR+"/realigned_{sample}.bam.log", table=ALIGN_DIR+"/{sample}.table.log"
@@ -57,6 +61,7 @@ rule recalibrate_plot:
     output: ALIGN_DIR+"/{sample}.recal_plots.pdf"
     singularity: GATK_SING
     params: padding=PADDING
+    docker: GATK_ODOCKER
     log: ALIGN_DIR+"/{sample}.recal_plots.pdf.log"
     shell: 
         """
@@ -82,6 +87,7 @@ rule all_coverage:
     input: bam=ALIGN_DIR+"/realigned_{sample}.sorted.bam", bai=ALIGN_DIR+"/realigned_{sample}.sorted.bam.bai"
     output: "depth/{sample}.quantized.bed.gz"
     params: prefix="depth/{sample}", thread=12
+    docker: ALIGN_ODOCKER
     shell: 
         """
             mkdir -p depth;
@@ -108,6 +114,7 @@ rule coverage_plot_bis:
     input: bam=ALIGN_DIR+"/realigned_{sample}.sorted.bam", bai=ALIGN_DIR+"/realigned_{sample}.sorted.bam.bai", bed=SEXONS
     output: temp("depth/{sample}.mosdepth.region.dist.txt")
     params: thread=12, prefix="depth/{sample}"
+    docker: ALIGN_ODOCKER
     shell:
         """ 
             mkdir -p depth;
@@ -136,9 +143,22 @@ rule interval:
               SD={input.sd}
         """
 
+rule binterval:
+    input: bed=BAIT, sd=REF_DIR+"/GRCh38.d1.vd1.fa"
+    output: "bait.interval_list"
+    params: picard=PICARD
+    shell:
+        """
+            {params.picard} BedToIntervalList \
+              I={input.bed} \
+              O={output} \
+              SD={input.sd}
+        """
+
+#
 # tODO change in CollectHsMetrics -I realigned_CRC1979NORM.sorted.bam -O CRC1979NORM.hsmetrics -R /work/egrassi/WXS/local/share/data/GRCh38.d1.vd1.fa -BAIT_INTERVALS target.interval_list -TARGET_INTERVALS target.interval_list  it was suggested but it did not work ... !?
 rule hsmetrics:
-    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa", il="target.interval_list"
+    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa", il="target.interval_list", bait="bait.interval_list"
     output: ALIGN_DIR+"/{sample}.hsmetrics"
     params: picard=PICARD
     shell:
@@ -147,7 +167,7 @@ rule hsmetrics:
             I={input.bam} \
             O={output} \
             R={input.reference} \
-            BAIT_INTERVALS={input.il} \
+            BAIT_INTERVALS={input.bait} \
             TARGET_INTERVALS={input.il}
        """
 
