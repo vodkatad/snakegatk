@@ -90,7 +90,6 @@ write.table(genes, file=genes_table_out_f, sep="\t", quote=FALSE, row.names = FA
 
 print('Checking if filtering of af based on TIERs and muts info based on AF worked')
 stopifnot(nrow(genes) == nrow(af))
-save.image('pippo.Rdata')
 m <- merge(af, genes, by.x='row.names', by.y='symbol')
 stopifnot(nrow(genes) == nrow(m))
 
