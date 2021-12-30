@@ -204,10 +204,22 @@ rule pcgr:
 
 rule pcgr_tiers_af:
     input: MUTECT_DIR+'/merged.table_nomultiallele'
-    output: af=MUTECT_DIR+'/merged.table_nomultiallele_wtiers', genes=MUTECT_DIR+'/merged.table_nomultiallele_genes'
-    params: mdir=MUTECT_DIR, tool=BIN_DIR+'/AFmatrix_filter_pcgr'
+    output: af=MUTECT_DIR+'/merged.table_nomultiallele_wtiers', genes=MUTECT_DIR+'/merged.table_nomultiallele_wtiers_annot', long_muts=MUTECT_DIR+'/merged_longformat_wtiers.tsv'
+    params: mdir=MUTECT_DIR, tool=BIN_DIR+'/AFmatrix_filter_pcgr', tiers='TIER 1,TIER 2,TIER 3'
+    log: MUTECT_DIR+'/merged.table_nomultiallele_wtiers.log'
     shell:
         """
-            {params.tool} -m {input} -o {output.af} -g {output.genes}
+            {params.tool} -m {input} -o {output.af} -g {output.genes} -w "{params.tiers}" -l {output.long_muts} &> {log}
         """
+
+rule pcgr_tiers_af_all:
+    input: MUTECT_DIR+'/merged.table_nomultiallele'
+    output: af=MUTECT_DIR+'/merged.table_nomultiallele_alltiers', genes=MUTECT_DIR+'/merged.table_nomultiallele_alltiers_annot', long_muts=MUTECT_DIR+'/merged_longformat_alltiers.tsv'
+    params: mdir=MUTECT_DIR, tool=BIN_DIR+'/AFmatrix_filter_pcgr', tiers='TIER 1,TIER 2,TIER 3,TIER 4'
+    log: MUTECT_DIR+'/merged.table_nomultiallele_alltiers.log'
+    shell:
+        """
+            {params.tool} -m {input} -o {output.af} -g {output.genes} -w "{params.tiers}" -l {output.long_muts} &> {log}
+        """
+
 
