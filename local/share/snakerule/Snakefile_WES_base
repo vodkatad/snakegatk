@@ -67,7 +67,7 @@ def produce_pairs(wildcards):
 rule trim:
     input: unpack(produce_pairs_base)
     output: expand(FQ_TRIM_DIR+'/{{sample}}'+FASTQ_SUFFIX, pair=PAIRS), FQ_TRIM_DIR+'/{sample}.summary'
-    docker: ALIGN_ODOCKER
+    #docker: ALIGN_ODOCKER
     params: dir=FQ_TRIM_DIR, cores=CORES, adapters=ADAPTERS
     shell:
         """
