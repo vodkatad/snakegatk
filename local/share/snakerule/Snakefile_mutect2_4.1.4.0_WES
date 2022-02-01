@@ -7,7 +7,7 @@ if PON != "":
         input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", bed=SEXONS, reference=REF_DIR+"/GRCh38.d1.vd1.fa", pon=PON
         output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), bam=MUTECT_DIR+"/{sample}.igv.bam", stats=MUTECT_DIR+"/{sample}.vcf.gz.stats"
         singularity: GATK_SING
-        #docker: GATK_ODOCKER
+        docker: GATK_ODOCKER
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
         params: padding=PADDING
         shell: 
@@ -19,7 +19,7 @@ else:
         input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", bed=SEXONS, reference=REF_DIR+"/GRCh38.d1.vd1.fa"
         output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), bam=MUTECT_DIR+"/{sample}.igv.bam", stats=MUTECT_DIR+"/{sample}.vcf.gz.stats"
         singularity: GATK_SING
-        #docker: GATK_ODOCKER
+        docker: GATK_ODOCKER
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
         params: padding=PADDING
         shell: 
@@ -31,7 +31,7 @@ rule getpileup:
     input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/gnomad.forcontamination.exomes.vcf", bed=SEXONS
     output: temp(MUTECT_DIR+"/{sample}.pileup.table")
     singularity: GATK_SING
-    #docker: GATK_ODOCKER
+    docker: GATK_ODOCKER
     params: padding=PADDING
     log: MUTECT_DIR+"/{sample}.pileup.table.log"
     shell: 
@@ -43,7 +43,7 @@ rule calculatecontamination:
     input: MUTECT_DIR+"/{sample}.pileup.table"
     output: table=MUTECT_DIR+"/{sample}.contamination.table", seg=MUTECT_DIR+"/{sample}.tum.seg"
     singularity: GATK_SING
-    #docker: GATK_ODOCKER
+    docker: GATK_ODOCKER
     log: MUTECT_DIR+"/{sample}.contamination.table.log"
     shell:
         """
@@ -58,7 +58,7 @@ rule filtercalls:
     input: vcf=MUTECT_DIR+"/{sample}.vcf.gz", ref=REF_DIR+"/GRCh38.d1.vd1.fa", stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", contam=MUTECT_DIR+"/{sample}.contamination.table", seg=MUTECT_DIR+"/{sample}.tum.seg"
     output: vcf=MUTECT_DIR+"/{sample}.filtered.vcf.gz", stats=MUTECT_DIR+"/{sample}_filtering_stats.tsv"
     singularity: GATK_SING
-    #docker: GATK_ODOCKER
+    docker: GATK_ODOCKER
     log: MUTECT_DIR+"/{sample}_filtering_stats.tsv.log"
     shell:
         """
@@ -71,7 +71,7 @@ rule artifacts:
     input: bam=ALIGN_DIR+"/realigned_{sample}.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
     output: MUTECT_DIR+"/{sample}.artifacts.pre_adapter_summary_metrics", MUTECT_DIR+"/{sample}.artifacts.pre_adapter_detail_metrics"
     singularity: GATK_SING
-    #docker: GATK_ODOCKER
+    docker: GATK_ODOCKER
     log: MUTECT_DIR+"/{sample}.artifacts.pre_adapter_summary_metrics.log"
     params: dir=MUTECT_DIR
     shell:
@@ -84,7 +84,7 @@ rule filterOrientation:
     input: vcf=MUTECT_DIR+"/{sample}.filtered.vcf.gz", artifact=MUTECT_DIR+"/{sample}.artifacts.pre_adapter_detail_metrics"
     output: vcf=MUTECT_DIR+"/{sample}.bifiltered.vcf.gz"
     singularity: GATK_SING
-    #docker: GATK_ODOCKER
+    docker: GATK_ODOCKER
     log: MUTECT_DIR+"/{sample}.bifiltered.vcf.gz.log"
     shell:
         """

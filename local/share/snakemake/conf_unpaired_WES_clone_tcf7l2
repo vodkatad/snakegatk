@@ -132,6 +132,14 @@ PURITY='plh'
 #PICARD="picard -Xmx10g -XX:ParallelGCThreads={params.cores}"
 PICARD="picard-tools"
 
+GENES="genes.tsv"
+NAME="WES_TCF7L2_ki"
+
+rule g:
+    output: "genes.tsv"
+    shell: "echo WES > {output}"
+
+
 
 rule all_markedDup:
     input: expand("align/markedDup_{sample}.sorted.bam", sample=SAMPLES)
