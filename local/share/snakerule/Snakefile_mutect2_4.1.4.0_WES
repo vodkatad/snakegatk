@@ -226,7 +226,7 @@ rule xlsx_mut:
         """
             bawk '$6!=0' {input.muts} > {output.out}.tmp
             tsv_to_xls -i {output.out}.tmp,{input.samples},{input.genes} -s muts,samples,genes -o {output.out}
-            rm {params.linkedname}
+            rm -f {params.linkedname}
             ln -s {output.out} {params.linkedname}
             rm {output.out}.tmp
         """
