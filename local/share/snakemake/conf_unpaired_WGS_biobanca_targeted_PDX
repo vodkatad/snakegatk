@@ -80,6 +80,8 @@ XENOME_PREFIX=ROOT+'/task/sequences/sequences/dataset/gdc/xenomidx'
 XENOME_TOOL=PRJ_ROOT+'/local/src/gossamer/build/src/xenome'
 XENOME_WAIT=1500
 EXONS=ROOT+'/prj/biobanca/local/share/data/targeted/all_target_segments_covered_by_probes_Integragen_PJ2008298_TE-95760481_hg38_200911181926.bed'
+GENES=ROOT+'/prj/biobanca/local/share/data/targeted/panel_pdo_pdx_genesymbol.tsv'
+NAME="biobanca_targeted_pdx"
 SEXONS=PRJ_ROOT+'/dataset/biobanca_targeted_pdo/targeted.bed'
 PADDING=100
 
