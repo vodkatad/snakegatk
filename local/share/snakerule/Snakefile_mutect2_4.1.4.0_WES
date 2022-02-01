@@ -223,3 +223,26 @@ rule pcgr_tiers_af_all:
         """
 
 
+# Caution: get entire list of samples, will need to link with QC if we ever remove failed samples, QC has still to be throughly implemented, will never be completely automatic.
+# do smt based on all_metrics, also they need to be converted to xlsx (or "align/deDup_{sample}.sorted.bam.flagstat")
+rule xlsx_mut:
+    input: muts=MUTECT_DIR+'/merged_longformat_{w}tiers.tsv', samples="samples.tsv", genes=GENES
+    output: out="{w}_af_table_samples_genes.xlsx"
+    params: linkedname=NAME+"_{w}_af_table_samples_genes.xlsx"
+    shell:
+        """
+            bawk '$6!=0' {input.muts} > {output.out}.tmp
+            tsv_to_xls -i {output.out}.tmp,{input.samples},{input.genes} -s muts,samples,genes -o {output.out}
+            rm {params.linkedname}
+            ln -s {output.out} {params.linkedname}
+            rm {output.out}.tmp
+        """
+
+rule samples:
+    output: "samples.tsv"
+    params: dir=MUTECT_DIR
+    shell:
+        """
+            ls -1 {params.dir}/*pcgr*pass.vcf.gz |  tr "//" "\\t" | tr "." "\\t" | cut -f 2 | sort | uniq > {output} 
+        """
+        
