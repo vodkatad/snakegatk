@@ -132,3 +132,17 @@ rule flagstat_dup:
 
 rule all_recalibrate:
     input: expand("align/realigned_{sample}.bam", sample=SAMPLES)
+
+rule xls_qc:
+    input:  o="all_metrics", x="../biobanca_targeted_pdx/all_metrics"
+    output: "targeted_qc.xlsx"
+    shell:
+        """
+            echo -e "sample\\tPF_UQ_READS_ALIGNED\\tMEAN_TARGET_COVERAGE" > {output}.tmp1
+            echo -e "sample\\tPF_UQ_READS_ALIGNED\\tMEAN_TARGET_COVERAGE" > {output}.tmp2
+            cut -f 11,23,58 {input.o} | sed 1d | bawk '{{print $3,$1,$2}}' | sed 's/align\///1; s/\.hsmetrics//1' >> {output}.tmp1
+            cut -f 11,23,58 {input.x} | sed 1d | bawk '{{print $3,$1,$2}}' | sed 's/align\///1; s/\.hsmetrics//1' >> {output}.tmp2
+            tsv_to_xls -i {output}.tmp1,{output}.tmp2 -s pdo,pdx -o {output}
+            rm {output}.tmp*
+        """
+        

@@ -148,3 +148,17 @@ rule passed_qc:
         """
             grep -v "\-" {input} > {output}
         """
+
+rule xls_qc:
+    input:  o="all_aligned_dedup.tsv", x='../biobanca_shallowseq_pdx/all_aligned_dedup.tsv'
+    output: "shallowseq_qc.xlsx"
+    shell:
+        """
+            echo -e "sample\\tmapped\\tcoverage" > {output}.tmp1
+            echo -e "sample\\tmapped\\tcoverage" > {output}.tmp2
+            cat {input.o} >> {output}.tmp1
+            cat {input.x} >> {output}.tmp2
+            tsv_to_xls -i {output}.tmp1,{output}.tmp2 -s pdo,pdx -o {output}
+            rm {output}.tmp*
+        """
+        
