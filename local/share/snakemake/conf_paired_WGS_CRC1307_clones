@@ -18,7 +18,7 @@ BIN_DIR=PRJ_ROOT+'/local/bin'
 FQ_REMOVED=True
 DEBUG="yes"
 TYPE="WGS"
-PAIRED=False # changed to to some tests for unpaired design (hypothetical) for 322
+PAIRED=True # has been changed to FALSE to do some tests for unpaired design (hypothetical) for 322
 SUBSAMPLE=1 # if == 1 do not downsample (downsampling is done right after alignment and dup removal, not before calling, to also recalibrate on less data).
 
 # Needed references and annotations
