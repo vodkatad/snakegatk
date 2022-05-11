@@ -57,7 +57,7 @@ rule filtercalls:
     log: MUTECT_DIR+"/{sample}_filtering_stats.tsv.log"
     shell:
         """
-            gatk FilterMutectCalls -V {input.vcf} -O {output.vcf} -R {input.ref} --stats {input.stats} --contamination-table {input.contam} --tumor-segmentation={input.seg} --filtering-stats {output.stats} 2> {log}
+            gatk FilterMutectCalls -V {input.vcf} -O {output.vcf} -R {input.ref} --stats {input.stats} --contamination-table {input.contam} --tumor-segmentation {input.seg} --filtering-stats {output.stats} 2> {log}
         """
 
 # Rule of thumb: less than 30 is worrisome for QSCORE  (https://gatkforums.broadinstitute.org/gatk/discussion/11136/how-to-call-somatic-mutations-using-gatk4-mutect2)
@@ -175,7 +175,7 @@ PCGR='/mnt/trcanmed/snaketree/prj/snakegatk/local/src/pcgr/'
 rule pcgr:
     input: MUTECT_DIR+"/{sample}.pass.vcf.gz"
     output: MUTECT_DIR+"/{sample}.pcgr_acmg.grch38.snvs_indels.tiers.tsv"
-    params: pcgr=PCGR, size=0.4, assay='TARGETED', mdir=MUTECT_DIR
+    params: pcgr=PCGR, size=SIZE, assay=ASSAY, mdir=MUTECT_DIR
     shell:
         """
             python3 {params.pcgr}/pcgr.py --pcgr_dir {params.pcgr} \
