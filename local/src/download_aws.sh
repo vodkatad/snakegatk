@@ -13,4 +13,4 @@ while read p; do
         wget -O $f1 $url1
         wget -O $f2 $url2
         date
-done < aws_marika_2.txt
+done < $1
