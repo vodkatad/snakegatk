@@ -10,7 +10,7 @@ while read p; do
         date
         echo -e "$url1\t$f1"
         echo -e "$url2\t$f2"
-        wget -O $f1 $url1
-        wget -O $f2 $url2
+        wget -q -O $f1 $url1
+        wget -q -O $f2 $url2
         date
 done < $1
