@@ -1,15 +1,17 @@
 def main():
     #args = get_args()
     # 12 in vitro + normal
-    SAMPLES=['CRC0282-01-0', 'CRC0282-05-0', 'CRC0282-07-0', 'CRC0282-01-1-A', 'CRC0282-01-1-B', 'CRC0282-01-1-E', 'CRC0282-05-1-A', 'CRC0282-05-1-C', 'CRC0282-05-1-D', 'CRC0282-07-1-A', 'CRC0282-07-1-B', 'CRC0282-07-1-E']
+    #SAMPLES=['CRC0282-01-0', 'CRC0282-05-0', 'CRC0282-07-0', 'CRC0282-01-1-A', 'CRC0282-01-1-B', 'CRC0282-01-1-E', 'CRC0282-05-1-A', 'CRC0282-05-1-C', 'CRC0282-05-1-D', 'CRC0282-07-1-A', 'CRC0282-07-1-B', 'CRC0282-07-1-E']
     # 9 in vivo
-    #SAMPLES=['CRC0282-01-MI-A', 'CRC0282-01-MI-D', 'CRC0282-01-MI-E', 'CRC0282-01-MA-C', 'CRC0282-01-MA-D', 'CRC0282-01-MA-G', 'CRC0282-01-MC-D', 'CRC0282-01-MC-E', 'CRC0282-01-MA-F']
+    #SAMPLES=['CRC0282-01-MI-A', 'CRC0282-01-MI-D']
+    #SAMPLES=["CRC0282LMO-0-B", "CRC1078LMO-0-B","CRC1502LMO-0-B","CRC0327LMO-0-B"]
+    SAMPLES=[ 'CRC1502-10-MA-C', 'CRC1502-10-MC-A', 'CRC1502-10-MC-C', 'CRC1502-10-MC-D', 'CRC1502-10-MI-A', 'CRC1502-10-MI-C', 'CRC1502-10-MI-G','plh']
 
-    NODES=['RUN_NODE=node' + str(n) for n in range(23, 28)] + ['RUN_NODE=node21']
-    SH=['282_vitro_node' + str(n) + '.sh' for n in range(23, 28)] + ['282_vitro_node21.sh']
+    NODES=['RUN_NODE=node' + str(n) for n in range(32, 36)]# + ['RUN_NODE=node6','RUN_NODE=node7']
+    SH=['bulk_node' + str(n) + '.sh' for n in range(32, 36)]# + ['1502_node6.sh','1502_node7.sh']
     at_command = """
  export {:s} && snakemake -j 2 --use-docker align/realigned_{:s}.bam align/realigned_{:s}.bam &> {:s}_align.slog;
- export {:s} && snakemake -j 24 --use-docker mutect_paired/{:s}.pass.vcf.gz mutect_paired/{:s}.pass.vcf.gz &> {:s}_mutect_paired_mice.slog;
+ export {:s} && snakemake -j 8 --use-docker mutect_paired/{:s}.pass.vcf.gz mutect_paired/{:s}.pass.vcf.gz &> {:s}_mutect_paired.slog;
  export {:s} && snakemake -j 2 --use-docker sequenza/{:s} sequenza/{:s} &> {:s}_sequenza.slog;
  export {:s} && snakemake -j 2 --use-docker fastqc_{:s} fastqc_{:s} &> {:s}_fastqc.slog;
  export {:s} && snakemake -j 2 --use-docker align/{:s}.bam.flagstat align/{:s}.bam.flagstat &> {:s}_flagstat.slog;

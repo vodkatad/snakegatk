@@ -1,0 +1,164 @@
+import os
+ROOT=os.environ.get('SNAKE_ROOT')
+def find_prj_root(path=os.getcwd()):
+    if os.path.isfile(os.path.join(path,".PRJ_ROOT")):
+        return path
+    else:
+        if path:
+            return find_prj_root(os.path.dirname(path))
+        else:
+            raise Exception("Can not find the PRJ_ROOT directory")
+
+
+PRJ_ROOT=find_prj_root()
+TMP="/tmp"
+
+SRC_DIR=PRJ_ROOT+'/local/src'
+BIN_DIR=PRJ_ROOT+'/local/bin'
+FQ_REMOVED=False
+DEBUG="yes"
+TYPE="WGS"
+PAIRED=False
+SUBSAMPLE=1 # if == 1 do not downsample (downsampling is done right after alignment and dup removal, not before calling, to also recalibrate on less data).
+
+# Needed references and annotations
+GNOMAD_TASK_DIR=ROOT+'/task/annotations/dataset/gnomad'
+REF_DIR=GNOMAD_TASK_DIR
+GNOMAD=GNOMAD_TASK_DIR
+VEP_CACHE_DIR=ROOT+"/task/variant_annotations/dataset/VEP"
+ANNOVAR=ROOT+"/task/variant_annotations/dataset/annovar/hg38/humandb/"
+PON=GNOMAD_TASK_DIR+"/1000g_pon.hg38.vcf.gz"
+DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
+INTERVAL=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.interval_list'
+GCFILE=GNOMAD_TASK_DIR+'sequenza_gc_w200.wig.gz'
+CALLABLE_BED=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.bed.gz'
+# Singularity containers and occam docker images
+GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
+GATK_ODOCKER="egrassi/occamsnakes/gatk:1"
+XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
+ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
+SEQUENZA_ODOCKER="egrassi/occamsnakes/sequenza:1"
+PLH_DOCKER="bubusettete"
+
+
+## This dataset:
+DATA=ROOT+'/prj/biobanca/local/share/data/shallowseq/fastq'
+FQ_XENOME_DIR="xenome"
+
+MAP=ROOT+'/prj/biobanca/local/share/data/shallowseq/map_lmo_withS.tsv'
+
+def get_orig_samples():
+    o = []
+    s = []
+    with open(MAP, 'r') as map:
+        for line in map.readlines():
+            line = line.rstrip('\n')
+            elems = line.split('\t')
+            o.append(elems[0])
+            s.append(elems[1])
+    assert(len(o) == len(s))
+    print(len(o))
+    print(len(s))
+    return (o, s)
+
+SAMPLES_PAIRS = get_orig_samples()
+
+SAMPLES_ORIG=SAMPLES_PAIRS[0]
+SAMPLES=SAMPLES_PAIRS[1]
+
+TUMOR=[] # why is this needed?
+#REF=""
+#SAMPLESD=[]
+#SAMPS=",".join(SAMPLESD)
+
+XENOMED_SAMPLES=[]
+TRIMMED_SAMPLES=[]
+
+FASTQ_SUFFIX="_{pair}.fastq.gz"
+FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
+XENOME_PREFIX=''
+XENOME_TOOL=''
+XENOME_WAIT=''
+
+PAIRS=['L001_R1_001','L001_R2_001']
+PAIRS_XENOME=['1','2']
+CORES=8
+CORESMD=4
+# TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
+PATTERNED=2500 
+# HiSeq4000, otherwise 100 for unpatterned
+#–o recal.bam
+
+AFPARAM=""
+#AFPARAM="--default-af 0"
+# https://gatkforums.broadinstitute.org/gatk/discussion/24633/mutect2-4-1-4-0-stats-file-with-a-negative-number#latest
+# use --default-af 0 to avoid 0.5 AF calls filtering 
+
+wildcard_constraints:
+    sample="[a-zA-Z0-9\-]+"
+
+
+CALLABLE="5:10,10:50,50:100,100:150,150:inf"
+CALLABLE_STRICT="50:100,100:150,150:inf"
+PLOIDY='plh'
+PURITY='plh'
+
+#PICARD="picard -Xmx10g -XX:ParallelGCThreads={params.cores}"
+PICARD="picard-tools"
+
+
+# needed here cause we do not recalibrate
+rule all_markedDup:
+    input: expand("align/markedDup_{sample}.sorted.bam", sample=SAMPLES)
+
+
+rule all_deDup_flagstat:
+    input: expand("align/deDup_{sample}.sorted.bam.flagstat", sample=SAMPLES)
+
+rule flagstat_dup:
+    input: "align/markedDup_{sample}.sorted.bam"
+    output: "align/deDup_{sample}.sorted.bam.flagstat"
+    shell:
+        """
+            samtools view -q 37 -b -F 1024 {input} | samtools flagstat - > {output}
+        """
+
+#https://www.biostars.org/p/304614/
+#Finally, they were aligned withBWAallowing two mismatches and end-trimming of baseswith qualities below 40 (options-n2-q40).
+# -n and -q 40 are not in my bwa, -q does something different.
+rule all_aligned_reads_coverage:
+    input: expand("align/deDup_{sample}.sorted.bam.flagstat", sample=SAMPLES)
+    output: "all_aligned_dedup.tsv"
+    shell:
+        """
+            for f in {input}; do 
+                grep -m1 mapped $f | tr -s " " "\\t" | cut -f 1 | bawk -v f=$f '{{print f,$1}}' | sed 's/align\/deDup_//1' | sed 's/\.sorted\.bam\.flagstat//1'
+            done | sort -k1,1 > {output}.tmp
+            for f in align/*wgsmetrics; do
+                grep -A2 picard.analysis.CollectWgsMetrics $f | tail -n1 | cut -f 2 | bawk -v f=$f '{{print f,$1}}' | sed 's/align\///1' | sed 's/\.wgsmetrics//1'
+            done | sort -k1,1 > {output}.tmp.2
+            join -t$'\\t' {output}.tmp {output}.tmp.2 > {output}
+            rm {output}.tmp*
+        """
+
+rule passed_qc:
+    input: "all_aligned_dedup.tsv"
+    output: "passed_qc.tsv"
+    shell: 
+        """
+            grep -v "\-" {input} > {output}
+        """
+
+rule xls_qc:
+    input:  o="all_aligned_dedup.tsv", x='../biobanca_shallowseq_pdx/all_aligned_dedup.tsv'
+    output: "shallowseq_qc.xlsx"
+    shell:
+        """
+            echo -e "sample\\tmapped\\tcoverage" > {output}.tmp1
+            echo -e "sample\\tmapped\\tcoverage" > {output}.tmp2
+            cat {input.o} >> {output}.tmp1
+            cat {input.x} >> {output}.tmp2
+            tsv_to_xls -i {output}.tmp1,{output}.tmp2 -s pdo,pdx -o {output}
+            rm {output}.tmp*
+        """
+        
