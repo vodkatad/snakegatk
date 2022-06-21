@@ -97,7 +97,7 @@ XENOME_WAIT=''
 # https://eu.idtdna.com/pages/products/next-generation-sequencing/workflow/xgen-ngs-hybridization-capture/pre-designed-hyb-cap-panels/exome-hyb-panel-v2#resources
 EXONS=DATA+'/xgen-exome-hyb-panel-v2-targets-hg38.sorted.bed'
 SEXONS=DATA+'/xgen-exome-hyb-panel-v2-targets-hg38.sorted.bed'
-PROBES=DATA+'/xgen-exome-hyb-panel-v2-targets-hg38.sorted.bed'
+PROBES=DATA+'/xgen-exome-hyb-panel-v2-probes-hg38.sorted.bed'
 PADDING=100
 
 
