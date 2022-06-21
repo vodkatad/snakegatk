@@ -97,6 +97,7 @@ XENOME_WAIT=''
 # https://eu.idtdna.com/pages/products/next-generation-sequencing/workflow/xgen-ngs-hybridization-capture/pre-designed-hyb-cap-panels/exome-hyb-panel-v2#resources
 EXONS=DATA+'/targets_idt.bed'
 SEXONS=DATA+'/targets_idt_sorted.bed'
+BAIT=SEXONS
 PADDING=100
 
 
@@ -125,7 +126,8 @@ PURITY='plh'
 
 #PICARD="picard -Xmx10g -XX:ParallelGCThreads={params.cores}"
 PICARD="picard-tools"
-
+FQ_TRIM_DIR="placeholder"
+ADAPTERS="placeholder"
 
 rule all_markedDup:
     input: expand("align/markedDup_{sample}.sorted.bam", sample=SAMPLES)
