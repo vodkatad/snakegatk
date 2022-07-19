@@ -2,6 +2,11 @@
 #ALIGN_DIR="align_calibrate"
 CHRS=["chr"+str(x) for x in range(1,23)]+["chrX","chrY"]
 
+rule all_seq:
+    input: expand(CNV_DIR+"/{sample}", sample=TUMOR)
+    output: CNV_DIR+"/all_sequenza.plh"
+    shell: "mkdir -p sequenza; touch {output}"
+
 rule allseqz:
     input: expand(CNV_DIR+"/{{sample}}_{ch}.seqz.gz", ch=CHRS)
     output: CNV_DIR+"/{sample}.all.seqz.gz"
