@@ -144,7 +144,7 @@ rule interval:
         """
 
 rule binterval:
-    input: bed=BAIT, sd=REF_DIR+"/GRCh38.d1.vd1.fa"
+    input: bed=PROBES, sd=REF_DIR+"/GRCh38.d1.vd1.fa"
     output: "bait.interval_list"
     params: picard=PICARD
     shell:

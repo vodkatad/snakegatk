@@ -30,8 +30,8 @@ PON=GNOMAD_TASK_DIR+"/1000g_pon.hg38.vcf.gz"
 DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
 # Singularity containers and occam docker images
 GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
-GATK_ODOCKER="egrassi/occamsnakes/gatk:1"
-#GATK_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/gatk_fixedov:1" TODO
+#GATK_ODOCKER="egrassi/occamsnakes/gatk:1"
+GATK_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/gatk_fixedov:1" #aTODO
 
 XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
 ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
@@ -51,9 +51,10 @@ SAMPLES_ORIG=SAMPLES_ORIG[0:third]
 SAMPLES=SAMPLES_ORIG
 
 # https://eu.idtdna.com/pages/products/next-generation-sequencing/workflow/xgen-ngs-hybridization-capture/pre-designed-hyb-cap-panels/exome-hyb-panel-v2#resources
-EXONS=DATA+'/xgen-exome-hyb-panel-v2-probes-hg38.bed'
-SEXONS=DATA+'/xgen-exome-hyb-panel-v2-probes-hg38.sorted.bed'
+EXONS=DATA+'/xgen-exome-hyb-panel-v2-targets-hg38.bed'
+SEXONS=DATA+'/xgen-exome-hyb-panel-v2-targets-hg38.sorted.bed'
 PADDING=100
+PROBES=DATA+'/xgen-exome-hyb-panel-v2-probes-hg38.sorted.bed'
 
 #REF=""
 #SAMPLESD=[]
@@ -105,6 +106,9 @@ PAIRS_XENOME=['1','2']
 XENOME_PREFIX='/mnt/trcanmed/snaketree/task/sequences/sequences/dataset/gdc/xenomidx'
 XENOME_TOOL='/mnt/trcanmed/snaketree/prj/snakegatk/local/src/gossamer/build/src/xenome'
 XENOME_WAIT=28800 # 6h for one, giving 2h bonus
+
+FQ_TRIM_DIR=''
+ADAPTERS=''
 
 CORES=12
 CORESMD=2
