@@ -62,7 +62,7 @@ rule filtercalls:
     log: MUTECT_DIR+"/{sample}_filtering_stats.tsv.log"
     shell:
         """
-            gatk FilterMutectCalls -V {input.vcf} -O {output.vcf} -R {input.ref} --stats {input.stats} --contamination-table {input.contam} --tumor-segmentation={input.seg} --filtering-stats {output.stats} 2> {log}
+            gatk FilterMutectCalls -V {input.vcf} -O {output.vcf} -R {input.ref} --stats {input.stats} --contamination-table {input.contam} --tumor-segmentation {input.seg} --filtering-stats {output.stats} 2> {log}
         """
 
 # Rule of thumb: less than 30 is worrisome for QSCORE  (https://gatkforums.broadinstitute.org/gatk/discussion/11136/how-to-call-somatic-mutations-using-gatk4-mutect2)
