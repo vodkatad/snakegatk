@@ -132,14 +132,16 @@ rule merge_targeted:
         """
 
 
+# Removed cause we no longer use VEP
+#output: txt=MUTECT_DIR+"/merged.vep.txt", html=MUTECT_DIR+"/merged.vep.stats.html"
+#vep -i {output.vcf}  --cache --dir_cache {params.cd} --output_file {output.txt} --stats_file {output.html} --pick
 rule VEP:
     input: MUTECT_DIR+"/merged_targeted.vcf"
-    output: txt=MUTECT_DIR+"/merged.vep.txt", html=MUTECT_DIR+"/merged.vep.stats.html", vcf=MUTECT_DIR+"/merged.vcf.id"
+    output: vcf=MUTECT_DIR+"/merged.vcf.id"
     params: cd=VEP_CACHE_DIR
     shell:
         """
              bcftools annotate -I +'%CHROM:%POS:%REF:%ALT' {input} > {output.vcf}
-             vep -i {output.vcf}  --cache --dir_cache {params.cd} --output_file {output.txt} --stats_file {output.html} --pick
         """
 
 rule vcf_to_aftable:
