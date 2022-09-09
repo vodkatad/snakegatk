@@ -34,10 +34,9 @@ GCFILE=GNOMAD_TASK_DIR+'sequenza_gc_w200.wig.gz'
 CALLABLE_BED=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.bed.gz'
 # Singularity containers and occam docker images
 GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
-GATK_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/gatk_fixedov:1"
+GATK_ODOCKER="broadinstitute/gatk:4.2.5.0"
 ALIGN_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/align_recalibrate:1"
 XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
-ALIGN_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/align_recalibrate:1"
 SEQUENZA_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/sequenza:1"
 VARSCAN_ODOCKER="egrassi/occamsnakes/varscan:1"
 PLATYPUS_ODOCKER="egrassi/occamsnakes/platypus:1"
@@ -111,6 +110,7 @@ EXONS=DATA+'/S31285117_Regions.bed' # agilent sureselect v7, https://earray.chem
 SEXONS=DATA+'/S31285117_Regions_sorted.bed'
 PADDING=100
 BAIT=DATA+'/S31285117_MergedProbes_sorted.bed'
+PROBES=BAIT
 
 PAIRS=['R1_001','R2_001']
 PAIRS_XENOME=['1','2']
