@@ -34,11 +34,12 @@ rule mark_duplicates_picard:
     input: ALIGN_DIR+"/{sample}.bam"
     output: bam=ALIGN_DIR+"/markedDup_{sample}.bam", metrics=ALIGN_DIR+"/{sample}.dupMetrics.txt"
     params: pixel_dist=PATTERNED, cores=CORESMD, picard=PICARD
+    docker: ALIGN_ODOCKER
     log: ALIGN_DIR+"/markedDup_{sample}.bam.log"
     benchmark: "bench/markedDup_{sample}.bam.times"
     shell: 
         """
-        {params.picard} MarkDuplicates INPUT="{input}" OUTPUT="{output.bam}" METRICS_FILE="{output.metrics}" \
+        {params.picard}{params.cores} MarkDuplicates INPUT="{input}" OUTPUT="{output.bam}" METRICS_FILE="{output.metrics}" \
         ASSUME_SORT_ORDER="queryname" OPTICAL_DUPLICATE_PIXEL_DISTANCE="{params.pixel_dist}" \
         ADD_PG_TAG_TO_READS=false VALIDATION_STRINGENCY="STRICT" 2> {log}
         """
