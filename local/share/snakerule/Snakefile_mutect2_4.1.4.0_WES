@@ -187,7 +187,7 @@ rule pcgr:
     params: pcgr=PCGR, size=0.4, assay='TARGETED', mdir=MUTECT_DIR
     shell:
         """
-            python3 {params.pcgr}/pcgr.py --pcgr_dir {params.pcgr} \
+            /usr/bin/python3 {params.pcgr}/pcgr.py --pcgr_dir {params.pcgr} \
             --output_dir {params.mdir} \
             --sample_id {wildcards.sample} \
             --genome_assembly grch38 \

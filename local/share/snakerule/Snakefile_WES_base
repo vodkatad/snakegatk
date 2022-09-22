@@ -157,13 +157,13 @@ rule murine_content:
                     out.write('{}\t{}\n'.format(s, ratio))
     
 
-rule sort_targeted:
-    input: bed=EXONS, fai=REF_DIR+"/GRCh38.d1.vd1.fa.fai" 
-    output: SEXONS
-    shell:
-        """
-            bedtools sort -faidx {input.fai} -i {input.bed} > {output}
-        """
+#rule sort_targeted:
+#    input: bed=EXONS, fai=REF_DIR+"/GRCh38.d1.vd1.fa.fai" 
+#    output: SEXONS
+#    shell:
+#        """
+#            bedtools sort -faidx {input.fai} -i {input.bed} > {output}
+#        """
 
 ### Alignment and calling are in separate Snakefiles that we include here following conf.sk:
 def find_matched_normal_sample(wildcards):
