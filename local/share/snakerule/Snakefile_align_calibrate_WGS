@@ -183,18 +183,17 @@ rule intersect_callable_singlesample:
 
 #####################3
 
-
-
 # thresholds gotten from Mutect2 default parameters that we are adopting
 #input: bam=ALIGN_DIR+"/realigned_{sample}.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
 rule wgs_metrics:
     input: bam=ALIGN_DIR+"/markedDup_{sample}.sorted.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
     output: txt=ALIGN_DIR+"/{sample}.wgsmetrics", sens=ALIGN_DIR+"/{sample}.sens"
     benchmark: "bench/{sample}.wgsmetrics.times"
-    params: picard=PICARD
+    params: picard=PICARD, cores=CORESMD
+    docker: ALIGN_ODOCKER
     shell:
         """
-            {params.picard} CollectWgsMetrics I={input.bam} O={output.txt} R={input.reference} INCLUDE_BQ_HISTOGRAM=true ALLELE_FRACTION=0.5 MINIMUM_BASE_QUALITY=18 THEORETICAL_SENSITIVITY_OUTPUT={output.sens} MINIMUM_MAPPING_QUALITY=20
+	{params.picard}{params.cores} CollectWgsMetrics I={input.bam} O={output.txt} R={input.reference} INCLUDE_BQ_HISTOGRAM=true ALLELE_FRACTION=0.5 MINIMUM_BASE_QUALITY=18 THEORETICAL_SENSITIVITY_OUTPUT={output.sens} MINIMUM_MAPPING_QUALITY=20
         """
 
 rule bam_stats:
