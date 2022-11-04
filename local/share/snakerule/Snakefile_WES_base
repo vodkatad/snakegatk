@@ -61,7 +61,7 @@ def produce_pairs(wildcards):
 
 rule xenome:
     input: unpack(produce_pairs)
-    #output: "xenome/{sample}.xenome.placeholder"
+    output: "xenome/{sample}.xenome.placeholder"
     params: cores=8, mem=20, xenome=XENOME_PREFIX, tool=XENOME_TOOL, wait=XENOME_WAIT #xenome="/home/egrassi/common/task/sequences/dataset/gdc/xenomidx"
     log: "{sample}.xenome"
     singularity: ROOT+"/gossamer/gossamer.img"
@@ -80,7 +80,7 @@ rule xenome:
 
 rule checkxenome:
     input: unpack(produce_pairs)
-    output: "xenome/{sample}.xenome.placeholder"
+    #output: "xenome/{sample}.xenome.placeholder"
     shell:
        """
         tot1=$(zcat {input.fastq2} {input.fastq1} | wc -l);
@@ -127,18 +127,21 @@ rule murine_content:
                 sk = sample_kind.split("_")
                 if len(sk) == 3:
                     if dictio_reads.get(sk[0]) is None:
-                        dictio_reads[sk[0]] = [0,0]
+                        dictio_reads[sk[0]] = [0,0,0]
                     if sk[1] == "human":
                         dictio_reads[sk[0]][0] = reads 
-                    if sk[1] == "mouse":
+                    elif sk[1] == "mouse":
                         dictio_reads[sk[0]][1] = reads 
+                    else:
+                        dictio_reads[sk[0]][2] += int(reads)
             with open(output.percs, 'w') as out:
                 for s in dictio_reads.keys():
                     tupl = dictio_reads[s]
                     ratio = 0
                     if float(tupl[0]) != 0:
-                        ratio = float(tupl[1]) / float(tupl[0])
-                    out.write('{}\t{}\n'.format(s, ratio))
+                        ratiomurine = float(tupl[1]) / float(tupl[0])
+                        ratiolost = float(tupl[2]/2) / float(tupl[0]) # XXX TODO works for paired only
+                    out.write('{}\t{}\t{}\n'.format(s, ratiomurine, ratiolost))
     
 
 rule sort_targeted:
