@@ -103,3 +103,14 @@ else:
 
 PLOIDY=2
 PURITY=1
+
+rule all_sottoriva_bin:
+    input: expand("{sample}.binfit.0.12_0.2.pdf", sample=TUMOR) 
+
+rule neutral_sottoriva_bin:
+    input: afmatrix="mutect_paired/{sample}.pass.table.gz"
+    params: debug="yes", afcolumn="{sample}"
+    output: fit="{sample}.binfit.{loweraf}_{higheraf}.pdf", r2="{sample}.binfit.{loweraf}_{higheraf}.r2"
+    script: SRC_DIR+"/neutral_sottoriva_bin.R"
+
+get_ppos = None

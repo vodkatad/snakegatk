@@ -112,13 +112,20 @@ rule passFilter:
         tabix {output};
         """ 
 
+
+def get_pos(wildcards):
+    if get_ppos is None:
+        return 9
+    else:
+        return get_ppos(wildcards)
+
 rule single_table:
     input: vcf=MUTECT_DIR+"/{sample}.pass.vcf.gz"
     output: MUTECT_DIR+"/{sample}.pass.table.gz"
-    params: nsamples=1
+    params: nsamples=1, pos=get_pos
     shell:
         """
-      zcat {input} | grep -v "^##" |  perl -ane '@gt=splice(@F,9,{params.nsamples}); $gt=""; foreach $g (@gt) {{ if ($.==1) {{$gt.=$g."\\t";}} else {{ @afs = split(":",$g); if ($afs[2] eq ".") {{$afs[2]=0;}} $gt.=$afs[2]."\\t";}} }} chop($gt) ; print $F[2]."\\t".$gt."\\n";' | grep -v "," | gzip > {output}
+      zcat {input} | grep -v "^##" |  perl -ane '@gt=splice(@F,{params.pos},{params.nsamples}); $gt=""; foreach $g (@gt) {{ if ($.==1) {{$gt.=$g."\\t";}} else {{ @afs = split(":",$g); if ($afs[2] eq ".") {{$afs[2]=0;}} $gt.=$afs[2]."\\t";}} }} chop($gt) ; print $F[2]."\\t".$gt."\\n";' | grep -v "," | gzip > {output}
         """
 
 rule neutral_sottoriva:
