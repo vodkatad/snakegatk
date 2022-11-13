@@ -18,7 +18,7 @@ BIN_DIR=PRJ_ROOT+'/local/bin'
 FQ_REMOVED=True
 DEBUG="yes"
 TYPE="WGS"
-PAIRED=True # has been changed to FALSE to do some tests for unpaired design (hypothetical) for 322
+PAIRED=True
 SUBSAMPLE=1 # if == 1 do not downsample (downsampling is done right after alignment and dup removal, not before calling, to also recalibrate on less data).
 
 # Needed references and annotations
@@ -44,16 +44,13 @@ PLH_DOCKER="bubusettete"
 
 
 ## This dataset:
-DATA=PRJ_ROOT+"/local/share/data/CRC1307_clones"
+DATA=PRJ_ROOT+"/local/share/data/third_shipment"
 FQ_XENOME_DIR="xenome"
 
-# data@rotpunkt:~/work/snakegatk$ python local/src/tsv_to_json_metadata.py -i ~/Dropbox/work/evol/MA/CRC1307/samples_sheet.tsv -j ~/Dropbox/work/evol/MA/CRC1307/metadata_partial.json
-#SAMPLES_ORIG=['1740D-84-01_S48_L004', 'BD0002_SA_L001', 'BD0011_SA_L001', 'BD0009_SA_L001', 'BD0013_SA_L001', 'BD0010_SA_L001', 'BD0012_SA_L001', 'BD0001_SA_L001', 'BD0014_SA_L001', 'BD0015_SA_L001']
-SAMPLES=['CRC1307NLH-0-B','CRC1307-02-0', 'CRC1307-08-0', 'CRC1307-09-0', 'CRC1307-02-1-A', 'CRC1307-02-1-B', 'CRC1307-02-1-E', 'CRC1307-08-1-B', 'CRC1307-08-1-D', 'CRC1307-08-1-E', 'CRC1307-09-1-B', 'CRC1307-09-1-C', 'CRC1307-09-1-E', 'CRC1307-08-MA-A', 'CRC1307-08-MA-C', 'CRC1307-08-MA-F', 'CRC1307-08-MC-D', 'CRC1307-08-MC-E', 'CRC1307-08-MC-F', 'CRC1307-08-MI-A', 'CRC1307-08-MI-B', 'CRC1307-08-MI-F']
-SAMPLES_ORIG=['1740D-84-01_S48_L004','BD0005_SA_L001', 'BD0006_SA_L001', 'BD0007_SA_L001', 'BD0003_SA_L001', 'BD0004_SA_L001', 'BD0018_SA_L001', 'BD0016_SA_L001', 'BD0017_SA_L001', 'BD0008_SA_L001', 'BD0020_SA_L001', 'BD0019_SA_L001', 'BD0021_SA_L001', 'BD0002_SA_L001', 'BD0011_SA_L001', 'BD0009_SA_L001', 'BD0013_SA_L001', 'BD0010_SA_L001', 'BD0012_SA_L001', 'BD0001_SA_L001', 'BD0014_SA_L001', 'BD0015_SA_L001']
-#SAMPLES= ['CRC1307NLH-0-B', 'CRC1307-08-MA-A', 'CRC1307-08-MA-C', 'CRC1307-08-MA-F', 'CRC1307-08-MC-D', 'CRC1307-08-MC-E', 'CRC1307-08-MC-F', 'CRC1307-08-MI-A', 'CRC1307-08-MI-B', 'CRC1307-08-MI-F']
-NORMAL=["CRC1307NLH-0-B"]*(len(SAMPLES[1:]))
-#TUMOR=['CRC1307-02-0', 'CRC1307-08-0', 'CRC1307-09-0', 'CRC1307-02-1-A', 'CRC1307-02-1-B', 'CRC1307-02-1-E', 'CRC1307-08-1-B', 'CRC1307-08-1-D', 'CRC1307-08-1-E', 'CRC1307-09-1-B', 'CRC1307-09-1-C', 'CRC1307-09-1-E']
+SAMPLES_ORIG=['PRJ004S28_SA_L001', 'PRJ004S29_SA_L001', 'PRJ004S30_SA_L001', 'PRJ004S31_SA_L001', 'PRJ004S32_SA_L001', 'PRJ004S33_SA_L001', 'PRJ004S34_SA_L001', 'PRJ004S35_SA_L001','Biodiversa-10_SA_L001']
+SAMPLES=['CRC1599NMH0000000000D03000', 'CRC1599PR-01-0', 'CRC1599PR-10-0', 'CRC1599PR-01-1-L', 'CRC1599PR-01-1-F', 'CRC1599PR-01-1-E', 'CRC1599PR-10-1-F', 'CRC1599PR-10-1-E', 'CRC1599PR-10-1-G']
+
+NORMAL=[SAMPLES[0]]*(len(SAMPLES)-1)
 TUMOR=SAMPLES[1:]
 
 #REF=""
@@ -83,7 +80,7 @@ AFPARAM="--default-af 0"
 # use --default-af 0 to avoid 0.5 AF calls filtering 
 
 wildcard_constraints:
-    sample="[a-zA-Z0-9]+-[0-9]+-[A-Z0-9]+-?[A-Z0-9]?"
+    sample="[a-zA-Z0-9]+-?[0-9]+-?[A-Z0-9]+-?[A-Z0-9]?"
 
 
 CALLABLE="5:10,10:50,50:100,100:150,150:inf"
@@ -98,5 +95,5 @@ else:
 
 #+'-scattered.interval_list'
 
-PLOIDY=3
+PLOIDY=2
 PURITY=1

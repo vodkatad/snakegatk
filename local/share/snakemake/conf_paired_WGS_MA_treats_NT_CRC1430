@@ -11,14 +11,14 @@ def find_prj_root(path=os.getcwd()):
 
 
 PRJ_ROOT=find_prj_root()
-TMP="/scratch/home/egrassi/"
+TMP="/scratch/home/mviviani/"
 
 SRC_DIR=PRJ_ROOT+'/local/src'
 BIN_DIR=PRJ_ROOT+'/local/bin'
 FQ_REMOVED=True
 DEBUG="yes"
 TYPE="WGS"
-PAIRED=True # has been changed to FALSE to do some tests for unpaired design (hypothetical) for 322
+PAIRED=True
 SUBSAMPLE=1 # if == 1 do not downsample (downsampling is done right after alignment and dup removal, not before calling, to also recalibrate on less data).
 
 # Needed references and annotations
@@ -44,17 +44,15 @@ PLH_DOCKER="bubusettete"
 
 
 ## This dataset:
-DATA=PRJ_ROOT+"/local/share/data/CRC1307_clones"
+DATA=PRJ_ROOT+"/local/share/data/WGS_cleverers_treats_LD150"
 FQ_XENOME_DIR="xenome"
 
-# data@rotpunkt:~/work/snakegatk$ python local/src/tsv_to_json_metadata.py -i ~/Dropbox/work/evol/MA/CRC1307/samples_sheet.tsv -j ~/Dropbox/work/evol/MA/CRC1307/metadata_partial.json
-#SAMPLES_ORIG=['1740D-84-01_S48_L004', 'BD0002_SA_L001', 'BD0011_SA_L001', 'BD0009_SA_L001', 'BD0013_SA_L001', 'BD0010_SA_L001', 'BD0012_SA_L001', 'BD0001_SA_L001', 'BD0014_SA_L001', 'BD0015_SA_L001']
-SAMPLES=['CRC1307NLH-0-B','CRC1307-02-0', 'CRC1307-08-0', 'CRC1307-09-0', 'CRC1307-02-1-A', 'CRC1307-02-1-B', 'CRC1307-02-1-E', 'CRC1307-08-1-B', 'CRC1307-08-1-D', 'CRC1307-08-1-E', 'CRC1307-09-1-B', 'CRC1307-09-1-C', 'CRC1307-09-1-E', 'CRC1307-08-MA-A', 'CRC1307-08-MA-C', 'CRC1307-08-MA-F', 'CRC1307-08-MC-D', 'CRC1307-08-MC-E', 'CRC1307-08-MC-F', 'CRC1307-08-MI-A', 'CRC1307-08-MI-B', 'CRC1307-08-MI-F']
-SAMPLES_ORIG=['1740D-84-01_S48_L004','BD0005_SA_L001', 'BD0006_SA_L001', 'BD0007_SA_L001', 'BD0003_SA_L001', 'BD0004_SA_L001', 'BD0018_SA_L001', 'BD0016_SA_L001', 'BD0017_SA_L001', 'BD0008_SA_L001', 'BD0020_SA_L001', 'BD0019_SA_L001', 'BD0021_SA_L001', 'BD0002_SA_L001', 'BD0011_SA_L001', 'BD0009_SA_L001', 'BD0013_SA_L001', 'BD0010_SA_L001', 'BD0012_SA_L001', 'BD0001_SA_L001', 'BD0014_SA_L001', 'BD0015_SA_L001']
-#SAMPLES= ['CRC1307NLH-0-B', 'CRC1307-08-MA-A', 'CRC1307-08-MA-C', 'CRC1307-08-MA-F', 'CRC1307-08-MC-D', 'CRC1307-08-MC-E', 'CRC1307-08-MC-F', 'CRC1307-08-MI-A', 'CRC1307-08-MI-B', 'CRC1307-08-MI-F']
-NORMAL=["CRC1307NLH-0-B"]*(len(SAMPLES[1:]))
-#TUMOR=['CRC1307-02-0', 'CRC1307-08-0', 'CRC1307-09-0', 'CRC1307-02-1-A', 'CRC1307-02-1-B', 'CRC1307-02-1-E', 'CRC1307-08-1-B', 'CRC1307-08-1-D', 'CRC1307-08-1-E', 'CRC1307-09-1-B', 'CRC1307-09-1-C', 'CRC1307-09-1-E']
+SAMPLES_ORIG=['BIOMEDICA-1-1-48_SA_L001', "BIOMEDICA-1-1-11_SA_L001","BIOMEDICA-1-1-12_SA_L001","BIOMEDICA-1-1-13_SA_L001","BIOMEDICA-1-1-33_SA_L001","BIOMEDICA-1-1-34_SA_L001","BIOMEDICA-1-1-35_SA_L001"]
+SAMPLES=['CRC1430NLH0000000000D03000', "CRC1430-03-0","CRC1430-04-0","CRC1430-05-0","CRC1430-03-1-NB","CRC1430-04-1-ND", "CRC1430-05-1-NB"]
+
 TUMOR=SAMPLES[1:]
+NORMAL=[SAMPLES[0]]*len(TUMOR)
+
 
 #REF=""
 #SAMPLESD=[]
@@ -63,6 +61,10 @@ TUMOR=SAMPLES[1:]
 XENOMED_SAMPLES=[]
 TRIMMED_SAMPLES=[]
 
+FQ_XENOME_DIR="xenome"
+XENOME_PREFIX=""
+XENOME_TOOL=""
+XENOME_WAIT=""
 
 FASTQ_SUFFIX="_{pair}.fastq.gz"
 FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
@@ -76,14 +78,16 @@ PATTERNED=2500
 # HiSeq4000, otherwise 100 for unpatterned
 #–o recal.bam
 
+PICARD="picard -Xmx10g -XX:ParallelGCThreads="
 
 ### TODO REMOVE ME FOR BULK!
-AFPARAM="--default-af 0"
+#AFPARAM="--default-af 0"
+AFPARAM=""
 # https://gatkforums.broadinstitute.org/gatk/discussion/24633/mutect2-4-1-4-0-stats-file-with-a-negative-number#latest
 # use --default-af 0 to avoid 0.5 AF calls filtering 
 
 wildcard_constraints:
-    sample="[a-zA-Z0-9]+-[0-9]+-[A-Z0-9]+-?[A-Z0-9]?"
+    sample="[a-zA-Z0-9]+-?[A-Z0-9]+-?[A-Z0-9]+-?[A-Z0-9]+"
 
 
 CALLABLE="5:10,10:50,50:100,100:150,150:inf"
