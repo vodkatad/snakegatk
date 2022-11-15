@@ -155,3 +155,77 @@ rule annovar:
         rm {output}.tmp
         mv merged.hg38_multianno.txt {output}
         """
+
+
+# Caution: get entire list of samples, will need to link with QC if we ever remove failed samples, QC has still to be throughly implemented, will never be completely automatic.
+# do smt based on all_metrics, also they need to be converted to xlsx (or "align/deDup_{sample}.sorted.bam.flagstat")
+rule xlsx_mut:
+    input: muts=MUTECT_DIR+'/merged_longformat_{w}tiers.tsv', samples="samples.tsv", genes=GENES
+    output: out="{w}_af_table_samples_genes.xlsx"
+    params: linkedname=NAME+"_{w}_af_table_samples_genes.xlsx"
+    shell:
+        """
+            bawk '$6!=0' {input.muts} > {output.out}.tmp
+            tsv_to_xls -i {output.out}.tmp,{input.samples},{input.genes} -s muts,samples,genes -o {output.out}
+            rm -f {params.linkedname}
+            ln -s {output.out} {params.linkedname}
+            rm {output.out}.tmp
+        """
+
+rule samples:
+    output: "samples.tsv"
+    params: dir=MUTECT_DIR
+    shell:
+        """
+            ls -1 {params.dir}/*pcgr*pass.vcf.gz |  tr "//" "\\t" | tr "." "\\t" | cut -f 2 | sort | uniq > {output} 
+        """
+        
+## PCGR
+rule all_pcgr:
+    input: expand(MUTECT_DIR+"/{sample}.pcgr_acmg.grch38.snvs_indels.tiers.tsv", sample=TUMOR)
+
+PCGR='/mnt/trcanmed/snaketree/prj/snakegatk/local/src/pcgr/'
+rule pcgr:
+    input: MUTECT_DIR+"/{sample}.pass.vcf.gz"
+    output: MUTECT_DIR+"/{sample}.pcgr_acmg.grch38.snvs_indels.tiers.tsv"
+    params: pcgr=PCGR, size=SIZE, assay=ASSAY, mdir=MUTECT_DIR
+    shell:
+        """
+            python3 {params.pcgr}/pcgr.py --pcgr_dir {params.pcgr} \
+            --output_dir {params.mdir} \
+            --sample_id {wildcards.sample} \
+            --genome_assembly grch38 \
+            --conf {params.pcgr}/examples/example_COAD.toml \
+            --input_vcf {input} \
+            --tumor_site 9 \
+            --tumor_purity 1 \
+            --include_trials \
+            --assay {params.assay} \
+            --estimate_msi_status \
+            --estimate_tmb \
+            --tumor_only \
+            --no_vcf_validate \
+            --target_size_mb {params.size}
+        """
+
+rule pcgr_tiers_af:
+    input: MUTECT_DIR+'/merged.table_nomultiallele'
+    output: af=MUTECT_DIR+'/merged.table_nomultiallele_wtiers', genes=MUTECT_DIR+'/merged.table_nomultiallele_wtiers_annot', long_muts=MUTECT_DIR+'/merged_longformat_wtiers.tsv'
+    params: mdir=MUTECT_DIR, tool=BIN_DIR+'/AFmatrix_filter_pcgr', tiers='TIER 1,TIER 2,TIER 3'
+    log: MUTECT_DIR+'/merged.table_nomultiallele_wtiers.log'
+    shell:
+        """
+            {params.tool} -m {input} -o {output.af} -g {output.genes} -w "{params.tiers}" -l {output.long_muts} &> {log}
+        """
+
+rule pcgr_tiers_af_all:
+    input: MUTECT_DIR+'/merged.table_nomultiallele'
+    output: af=MUTECT_DIR+'/merged.table_nomultiallele_alltiers', genes=MUTECT_DIR+'/merged.table_nomultiallele_alltiers_annot', long_muts=MUTECT_DIR+'/merged_longformat_alltiers.tsv'
+    params: mdir=MUTECT_DIR, tool=BIN_DIR+'/AFmatrix_filter_pcgr', tiers='TIER 1,TIER 2,TIER 3,TIER 4'
+    log: MUTECT_DIR+'/merged.table_nomultiallele_alltiers.log'
+    shell:
+        """
+            {params.tool} -m {input} -o {output.af} -g {output.genes} -w "{params.tiers}" -l {output.long_muts} &> {log}
+        """
+
+

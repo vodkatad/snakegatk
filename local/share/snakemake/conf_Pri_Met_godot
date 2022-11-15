@@ -175,3 +175,10 @@ rule bet_bin:
             head -n1 {input[0]} > {output}
             grep -v intercept {input} | sort -k1,1 >> {output}
         """
+
+GENES="genes.tsv"
+NAME="PriMets"
+rule g:
+    output: "genes.tsv"
+    params: wes=EXONS
+    shell: "echo {params.wes} > {output}"
