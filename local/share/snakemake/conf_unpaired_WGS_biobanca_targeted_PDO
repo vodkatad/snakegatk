@@ -113,6 +113,8 @@ PURITY='plh'
 #PICARD="picard -Xmx10g -XX:ParallelGCThreads={params.cores}"
 PICARD="picard-tools"
 
+SIZE=''
+ASSAY=''
 
 # needed here cause we do not recalibrate
 rule all_markedDup:
