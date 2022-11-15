@@ -251,8 +251,8 @@ rule size:
         """
 
 rule mut_burden:
-    input: tsize="targeted_size.txt", muts="mutect/merged.table_nomultiallele"
-    output: "mutect/mut_burden.tsv"
+    input: tsize="targeted_size.txt", muts=MUTECT_DIR+"/merged.table_nomultiallele"
+    output: MUTECT_DIR+"/mut_burden.tsv"
     run:
         import pandas as pd
         import numpy as np

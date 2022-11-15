@@ -228,4 +228,27 @@ rule pcgr_tiers_af_all:
             {params.tool} -m {input} -o {output.af} -g {output.genes} -w "{params.tiers}" -l {output.long_muts} &> {log}
         """
 
+# For WGS we set SEXONS to all the mappable regions to begin with. Will need more specific rules to compute coverage on regions with at least X coverage (and keep only muts on exons for WES)
+rule size:
+    input: SEXONS
+    output: "targeted_size.txt"
+    shell:
+        """
+            bawk 'BEGIN{{t=0}} {{t=t+($3-$2)}} END {{print t}}' {input} > {output}
+        """
 
+rule mut_burden:
+    input: tsize="targeted_size.txt", muts=MUTECT_DIR+"/merged.table_nomultiallele"
+    output: MUTECT_DIR+"/mut_burden.tsv"
+    run:
+        import pandas as pd
+        import numpy as np
+        data = pd.read_csv(input.muts, sep="\t", index_col=0)
+        tot = np.count_nonzero(data > 0.1, axis=0)
+        target_len = 0
+        with open(input.tsize, 'r') as tsize:
+            line = tsize.readline()
+            target_len = float(line.rstrip())
+        target_len = target_len / 1000000
+        res = pd.DataFrame(data = {'totmut': tot, 'burden': tot/target_len}, index=data.columns)
+        res.to_csv(output[0], sep="\t", index=True)
