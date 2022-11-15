@@ -105,24 +105,27 @@ rule neutral_sottoriva:
 
 
 rule merge_targeted:
-    input: vcf=expand(MUTECT_DIR+"/{sample}.pass.vcf.gz", sample=SAMPLES), bed=SEXONS
+    input: vcf=expand(MUTECT_DIR+"/{sample}.pass.vcf.gz", sample=TUMOR), bed=SEXONS
     output: MUTECT_DIR+"/merged_targeted.vcf"
+    params: tumors=lambda wildcards: (',').join(TUMOR)
     shell:
         """
-            bcftools merge --missing-to-ref -m none -o {output}.vcf.tmp {input.vcf}
-            bedtools intersect -header -u -a {output}.vcf.tmp -b {input.bed} > {output}
+            bcftools merge --force-samples --missing-to-ref -m none -o {output}.vcf.tmp {input.vcf}
+            bcftools view -s {params.tumors} -o {output}.vcf.tumor.tmp {output}.vcf.tmp
+            bedtools intersect -header -u -a {output}.vcf.tumor.tmp -b {input.bed} > {output}
             rm {output}.*.tmp
         """
 
 
+#output: #txt=MUTECT_DIR+"/merged.vep.txt", #html=MUTECT_DIR+"/merged.vep.stats.html", 
+#vep -i {output.vcf}  --cache --dir_cache {params.cd} --output_file {output.txt} --stats_file {output.html} --pick
 rule VEP:
     input: MUTECT_DIR+"/merged_targeted.vcf"
-    output: txt=MUTECT_DIR+"/merged.vep.txt", html=MUTECT_DIR+"/merged.vep.stats.html", vcf=MUTECT_DIR+"/merged.vcf.id"
+    output: vcf=MUTECT_DIR+"/merged.vcf.id"
     params: cd=VEP_CACHE_DIR
     shell:
         """
              bcftools annotate -I +'%CHROM:%POS:%REF:%ALT' {input} > {output.vcf}
-             vep -i {output.vcf}  --cache --dir_cache {params.cd} --output_file {output.txt} --stats_file {output.html} --pick
         """
 
 rule vcf_to_aftable:
@@ -218,6 +221,7 @@ rule pcgr_tiers_af:
             {params.tool} -m {input} -o {output.af} -g {output.genes} -w "{params.tiers}" -l {output.long_muts} &> {log}
         """
 
+# FIXME look in right mutect TODO
 rule pcgr_tiers_af_all:
     input: MUTECT_DIR+'/merged.table_nomultiallele'
     output: af=MUTECT_DIR+'/merged.table_nomultiallele_alltiers', genes=MUTECT_DIR+'/merged.table_nomultiallele_alltiers_annot', long_muts=MUTECT_DIR+'/merged_longformat_alltiers.tsv'
