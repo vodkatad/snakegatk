@@ -1,4 +1,5 @@
 import os
+import re
 ROOT=os.environ.get('SNAKE_ROOT')
 def find_prj_root(path=os.getcwd()):
     if os.path.isfile(os.path.join(path,".PRJ_ROOT")):
@@ -15,7 +16,7 @@ TMP="/tmp"
 
 SRC_DIR=PRJ_ROOT+'/local/src'
 BIN_DIR=PRJ_ROOT+'/local/bin'
-FQ_REMOVED=False
+FQ_REMOVED=True
 DEBUG="yes"
 TYPE="WES"
 PAIRED=True
@@ -30,8 +31,9 @@ PON=GNOMAD_TASK_DIR+"/1000g_pon.hg38.vcf.gz"
 DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
 # Singularity containers and occam docker images
 GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
-GATK_ODOCKER="egrassi/occamsnakes/gatk:1"
-#GATK_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/gatk_fixedov:1" TODO
+#GATK_ODOCKER="egrassi/occamsnakes/gatk:1"
+GATK_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/gatk_fixedov:1" # we keep this for this project and accept the filtering bug, even if it's not that small..
+SEQUENZA_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/sequenza:1" # we keep this for this project and accept the filtering bug, even if it's not that small..
 
 XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
 ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
@@ -137,11 +139,28 @@ PICARD="export JAVA_OPTIONS='-Xmx10g -XX:ParallelGCThreads=12' && picard-tools"
 SIZE=34 # WES agilent sureselect
 ASSAY="WES" #   "TARGETED"
 
-GCFILE=GNOMAD_TASK_DIR+'sequenza_gc_w50.wig.gz'
+GCFILE=GNOMAD_TASK_DIR+'/sequenza_gc_w50.wig.gz'
 
 rule all_markedDup:
     input: expand("align/markedDup_{sample}.sorted.bam", sample=SAMPLES)
 
+rule xls_qc:
+    input:  "all_metrics"
+    output: "qc.xlsx"
+    shell:
+        """
+            echo -e "sample\\tPF_UQ_READS_ALIGNED\\tMEAN_TARGET_COVERAGE" > {output}.tmp1
+            cut -f 11,23,58 {input} | sed 1d | bawk '{{print $3,$1,$2}}' | sed 's/align\///1; s/\.hsmetrics//1' >> {output}.tmp1
+            tsv_to_xls -i {output}.tmp1 -s WES -o {output}
+            rm {output}.tmp*
+        """
+        
+
+def get_ppos(wildcards):
+    if re.match(r'.*LMX.*', wildcards.sample):
+        return 9
+    else:
+        return 10
 
 rule all_deDup_flagstat:
     input: expand("align/deDup_{sample}.sorted.bam.flagstat", sample=SAMPLES)
@@ -182,3 +201,31 @@ rule g:
     output: "genes.tsv"
     params: wes=EXONS
     shell: "echo {params.wes} > {output}"
+
+
+
+### 
+rule subclonal_common:
+    input: pri="mutect_paired/{sample_pri}.pass.tsv.gz", met="mutect_paired/{sample_met}.pass.tsv.gz"
+    output: "venns/{sample_pri}_{sample_met}_subcl_{loweraf}_{higheraf}.tsv"
+    shell: 
+        """
+            mkdir -p venns
+            echo ">{wildcards.sample_met}" | bawk '{{print substr($1,0,8)}}' > {output}
+            zcat {input.pri} | bawk '$4 > {wildcards.higheraf}{{print $1}}' > {output}.pri.tmp
+            zcat {input.met} | bawk '$4 > {wildcards.higheraf}{{print $1}}' > {output}.met.tmp
+            cat <(echo -en "cpri\\t") <(cat {output}.pri.tmp | wc -l) >> {output}
+            cat <(echo -en "cmet\\t") <(cat {output}.met.tmp | wc -l) >> {output}
+            cat <(echo -en "cboth\\t") <(cat {output}.met.tmp | filter_1col 1 {output}.pri.tmp | wc -l) >> {output}
+            zcat {input.pri} | bawk '$4 > {wildcards.loweraf} && $4 < {wildcards.higheraf} {{print $1}}' > {output}.pri.tmp
+            zcat {input.met} | bawk '$4 > {wildcards.loweraf} && $4 < {wildcards.higheraf} {{print $1}}' > {output}.met.tmp
+            cat <(echo -en "spri\\t") <(cat {output}.pri.tmp | wc -l) >> {output}
+            cat <(echo -en "smet\\t") <(cat {output}.met.tmp | wc -l) >> {output}
+            cat <(echo -en "sboth\\t") <(cat {output}.met.tmp | filter_1col 1 {output}.pri.tmp | wc -l) >> {output}
+            rm {output}.*.tmp
+        """
+
+rule all_subclonal:
+    input: expand("venns/{sample_pri}_{sample_met}_subcl_{{loweraf}}_{{higheraf}}.tsv", zip, sample_pri=[x for x in TUMOR if re.match(r'.*LMX.*', x)], sample_met=[x for x in TUMOR if re.match(r'.*PRX.*', x)])
+    output: "all_intersection_{loweraf}_{higheraf}.tsv"
+    shell: "cat {input} > {output}"
