@@ -227,5 +227,5 @@ rule subclonal_common:
 
 rule all_subclonal:
     input: expand("venns/{sample_pri}_{sample_met}_subcl_{{loweraf}}_{{higheraf}}.tsv", zip, sample_pri=[x for x in TUMOR if re.match(r'.*LMX.*', x)], sample_met=[x for x in TUMOR if re.match(r'.*PRX.*', x)])
-    output: "all_intersection_{loweraf}_{higheraf}.tsv"
+    output: "all_intersection_{loweraf}_{higheraf}.fasta"
     shell: "cat {input} > {output}"
