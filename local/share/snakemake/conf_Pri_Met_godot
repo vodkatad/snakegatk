@@ -214,6 +214,7 @@ rule subclonal_common:
             echo ">{wildcards.sample_met}" | bawk '{{print substr($1,0,8)}}' > {output}
             zcat {input.pri} | bawk '$4 > {wildcards.higheraf}{{print $1}}' > {output}.pri.tmp
             zcat {input.met} | bawk '$4 > {wildcards.higheraf}{{print $1}}' > {output}.met.tmp
+            cat <(echo -en "all\\t") <(cat {output}.pri.tmp {output}.met.tmp | sort | uniq | wc -l) >> {output}
             cat <(echo -en "cpri\\t") <(cat {output}.pri.tmp | wc -l) >> {output}
             cat <(echo -en "cmet\\t") <(cat {output}.met.tmp | wc -l) >> {output}
             cat <(echo -en "cboth\\t") <(cat {output}.met.tmp | filter_1col 1 {output}.pri.tmp | wc -l) >> {output}
@@ -229,3 +230,9 @@ rule all_subclonal:
     input: expand("venns/{sample_pri}_{sample_met}_subcl_{{loweraf}}_{{higheraf}}.tsv", zip, sample_pri=[x for x in TUMOR if re.match(r'.*LMX.*', x)], sample_met=[x for x in TUMOR if re.match(r'.*PRX.*', x)])
     output: "all_intersection_{loweraf}_{higheraf}.fasta"
     shell: "cat {input} > {output}"
+
+
+rule all_phyper:
+    input: fastamuts="all_intersection_{loweraf}_{higheraf}.fasta"
+    output: phyper="phyper_{loweraf}_{higheraf}.tsv"
+    script: SRC_DIR+'/phyper_common_pri_met.R'    
