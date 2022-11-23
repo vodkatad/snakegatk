@@ -3,7 +3,6 @@ higheraf <- as.numeric(snakemake@wildcards[["higheraf"]])
 data <- snakemake@input[["fastamuts"]]
 outfile <- snakemake@output[['phyper']]
 
-save.image('pippo.Rdata')
 
 id <- ''
 connection <- file(data, open='r')
@@ -44,12 +43,14 @@ rownames(df) <- samples
 
 
 get_phy <- function(x) {
-    phy_cl <- phyper(x[4]-1, x[2], x[1]-x[2], x[3], lower.tail=TRUE)
-    phy_sc <- phyper(x[7]-1, x[5], x[1]-x[5], x[6], lower.tail=TRUE)
+    phy_cl <- phyper(x[4]-1, x[2], x[1]-x[2], x[3], lower.tail=FALSE)
+    phy_sc <- phyper(x[7]-1, x[5], x[1]-x[5], x[6], lower.tail=FALSE)
     return(c(phy_cl, phy_sc))
 }
 
 
-apply(df, 1, get_phy)
+phy <- apply(df, 1, get_phy)
+write.table(t(phy), outfile, sep="\t", quote=FALSE)
+
 close(connection)
 

@@ -214,9 +214,11 @@ rule subclonal_common:
         """
             mkdir -p venns
             echo ">{wildcards.sample_met}" | bawk '{{print substr($1,0,8)}}' > {output}
+            zcat {input.pri} > {output}.apri.tmp
+            zcat {input.met} > {output}.amet.tmp
             zcat {input.pri} | bawk '$4 > {wildcards.higheraf}{{print $1}}' > {output}.pri.tmp
             zcat {input.met} | bawk '$4 > {wildcards.higheraf}{{print $1}}' > {output}.met.tmp
-            cat <(echo -en "all\\t") <(cat {output}.pri.tmp {output}.met.tmp | sort | uniq | wc -l) >> {output}
+            cat <(echo -en "all\\t") <(cat {output}.apri.tmp {output}.amet.tmp | sort | uniq | wc -l) >> {output}
             cat <(echo -en "cpri\\t") <(cat {output}.pri.tmp | wc -l) >> {output}
             cat <(echo -en "cmet\\t") <(cat {output}.met.tmp | wc -l) >> {output}
             cat <(echo -en "cboth\\t") <(cat {output}.met.tmp | filter_1col 1 {output}.pri.tmp | wc -l) >> {output}
@@ -238,3 +240,7 @@ rule all_phyper:
     input: fastamuts="all_intersection_{loweraf}_{higheraf}.fasta"
     output: phyper="phyper_{loweraf}_{higheraf}.tsv"
     script: SRC_DIR+'/phyper_common_pri_met.R'    
+
+
+rule all_phyper_thrs:
+    input: expand("phyper_{loweraf}_{higheraf}.tsv", loweraf=[0.05, 0.1, 0.12, 0.15], higheraf=[0.05, 0.1, 0.15, 0.2, 0.24, 0.3, 0.5])
