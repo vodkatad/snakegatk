@@ -140,6 +140,8 @@ SIZE=34 # WES agilent sureselect
 ASSAY="WES" #   "TARGETED"
 
 GCFILE=GNOMAD_TASK_DIR+'/sequenza_gc_w50.wig.gz'
+GENES="genes.tsv"
+NAME="Pri_Mets"
 
 rule all_markedDup:
     input: expand("align/markedDup_{sample}.sorted.bam", sample=SAMPLES)
