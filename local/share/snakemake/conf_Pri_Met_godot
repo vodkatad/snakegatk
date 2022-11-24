@@ -182,6 +182,13 @@ rule bet:
             grep -v intercept {input} | sort -k1,1 >> {output}
         """
 
+rule bet_summary:
+    input: fit_r2_slope='bestbet_{low}_{high}.tsv'
+    output: r2_plot='r2_{low,\d+.\d+}_{high,\d+.\d+}_distr.pdf', delta_plot="r2_{low,\d+.\d+}_{high,\d+.\d+}_delta_plot.pdf"
+    log: log="{low,\d+.\d+}_{high,\d+.\d+}.log"
+    params: r2_thr=0.9, subl_thr=10
+    script: SRC_DIR+'/fit_r2_plots.R'
+
 rule neutral_sottoriva_bin:
     input: afmatrix="mutect_paired/{sample}.pass.table.gz"
     params: debug="no", afcolumn="{sample}"
