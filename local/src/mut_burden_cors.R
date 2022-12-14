@@ -53,31 +53,31 @@ ggplot(data=o[o$loweraf==0.05,], aes(x=higheraf, y=-log10(V3), color=as.factor(l
   theme(text=element_text(size = 18))+scale_color_manual(values="brown")
 
 
-ggplot(data=o[o$loweraf==0.15,], aes(x=higheraf, y=-log10(V3), color=as.factor(loweraf)))+
+ggplot(data=o[o$loweraf==0.1,], aes(x=higheraf, y=-log10(V3), color=as.factor(loweraf)))+
   geom_point(alpha=0.7)+theme_bw()+ylab('-log10(Psubcl)')+geom_hline(yintercept=2)+
+  geom_line(aes(group=smodel))+
+  theme(text=element_text(size = 18))+scale_color_manual(values="darkgoldenrod2")
+
+
+ggplot(data=o[o$loweraf==0.05,], aes(x=higheraf, y=-log10(V2), color=as.factor(loweraf)))+
+  geom_point(alpha=0.7)+theme_bw()+ylab('-log10(Pcl)')+geom_hline(yintercept=2)+
+  geom_line(aes(group=smodel))+
+  theme(text=element_text(size = 18))+scale_color_manual(values="brown")
+
+
+ggplot(data=o[o$loweraf==0.1,], aes(x=higheraf, y=-log10(V2), color=as.factor(loweraf)))+
+  geom_point(alpha=0.7)+theme_bw()+ylab('-log10(Pcl)')+geom_hline(yintercept=2)+
   geom_line(aes(group=smodel))+
   theme(text=element_text(size = 18))+scale_color_manual(values="dodgerblue2")
 
 
 ggplot(data=o[o$loweraf==0.05,], aes(x=higheraf, y=-log10(V2), color=as.factor(loweraf)))+
-  geom_point(alpha=0.7)+theme_bw()+ylab('-log10(Psubcl)')+geom_hline(yintercept=2)+
+  geom_point(alpha=0.7)+theme_bw()+ylab('-log10(Pcl)')+geom_hline(yintercept=2)+
   geom_line(aes(group=smodel))+
   theme(text=element_text(size = 18))+scale_color_manual(values="brown")
 
 
-ggplot(data=o[o$loweraf==0.15,], aes(x=higheraf, y=-log10(V2), color=as.factor(loweraf)))+
-  geom_point(alpha=0.7)+theme_bw()+ylab('-log10(Psubcl)')+geom_hline(yintercept=2)+
-  geom_line(aes(group=smodel))+
-  theme(text=element_text(size = 18))+scale_color_manual(values="dodgerblue2")
-
-
-ggplot(data=o[o$loweraf==0.05,], aes(x=higheraf, y=-log10(V2), color=as.factor(loweraf)))+
-  geom_point(alpha=0.7)+theme_bw()+ylab('-log10(Psubcl)')+geom_hline(yintercept=2)+
-  geom_line(aes(group=smodel))+
-  theme(text=element_text(size = 18))+scale_color_manual(values="brown")
-
-
-ggplot(data=o[o$loweraf==0.15,], aes(x=higheraf, y=-log10(V2), color=as.factor(loweraf)))+
+ggplot(data=o[o$loweraf==0.1,], aes(x=higheraf, y=-log10(V2), color=as.factor(loweraf)))+
   geom_point(alpha=0.7)+theme_bw()+ylab('-log10(Psubcl)')+geom_hline(yintercept=2)+
   geom_line(aes(group=smodel))+
   theme(text=element_text(size = 18))+scale_color_manual(values="dodgerblue2")

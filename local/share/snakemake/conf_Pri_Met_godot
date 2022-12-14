@@ -251,3 +251,38 @@ rule all_phyper:
 
 rule all_phyper_thrs:
     input: expand("phyper_{loweraf}_{higheraf}.tsv", loweraf=[0.05, 0.1, 0.12, 0.15], higheraf=[0.05, 0.1, 0.15, 0.2, 0.24, 0.3, 0.5])
+
+
+#from itertools import product
+#def my_order(combinator):
+#    def all_ordered(*args, **kwargs): #loweraf, higheraf):
+        #for laf in args[0]:
+        #    for haf in args[1]:
+#        for tu in combinator(*args, **kwargs):
+            #if haf > laf:
+#            if tu[0] < tu[1]:
+#                yield tu
+#    return all_ordered
+
+#my_order_boh = my_order(product)
+def my_expand(wildcards):
+    exp = expand("bestbet_{loweraf}_{higheraf}.tsv", loweraf=[0.05, 0.1, 0.12, 0.15], higheraf=[0.05, 0.1, 0.15, 0.2, 0.24, 0.3, 0.5])
+    res = []
+    import re
+    for e in exp:
+        sl = e.split('_')
+        laf = float(sl[1])
+        haf_tsv = sl[2]
+        haf = float(re.sub('\.tsv$', '', haf_tsv))
+        if laf < haf:
+            res.append(e)
+    return res
+
+rule all_bet:
+    input: my_expand
+    output: "all_bets.tsv"
+    shell: 
+        """ 
+            head -n1 {input[0]} > {output}
+            cat {input} | grep -v -w slope >> {output}
+        """  

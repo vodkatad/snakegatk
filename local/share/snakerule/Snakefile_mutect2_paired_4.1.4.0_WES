@@ -230,10 +230,9 @@ rule pcgr_tiers_af:
     log: MUTECT_DIR+'/merged.table_nomultiallele_wtiers.log'
     shell:
         """
-            {params.tool} -m {input} -o {output.af} -g {output.genes} -w "{params.tiers}" -l {output.long_muts} &> {log}
+            {params.tool} -m {input} -o {output.af} -g {output.genes} -w "{params.tiers}" -l {output.long_muts} -u {params.mdir} &> {log}
         """
 
-# FIXME look in right mutect TODO
 rule pcgr_tiers_af_all:
     input: MUTECT_DIR+'/merged.table_nomultiallele'
     output: af=MUTECT_DIR+'/merged.table_nomultiallele_alltiers', genes=MUTECT_DIR+'/merged.table_nomultiallele_alltiers_annot', long_muts=MUTECT_DIR+'/merged_longformat_alltiers.tsv'
@@ -241,7 +240,7 @@ rule pcgr_tiers_af_all:
     log: MUTECT_DIR+'/merged.table_nomultiallele_alltiers.log'
     shell:
         """
-            {params.tool} -m {input} -o {output.af} -g {output.genes} -w "{params.tiers}" -l {output.long_muts} &> {log}
+            {params.tool} -m {input} -o {output.af} -g {output.genes} -w "{params.tiers}" -l {output.long_muts} -u {params.mdir} &> {log}
         """
 
 # For WGS we set SEXONS to all the mappable regions to begin with. Will need more specific rules to compute coverage on regions with at least X coverage (and keep only muts on exons for WES)
