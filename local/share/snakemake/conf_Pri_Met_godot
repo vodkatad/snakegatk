@@ -313,3 +313,41 @@ rule vcf_cninterval_noloh:
         """
             bedtools intersect -header -wa -b <(zcat {input.callable} | bawk '$4>={wildcards.cn1} && $4<={wildcards.cn2} && $6!=0') -a {input.vcf} | bgzip > {output}
         """
+
+rule len:
+    input: "{sample}.callable.bed.gz"
+    output: barplot="{sample}.cn3.png", len="{sample}.length3.txt", cumplot="{sample}.cumcn3.png"
+    params: cns='3', tool=BIN_DIR+'/cn_len_plot'
+    shell:
+        """
+            {params.tool} {input} {params.cns} {output.barplot} {output.cumplot} {output.len}
+        """
+
+
+rule intersect_cnv_wes:
+    input: sequenza="sequenza/{sample}/{sample}_segments.txt", callable=SEXONS
+    output: callable="{sample}.wcallable.bed.gz"
+    shell:
+        """
+            bedtools intersect -b {input.callable} -a <(sed 1d {input.sequenza} | bawk '{{print $1, $2-1, $3, $10}}') | gzip > {output.callable}
+        """
+
+rule wes_len:
+    input: "{sample}.wcallable.bed.gz"
+    output: barplot="{sample}.wcn3.png", len="{sample}.wlength3.txt", cumplot="{sample}.wcumcn3.png"
+    params: cns='3', tool=BIN_DIR+'/cn_len_plot'
+    shell:
+        """
+            {params.tool} {input} {params.cns} {output.barplot} {output.cumplot} {output.len}
+        """
+
+rule wes_len_aggr:
+    input: "{sample}.wcallable.bed.gz"
+    output: barplot="{sample}.wcn234.png", len="{sample}.wlength234.txt", cumplot="{sample}.wcumcn234.png"
+    params: cns='2,3,4', tool=BIN_DIR+'/cn_len_plot'
+    shell:
+        """
+            {params.tool} {input} {params.cns} {output.barplot} {output.cumplot} {output.len}
+        """
+
+
