@@ -286,3 +286,30 @@ rule all_bet:
             head -n1 {input[0]} > {output}
             cat {input} | grep -v -w slope >> {output}
         """  
+
+CALLABLEBED=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.bed.gz'
+rule intersect_cnv:
+    input: sequenza="sequenza/{sample}/{sample}_segments.txt", callable=CALLABLEBED
+    output: callable="{sample}.callable.bed.gz"
+    shell:
+        """
+            bedtools intersect -b {input.callable} -a <(sed 1d {input.sequenza} | bawk '{{print $1, $2-1, $3, $10}}') | gzip > {output.callable}
+        """
+
+ruleorder: vcf_cninterval_noloh > vcf_cn_noloh
+
+rule vcf_cn_noloh:
+    input: callable="{sample}.callable.bed.gz", vcf='mutect_paired/{sample}.pass.vcf.gz'
+    output: '{sample}_nolohcn{cn}.vcf.gz'
+    shell:
+        """
+            bedtools intersect -header -wa -b <(zcat {input.callable} | bawk '$4=={wildcards.cn} && $6!=0') -a {input.vcf} | bgzip > {output}
+        """
+
+rule vcf_cninterval_noloh:
+    input: callable="{sample}.callable.bed.gz", vcf='mutect_paired/{sample}.pass.vcf.gz'
+    output: '{sample}_nolohcnint{cn1}_{cn2}.vcf.gz'
+    shell:
+        """
+            bedtools intersect -header -wa -b <(zcat {input.callable} | bawk '$4>={wildcards.cn1} && $4<={wildcards.cn2} && $6!=0') -a {input.vcf} | bgzip > {output}
+        """
