@@ -102,3 +102,8 @@ abline(model2, col="red")
 #==> CRC1599PRX0A02002TUMD03000V2.wlength234.txt <==
 #  94830349
 
+m <- coeffs/101868154
+
+p <- coeffs2/94830349
+
+m/p

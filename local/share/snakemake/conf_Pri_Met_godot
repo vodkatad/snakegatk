@@ -237,6 +237,7 @@ rule subclonal_common:
             rm {output}.*.tmp
         """
 
+# TODO FIXME L/P are inverted here, IDIOT!
 rule all_subclonal:
     input: expand("venns/{sample_pri}_{sample_met}_subcl_{{loweraf}}_{{higheraf}}.tsv", zip, sample_pri=[x for x in TUMOR if re.match(r'.*LMX.*', x)], sample_met=[x for x in TUMOR if re.match(r'.*PRX.*', x)])
     output: "all_intersection_{loweraf}_{higheraf}.fasta"
@@ -350,4 +351,35 @@ rule wes_len_aggr:
             {params.tool} {input} {params.cns} {output.barplot} {output.cumplot} {output.len}
         """
 
+# note: only on SEXONS to have a correct length, reasons why we have less than in phyper numbers
+rule subcl_mut_burden:
+    input: tsize="targeted_size.txt", muts="mutect_paired/merged.table_nomultiallele"
+    output: "mutect_paired/subcl_mut_burden.tsv"
+    run:
+        import pandas as pd
+        import numpy as np
+        data = pd.read_csv(input.muts, sep="\t", index_col=0)
+        tot = np.count_nonzero(np.logical_and(data > 0.1, data < 0.2), axis=0)
+        target_len = 0
+        with open(input.tsize, 'r') as tsize:
+            line = tsize.readline()
+            target_len = float(line.rstrip())
+        target_len = target_len / 1000000
+        res = pd.DataFrame(data = {'totmut': tot, 'burden': tot/target_len}, index=data.columns)
+        res.to_csv(output[0], sep="\t", index=True)
 
+rule cl_mut_burden:
+    input: tsize="targeted_size.txt", muts="mutect_paired/merged.table_nomultiallele"
+    output: "mutect_paired/clonal_mut_burden.tsv"
+    run:
+        import pandas as pd
+        import numpy as np
+        data = pd.read_csv(input.muts, sep="\t", index_col=0)
+        tot = np.count_nonzero(data > 0.2, axis=0)
+        target_len = 0
+        with open(input.tsize, 'r') as tsize:
+            line = tsize.readline()
+            target_len = float(line.rstrip())
+        target_len = target_len / 1000000
+        res = pd.DataFrame(data = {'totmut': tot, 'burden': tot/target_len}, index=data.columns)
+        res.to_csv(output[0], sep="\t", index=True)
