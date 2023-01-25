@@ -105,3 +105,6 @@ else:
 
 PLOIDY=3
 PURITY=1
+
+SIZE=34 # the default for PCGR
+ASSAY="WGS" #   "TARGETED"

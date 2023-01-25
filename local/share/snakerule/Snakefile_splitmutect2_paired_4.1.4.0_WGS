@@ -209,3 +209,72 @@ rule mut_burden:
         target_len = target_len / 1000000
         res = pd.DataFrame(data = {'totmut': tot, 'burden': tot/target_len}, index=data.columns)
         res.to_csv(output[0], sep="\t", index=True)
+
+## PCGR
+rule all_pcgr:
+    input: expand(MUTECT_DIR+"/{sample}.pcgr_acmg.grch38.snvs_indels.tiers.tsv", sample=TUMOR)
+
+PCGR='/mnt/trcanmed/snaketree/prj/snakegatk/local/src/pcgr/'
+rule pcgr:
+    input: MUTECT_DIR+"/{sample}.pass.vcf.gz"
+    output: MUTECT_DIR+"/{sample}.pcgr_acmg.grch38.snvs_indels.tiers.tsv"
+    params: pcgr=PCGR, size=SIZE, assay=ASSAY, mdir=MUTECT_DIR
+    shell:
+        """
+            python3 {params.pcgr}/pcgr.py --pcgr_dir {params.pcgr} \
+            --output_dir {params.mdir} \
+            --sample_id {wildcards.sample} \
+            --genome_assembly grch38 \
+            --conf {params.pcgr}/examples/example_COAD.toml \
+            --input_vcf {input} \
+            --tumor_site 9 \
+            --tumor_purity 1 \
+            --include_trials \
+            --assay {params.assay} \
+            --estimate_msi_status \
+            --estimate_tmb \
+            --tumor_only \
+            --no_vcf_validate \
+            --target_size_mb {params.size}
+        """
+
+rule pcgr_tiers_af:
+    input: MUTECT_DIR+'/merged.table_nomultiallele'
+    output: af=MUTECT_DIR+'/merged.table_nomultiallele_wtiers', genes=MUTECT_DIR+'/merged.table_nomultiallele_wtiers_annot', long_muts=MUTECT_DIR+'/merged_longformat_wtiers.tsv'
+    params: mdir=MUTECT_DIR, tool=BIN_DIR+'/AFmatrix_filter_pcgr', tiers='TIER 1,TIER 2,TIER 3'
+    log: MUTECT_DIR+'/merged.table_nomultiallele_wtiers.log'
+    shell:
+        """
+            {params.tool} -m {input} -o {output.af} -g {output.genes} -w "{params.tiers}" -l {output.long_muts} -u {params.mdir} &> {log}
+        """
+
+rule pcgr_tiers_af_all:
+    input: MUTECT_DIR+'/merged.table_nomultiallele'
+    output: af=MUTECT_DIR+'/merged.table_nomultiallele_alltiers', genes=MUTECT_DIR+'/merged.table_nomultiallele_alltiers_annot', long_muts=MUTECT_DIR+'/merged_longformat_alltiers.tsv'
+    params: mdir=MUTECT_DIR, tool=BIN_DIR+'/AFmatrix_filter_pcgr', tiers='TIER 1,TIER 2,TIER 3,TIER 4'
+    log: MUTECT_DIR+'/merged.table_nomultiallele_alltiers.log'
+    shell:
+        """
+            {params.tool} -m {input} -o {output.af} -g {output.genes} -w "{params.tiers}" -l {output.long_muts} -u {params.mdir} &> {log}
+        """
+
+rule signature:
+    input: MUTECT_DIR+"/{sample}.pass.vcf.gz"
+    output: "signatures/{sample}.cosmic.fit.tsv"
+    params: tool=BIN_DIR+'/mut_pat_signatures_fit_one'
+    shell: 
+        """
+            mkdir -p signatures
+            {params.tool} {input} {output} {wildcards.sample}
+        """
+
+rule all_signatures:
+    input: expand('signatures/{sample}.cosmic.fit.tsv', sample=TUMOR)
+    output: 'signatures/all_cosmic_fit.tsv'
+    run:    
+        import pandas as pd
+        res = pd.read_csv(input[0], sep="\t")
+        for i in range(1,len(input)):
+            resi = pd.read_csv(input[i], sep="\t")
+            res = res.merge(resi, left_index=True, right_index=True)
+        res.to_csv(output[0], sep="\t")
