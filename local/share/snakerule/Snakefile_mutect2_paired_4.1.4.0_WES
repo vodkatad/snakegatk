@@ -112,8 +112,19 @@ rule single_table_bis:
             bcftools query -s {wildcards.sample} -f '%CHROM:%POS:%REF:%ALT[\\t%SAMPLE\\t%GT\\t%AF]\n' {input.vcf} | gzip > {output}
         """
 
+rule single_table_snv: 
+    input: vcf=MUTECT_DIR+"/{sample}.pass.tsv.gz"
+    output: MUTECT_DIR+"/{sample}.pass.table.snv.gz"
+    shell: 
+        """ 
+            echo -e "ID\\t{wildcards.sample}" > {output}.tmp
+            zcat {input} | cut -f1,4 | tr ":" "\\t" | bawk 'length($3)==1 && length($4==1) {{print".",$5}}' >> {output}.tmp
+            gzip -c {output}.tmp > {output}
+            rm {output}.tmp
+        """
+
 rule neutral_sottoriva:
-    input: afmatrix=MUTECT_DIR+"/{sample}.pass.table.gz"
+    input: afmatrix=MUTECT_DIR+"/{sample}.pass.table.snv.gz"
     params: debug=DEBUG, afcolumn="{sample}"
     output: hist="{sample}.hist.{loweraf}_{higheraf}.pdf", fit="{sample}.fit.{loweraf}_{higheraf}.pdf", r2="{sample}.fit.{loweraf}_{higheraf}.r2"
     script: SRC_DIR+"/neutral_sottoriva.R"

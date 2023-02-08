@@ -190,7 +190,7 @@ rule bet_summary:
     script: SRC_DIR+'/fit_r2_plots.R'
 
 rule neutral_sottoriva_bin:
-    input: afmatrix="mutect_paired/{sample}.pass.table.gz"
+    input: afmatrix="mutect_paired/{sample}.pass.table.snv.gz"
     params: debug="no", afcolumn="{sample}"
     output: fit="{sample}.binfit.{loweraf}_{higheraf}.pdf", r2="{sample}.binfit.{loweraf}_{higheraf}.r2"
     script: SRC_DIR+"/neutral_sottoriva_bin.R"
@@ -267,7 +267,7 @@ rule all_phyper_thrs:
 
 #my_order_boh = my_order(product)
 def my_expand(wildcards):
-    exp = expand("bestbet_{loweraf}_{higheraf}.tsv", loweraf=[0.05, 0.1, 0.12, 0.15], higheraf=[0.05, 0.1, 0.15, 0.2, 0.24, 0.3, 0.5])
+    exp = expand("bestbet_{loweraf}_{higheraf}.tsv", loweraf=[0.025, 0.05, 0.1, 0.12, 0.15], higheraf=[0.05, 0.1, 0.15, 0.2, 0.24, 0.3, 0.5])
     res = []
     import re
     for e in exp:

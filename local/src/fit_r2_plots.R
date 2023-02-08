@@ -7,9 +7,9 @@ log_f <- snakemake@log[["log"]]
 r2_thr <- as.numeric(snakemake@params[['r2_thr']])
 subcl_thr <- as.numeric(snakemake@params[['subcl_thr']])
 
-#r2_thr <- 0.9
-#subcl_thr <- 10
-#fit_r2_f <- '/mnt/trcanmed/snaketree/prj/snakegatk/dataset/Pri_Mets_godot/bestbet_0.05_0.2.tsv'
+r2_thr <- 0.9
+subcl_thr <- 10
+fit_r2_f <- '/mnt/trcanmed/snaketree/prj/snakegatk/dataset/Pri_Mets_godot/bestbet_0.12_0.24.tsv'
 
 printf <- function(...) cat(sprintf(...))
 

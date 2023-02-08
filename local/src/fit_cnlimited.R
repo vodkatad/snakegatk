@@ -5,8 +5,8 @@ setwd('/mnt/trcanmed/snaketree/prj/snakegatk/dataset/Pri_Mets_godot')
 vcf <- read.vcfR('CRC1599LMX0A02001TUMD03000V2_nolohcn3.vcf.gz') #CRC1599PRX0A02002TUMD03000V2_nolohcn3.vcf.gz
 vaf <- extract.gt(vcf, element = "AF", as.numeric = TRUE)
 
-loweraf <- 0.12
-higheraf <- 0.24
+loweraf <- 0.1
+higheraf <- 0.2
 
 af <- vaf[,1]
 exsubcl <- af[af<higheraf & af>loweraf]
@@ -24,6 +24,9 @@ oex <- exsubcl[order(-exsubcl)]
 axis(1, at=oi[labels],labels=paste0("1/",oex[labels]), las=2)
 abline(model, col="red")
 
+
+length(vaf)
+length(exsubcl)
 
 vcf <- read.vcfR('CRC1599PRX0A02002TUMD03000V2_nolohcn3.vcf.gz')
 vaf <- extract.gt(vcf, element = "AF", as.numeric = TRUE)
@@ -44,6 +47,10 @@ oex <- exsubcl[order(-exsubcl)]
 axis(1, at=oi[labels],labels=paste0("1/",oex[labels]), las=2)
 abline(model2, col="red")
 
+
+length(vaf)
+length(exsubcl)
+
 #egrassi@godot:/mnt/trcanmed/snaketree/prj/snakegatk/dataset/Pri_Mets_godot$ cat CRC1599PRX0A02002TUMD03000V2.wlength3.txt 
 #39620343
 #egrassi@godot:/mnt/trcanmed/snaketree/prj/snakegatk/dataset/Pri_Mets_godot$ cat CRC1599LMX0A02001TUMD03000V2.wlength3.txt 
@@ -53,6 +60,8 @@ abline(model2, col="red")
 coeffs/44902560
 
 coeffs2/39620343
+
+0.9*(coeffs/44902560)
 ### cn2-3
 vcf <- read.vcfR('CRC1599LMX0A02001TUMD03000V2_nolohcnint2_4.vcf.gz') #CRC1599PRX0A02002TUMD03000V2_nolohcn3.vcf.gz
 vaf <- extract.gt(vcf, element = "AF", as.numeric = TRUE)
@@ -95,6 +104,10 @@ oi <- invf[order(invf)]
 oex <- exsubcl[order(-exsubcl)]
 axis(1, at=oi[labels],labels=paste0("1/",oex[labels]), las=2)
 abline(model2, col="red")
+
+
+length(vaf)
+length(exsubcl)
 
 #==> CRC1599LMX0A02001TUMD03000V2.wlength234.txt <==
 #  101868154

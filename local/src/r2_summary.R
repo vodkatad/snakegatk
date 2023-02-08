@@ -12,7 +12,6 @@ data$smodel <- substr(rownames(data), 0, 7)
 data$mp <- substr(rownames(data), 8, 10)
 data$mp <- factor(data$mp, levels=c('PRX', 'LMX'))
 
-
 get_laf <- function(s) {
   as.numeric(str_match(s, "fit.(\\d+.\\d+)")[1,2])
 }
@@ -23,6 +22,7 @@ get_haf <- function(s) {
 
 data$laf <- sapply(rownames(data), get_laf)
 data$haf <- sapply(rownames(data), get_haf)
+#data <- data[data$laf != 0.025,]
 
 
 r2_plot <- ggplot(data=data, aes(x=as.factor(laf), y=r)) + 
@@ -80,6 +80,8 @@ delta_plot <- ggplot(data=topl, aes(x=as.factor(laf), y=deltasl, fill=sign)) +
 ggarrange(r2_plot, delta_plot, 
           labels = c("A", "B"),
           ncol = 1, nrow = 2)
+
+#ggsave('Redo_mixedPriMets.pdf', width=11.68, height=8.26, units="in")
 
 topl$sign <- topl$tpval < 0.05
 ggplot(data=topl, aes(x=as.factor(laf), y=deltasl, fill=sign)) + 
