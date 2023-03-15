@@ -34,11 +34,12 @@ rule mark_duplicates_picard:
     input: ALIGN_DIR+"/{sample}.bam"
     output: bam=ALIGN_DIR+"/markedDup_{sample}.bam", metrics=ALIGN_DIR+"/{sample}.dupMetrics.txt"
     params: pixel_dist=PATTERNED, cores=CORESMD, picard=PICARD
+    docker: ALIGN_ODOCKER
     log: ALIGN_DIR+"/markedDup_{sample}.bam.log"
     benchmark: "bench/markedDup_{sample}.bam.times"
     shell: 
         """
-        {params.picard} MarkDuplicates INPUT="{input}" OUTPUT="{output.bam}" METRICS_FILE="{output.metrics}" \
+        {params.picard}{params.cores} MarkDuplicates INPUT="{input}" OUTPUT="{output.bam}" METRICS_FILE="{output.metrics}" \
         ASSUME_SORT_ORDER="queryname" OPTICAL_DUPLICATE_PIXEL_DISTANCE="{params.pixel_dist}" \
         ADD_PG_TAG_TO_READS=false VALIDATION_STRINGENCY="STRICT" 2> {log}
         """
@@ -182,8 +183,6 @@ rule intersect_callable_singlesample:
 
 #####################3
 
-
-
 # thresholds gotten from Mutect2 default parameters that we are adopting
 #input: bam=ALIGN_DIR+"/realigned_{sample}.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
 rule wgs_metrics:
@@ -194,7 +193,7 @@ rule wgs_metrics:
     params: picard=PICARD
     shell:
         """
-            {params.picard} CollectWgsMetrics I={input.bam} O={output.txt} R={input.reference} INCLUDE_BQ_HISTOGRAM=true ALLELE_FRACTION=0.5 MINIMUM_BASE_QUALITY=18 THEORETICAL_SENSITIVITY_OUTPUT={output.sens} MINIMUM_MAPPING_QUALITY=20
+	{params.picard}{params.cores} CollectWgsMetrics I={input.bam} O={output.txt} R={input.reference} INCLUDE_BQ_HISTOGRAM=true ALLELE_FRACTION=0.5 MINIMUM_BASE_QUALITY=18 THEORETICAL_SENSITIVITY_OUTPUT={output.sens} MINIMUM_MAPPING_QUALITY=20
         """
 
 rule bam_stats:

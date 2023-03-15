@@ -147,14 +147,8 @@ rule murine_content:
 def find_matched_normal_sample(wildcards):
     try:
         index = TUMOR.index(wildcards.sample)
-        return NORMAL[index]
-    except:
-        raise ValueError("Check you TUMOR and NORMAL in conf.sk, cannot find matched normal for " + wildcards.sample)
-
-#############################################
-def find_matched_normal_sample(wildcards):
-    try:
-        index = TUMOR.index(wildcards.sample)
+	print(NORMAL)
+	print(TUMOR)
         return NORMAL[index]
     except:
         raise ValueError("Check you TUMOR and NORMAL in conf.sk, cannot find matched normal for " + wildcards.sample)
@@ -192,3 +186,21 @@ rule all_single_something:
     input: expand("{{dir}}/{sample}.{{something}}", sample=SAMPLES)
     output: "{dir}/all_samples.{something}"
     shell: "mkdir -p {wildcards.dir}; touch {output}"
+
+
+
+#ruleorder:
+#	recalibrate_quality_onlyApply > recalibrate_quality
+
+#rule recalibrate_quality_onlyApply:
+#    input: unpack(check_subsample), reference=REF_DIR+"/GRCh38.d1.vd1.fa", snps=DBSNP
+#    singularity: GATK_SING
+#    docker: GATK_ODOCKER
+#    output: bam=protected(ALIGN_DIR+"/realigned_{sample}.bam") 
+#    params: table=ALIGN_DIR+"/{sample}.table"
+#    log: bam=ALIGN_DIR+"/realigned_{sample}.bam.log" #, table=ALIGN_DIR+"/{sample}.table.log"
+#    benchmark: "bench/realignesOnlyApply_{sample}.times"
+#    shell:
+#        """
+#            gatk ApplyBQSR -R {input.reference} -I {input.bam} --bqsr-recal-file  {params.table} -O {output.bam} --create-output-bam-index true 2> {log.bam};
+#        """
