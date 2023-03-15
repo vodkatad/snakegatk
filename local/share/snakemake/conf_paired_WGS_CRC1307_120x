@@ -42,7 +42,10 @@ VARSCAN_ODOCKER="egrassi/occamsnakes/varscan:1"
 PLATYPUS_ODOCKER="egrassi/occamsnakes/platypus:1"
 PLH_DOCKER="bubusettete"
 
-
+XENOME_PREFIX=""
+XENOME_TOOL=""
+XENOME_WAIT=0
+PICARD=""
 ## This dataset:
 DATA=PRJ_ROOT+"/local/share/data/second_shipment"
 FQ_XENOME_DIR="xenome"

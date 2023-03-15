@@ -46,6 +46,10 @@ PLH_DOCKER="bubusettete"
 ## This dataset:
 DATA=PRJ_ROOT+"/local/share/data/CRC1307_clones"
 FQ_XENOME_DIR="xenome"
+XENOME_PREFIX=""
+XENOME_TOOL=""
+XENOME_WAIT=""
+PICARD=""
 
 # data@rotpunkt:~/work/snakegatk$ python local/src/tsv_to_json_metadata.py -i ~/Dropbox/work/evol/MA/CRC1307/samples_sheet.tsv -j ~/Dropbox/work/evol/MA/CRC1307/metadata_partial.json
 #SAMPLES_ORIG=['1740D-84-01_S48_L004', 'BD0002_SA_L001', 'BD0011_SA_L001', 'BD0009_SA_L001', 'BD0013_SA_L001', 'BD0010_SA_L001', 'BD0012_SA_L001', 'BD0001_SA_L001', 'BD0014_SA_L001', 'BD0015_SA_L001']

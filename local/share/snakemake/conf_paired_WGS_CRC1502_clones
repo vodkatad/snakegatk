@@ -21,6 +21,10 @@ TYPE="WGS"
 PAIRED=True
 SUBSAMPLE=1 # if == 1 do not downsample (downsampling is done right after alignment and dup removal, not before calling, to also recalibrate on less data).
 
+XENOME_PREFIX=""
+XENOME_TOOL=""
+XENOME_WAIT=""
+PICARD=""
 # Needed references and annotations
 GNOMAD_TASK_DIR=ROOT+'/task/annotations/dataset/gnomad'
 REF_DIR=GNOMAD_TASK_DIR
