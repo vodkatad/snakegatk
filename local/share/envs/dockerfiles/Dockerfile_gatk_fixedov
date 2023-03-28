@@ -1,0 +1,5 @@
+FROM broadinstitute/gatk:4.1.4.0
+
+COPY gatk-4.1.4.0-with-overflow-patch.jar /gatk/gatk-package-4.1.4.0-local.jar
+
+CMD ["bash"]
