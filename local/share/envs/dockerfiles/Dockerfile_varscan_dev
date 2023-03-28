@@ -1,0 +1,9 @@
+FROM debian:testing-20190708-slim
+
+MAINTAINER Elena Grassi <elena.grassi@ircc.it>
+
+RUN sed -i "s#deb http://http.us.debian.org/debian testing main contrib#deb http://http.us.debian.org/debian testing main non-free#g" /etc/apt/sources.list
+RUN apt-get update
+RUN apt-get install -y bedtools samtools tabix varscan
+
+CMD ["/bin/bash"]

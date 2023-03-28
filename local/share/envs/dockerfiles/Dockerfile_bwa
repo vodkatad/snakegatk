@@ -1,0 +1,8 @@
+FROM debian:testing-20190708-slim
+
+MAINTAINER Elena Grassi <elena.grassi@ircc.it>
+
+RUN apt-get update
+RUN apt-get install -y bwa bedtools samtools tabix
+
+CMD ["/bin/bash"]
