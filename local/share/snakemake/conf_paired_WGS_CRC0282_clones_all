@@ -39,26 +39,39 @@ XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
 ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
 SEQUENZA_ODOCKER="egrassi/occamsnakes/sequenza:1"
 VARSCAN_ODOCKER="egrassi/occamsnakes/varscan:1"
+PLATYPUS_ODOCKER="egrassi/occamsnakes/platypus:1"
 PLH_DOCKER="bubusettete"
 
 
 ## This dataset:
-DATA=PRJ_ROOT+"/local/share/data/WGS_biodiversa/test"
+DATA=PRJ_ROOT+"/local/share/data/second_shipment"
 FQ_XENOME_DIR="xenome"
 
-# sed 1d PJ1903090-SF-Integragen-Targeted-Seq.tsv  | cut -f 1 | tr "_" "\t" | cut -f 1 | tr "\n" "," | sed 's/,/","/g'
-#SAMPLES_ORIG=['ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6', 'ex7', 'ex8', 'ex9']
-#SAMPLES=['CRC1307_02_0', 'CRC1307_08_0', 'CRC1307_09_0', 'CRC1307_02_1_0', 'CRC1307_02_1_1', 'CRC1307_02_1_2', 'CRC1307_08_1_0', 'CRC1307_08_1_1', 'CRC1307_08_1_2']
-SAMPLES_ORIG=["1740D-84-01_S48_L004","1740D-84-02_S52_L005"]
-SAMPLES=["CRC1307NLH","CRC1307LMO"]
+#data@rotpunkt:~/work/snakegatk$ python3 local/src/tsv_to_json_metadata.py -i ~/Dropbox/work/evol/MA/second_shipment/samples/ss_282.txt -j /tmp/p
 
-NORMAL=["CRC1307NLH"]
-TUMOR=["CRC1307LMO"]
+# TODO link to files in second_shipment directory
 
-XENOME_PREFIX=""
-XENOME_TOOL=''
-XENOME_WAIT=0
-PICARD=''
+# original up to second shipment:
+SAMPLES_ORIG=['PRJ0003S1_SA_L001', 'PRJ0003S3_SA_L001', 'PRJ0003S4_SA_L001', 'PRJ0003S5_SA_L001', 'PRJ0003S6_SA_L001', 'PRJ0003S7_SA_L001', 'PRJ0003S8_SA_L001', 'PRJ0003S9_SA_L001', 'PRJ0003S10_SA_L001', 'PRJ0003S11_SA_L001', 'PRJ0003S12_SA_L001', 'PRJ0003S13_SA_L001', 'PRJ0003S14_SA_L001', 'PRJ0003S15_SA_L001', 'PRJ0003S16_SA_L001', 'PRJ0003S17_SA_L001', 'PRJ0003S18_SA_L001', 'PRJ0003S19_SA_L001', 'PRJ0003S20_SA_L001', 'PRJ0003S21_SA_L001', 'PRJ0003S22_SA_L001', 'PRJ0003S23_SA_L001']
+SAMPLES=['CRC0282NMH0000000000D07000', 'CRC0282-01-0', 'CRC0282-05-0', 'CRC0282-07-0', 'CRC0282-01-1-A', 'CRC0282-01-1-B', 'CRC0282-01-1-E', 'CRC0282-05-1-A', 'CRC0282-05-1-C', 'CRC0282-05-1-D', 'CRC0282-07-1-A', 'CRC0282-07-1-B', 'CRC0282-07-1-E', 'CRC0282-01-MI-A', 'CRC0282-01-MI-D', 'CRC0282-01-MI-E', 'CRC0282-01-MA-C', 'CRC0282-01-MA-D', 'CRC0282-01-MA-G', 'CRC0282-01-MC-D', 'CRC0282-01-MC-E', 'CRC0282-01-MC-F']
+
+# added in third shipment:
+SAMPLES_ORIG_3=['PRJ004S36_SA_L001', 'PRJ004S37_SA_L001', 'PRJ004S38_SA_L001', 'PRJ004S39_SA_L001', 'PRJ004S40_SA_L001', 'PRJ004S41_SA_L001']
+SAMPLES_3=['CRC0282-01-1-C', 'CRC0282-01-1-D', 'CRC0282-01-1-F', 'CRC0282-07-1-C', 'CRC0282-07-1-D', 'CRC0282-07-1-F']
+
+
+SAMPLES_ORIG_2=['Biodiversa-6_SA_L001', 'Biodiversa-5_SA_L001', 'Biodiversa-4_SA_L001', 'Biodiversa-3_SA_L001', 'Biodiversa-2_SA_L001', 'Biodiversa-1_SA_L001']
+SAMPLES_2=['CRC0282-07E-2-4', 'CRC0282-07E-2-3', 'CRC0282-07E-2-2', 'CRC0282-01A-2-4', 'CRC0282-01A-2-3', 'CRC0282-01A-2-2']
+
+SAMPLES=SAMPLES+SAMPLES_3+SAMPLES_2
+SAMPLES_ORIG=SAMPLES_ORIG+SAMPLES_ORIG_3+SAMPLES_ORIG_3
+
+NORMAL=["CRC0282NMH0000000000D07000"]*(len(SAMPLES)-1)
+
+# to reduce platypus to only in vitro:
+#TUMOR=SAMPLES[1:13]
+TUMOR=SAMPLES[1:]
+
 #REF=""
 #SAMPLESD=[]
 #SAMPS=",".join(SAMPLESD)
@@ -72,19 +85,21 @@ FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
 
 PAIRS=['R1_001','R2_001']
 PAIRS_XENOME=['1','2']
-CORES=12
+CORES=24
 CORESMD=4
 # TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
 PATTERNED=2500 
 # HiSeq4000, otherwise 100 for unpatterned
 #–o recal.bam
 
+
+### TODO REMOVE ME FOR BULK!
 AFPARAM="--default-af 0"
 # https://gatkforums.broadinstitute.org/gatk/discussion/24633/mutect2-4-1-4-0-stats-file-with-a-negative-number#latest
 # use --default-af 0 to avoid 0.5 AF calls filtering 
 
 wildcard_constraints:
-    sample="[a-zA-Z0-9]+"
+    sample="[a-zA-Z0-9]+-?[0-9A-Z]+-?[A-Z0-9]+-?[A-Z0-9]?"
 
 
 CALLABLE="5:10,10:50,50:100,100:150,150:inf"
@@ -98,9 +113,6 @@ else:
     SPLITS=['000'+str(x) for x in range(0, SPLIT)]
 
 #+'-scattered.interval_list'
-PLOIDY=''
-XENOME_PREFIX=""
-XENOME_TOOL=''
-XENOME_WAIT=0
-PICARD=''
-PURITY=''
+
+PLOIDY=2
+PURITY=1

@@ -1,0 +1,113 @@
+import os
+ROOT=os.environ.get('BIOINFO_ROOT')
+def find_prj_root(path=os.getcwd()):
+    if os.path.isfile(os.path.join(path,".PRJ_ROOT")):
+        return path
+    else:
+        if path:
+            return find_prj_root(os.path.dirname(path))
+        else:
+            raise Exception("Can not find the PRJ_ROOT directory")
+
+
+PRJ_ROOT=find_prj_root()
+TMP="/scratch/home/egrassi/"
+
+SRC_DIR=PRJ_ROOT+'/local/src'
+BIN_DIR=PRJ_ROOT+'/local/bin'
+FQ_REMOVED=True
+DEBUG="yes"
+TYPE="WGS"
+PAIRED=True
+SUBSAMPLE=1 # if == 1 do not downsample (downsampling is done right after alignment and dup removal, not before calling, to also recalibrate on less data).
+
+# Needed references and annotations
+GNOMAD_TASK_DIR=ROOT+'/task/annotations/dataset/gnomad'
+REF_DIR=GNOMAD_TASK_DIR
+GNOMAD=GNOMAD_TASK_DIR
+VEP_CACHE_DIR=ROOT+"/task/variant_annotations/dataset/VEP"
+ANNOVAR=ROOT+"/task/variant_annotations/dataset/annovar/hg38/humandb/"
+PON=GNOMAD_TASK_DIR+"/1000g_pon.hg38.vcf.gz"
+DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
+INTERVAL=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.interval_list'
+CALLABLE_BED=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.bed.gz'
+GCFILE=GNOMAD_TASK_DIR+'/sequenza_gc_w200.wig.gz'
+# Singularity containers and occam docker images
+GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
+GATK_ODOCKER="egrassi/occamsnakes/gatk_fixedov:1"
+XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
+ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
+SEQUENZA_ODOCKER="egrassi/occamsnakes/sequenza:1"
+VARSCAN_ODOCKER="egrassi/occamsnakes/varscan:1"
+PLATYPUS_ODOCKER="egrassi/occamsnakes/platypus:1"
+PLH_DOCKER="bubusettete"
+
+
+## This dataset:
+DATA=PRJ_ROOT+"/local/share/data/second_shipment"
+FQ_XENOME_DIR="xenome"
+
+#data@rotpunkt:~/work/snakegatk/local/src$ ./tsv_to_json_metadata.py -i ~/Dropbox/work/evol/MA/second_shipment/samples/ss_1502.txt -j /tmp/test
+# remove bulk add normal
+# CRC1502-03-0 CRC1502-03-1-A REMOVE TODO
+#all
+SAMPLES_ORIG=['CRC1502NLH0000000000D03000', '30XPRJ0003S63_SA_L001', 'PRJ0003S64_SA_L001', 'PRJ0003S65_SA_L001', '30XPRJ0003S66_SA_L001', 'PRJ0003S67_SA_L001', 'PRJ0003S68_SA_L001', 'PRJ0003S69_SA_L001', 'PRJ0003S70_SA_L001', 'PRJ0003S71_SA_L001', 'PRJ0003S72_SA_L001', 'PRJ0003S73_SA_L001', 'PRJ0003S74_SA_L001', 'PRJ0003S75_SA_L001', 'PRJ0003S76_SA_L001', 'PRJ0003S77_SA_L001', 'PRJ0003S78_SA_L001', 'PRJ0003S79_SA_L001', 'PRJ0003S80_SA_L001', 'PRJ0003S81_SA_L001', 'PRJ0003S82_SA_L001', 'PRJ0003S83_SA_L001','PRJ004S42_SA_L001', 'PRJ004S43_SA_L001', 'PRJ004S44_SA_L001', 'PRJ004S45_SA_L001', 'PRJ004S46_SA_L001', 'PRJ004S47_SA_L001', 'PRJ004S48_SA_L001', 'PRJ004S49_SA_L001', 'PRJ004S50_SA_L001', 'PRJ004S51_SA_L001', 'PRJ004S52_SA_L001', 'PRJ004S53_SA_L001', 'PRJ004S54_SA_L001', 'PRJ004S55_SA_L001']
+SAMPLES=['CRC1502NLH0000000000D03000', 'CRC1502-03-0', 'CRC1502-08-0', 'CRC1502-09-0', 'CRC1502-03-1-A', 'CRC1502-03-1-C', 'CRC1502-03-1-D', 'CRC1502-08-1-A', 'CRC1502-08-1-C', 'CRC1502-08-1-D', 'CRC1502-09-1-A', 'CRC1502-09-1-C', 'CRC1502-09-1-E', 'CRC1502-10-MA-A', 'CRC1502-10-MA-D', 'CRC1502-10-MA-C', 'CRC1502-10-MC-A', 'CRC1502-10-MC-C', 'CRC1502-10-MC-D', 'CRC1502-10-MI-A', 'CRC1502-10-MI-C', 'CRC1502-10-MI-G','CRC1502-10-0', 'CRC1502-10-1-A', 'CRC1502-10-1-B', 'CRC1502-10-1-D', 'CRC1502-08D-2-2', 'CRC1502-03A-2-1', 'CRC1502-03A-2-3', 'CRC1502-03A-2-5', 'CRC1502-10B-2-3', 'CRC1502-10B-2-5', 'CRC1502-10B-2-6', 'CRC1502-09C-2-1', 'CRC1502-09C-2-2', 'CRC1502-09C-2-3']
+
+# no in vivo!
+#SAMPLES_ORIG=['CRC1502NLH0000000000D03000', '30XPRJ0003S63_SA_L001', 'PRJ0003S64_SA_L001', 'PRJ0003S65_SA_L001', '30XPRJ0003S66_SA_L001', 'PRJ0003S67_SA_L001', 'PRJ0003S68_SA_L001', 'PRJ0003S69_SA_L001', 'PRJ0003S70_SA_L001', 'PRJ0003S71_SA_L001', 'PRJ0003S72_SA_L001', 'PRJ0003S73_SA_L001', 'PRJ0003S74_SA_L001']# 'PRJ0003S75_SA_L001', 'PRJ0003S76_SA_L001', 'PRJ0003S77_SA_L001', 'PRJ0003S78_SA_L001', 'PRJ0003S79_SA_L001', 'PRJ0003S80_SA_L001', 'PRJ0003S81_SA_L001', 'PRJ0003S82_SA_L001', 'PRJ0003S83_SA_L001']
+#SAMPLES=['CRC1502NLH0000000000D03000', 'CRC1502-03-0', 'CRC1502-08-0', 'CRC1502-09-0', 'CRC1502-03-1-A', 'CRC1502-03-1-C', 'CRC1502-03-1-D', 'CRC1502-08-1-A', 'CRC1502-08-1-C', 'CRC1502-08-1-D', 'CRC1502-09-1-A', 'CRC1502-09-1-C', 'CRC1502-09-1-E']# 'CRC1502-10-MA-A', 'CRC1502-10-MA-D', 'CRC1502-10-MA-C', 'CRC1502-10-MC-A', 'CRC1502-10-MC-C', 'CRC1502-10-MC-D', 'CRC1502-10-MI-A', 'CRC1502-10-MI-C', 'CRC1502-10-MI-G']
+
+#SAMPLES_ORIG=['CRC1502NLH0000000000D03000', 'PRJ0003S64_SA_L001', 'PRJ0003S65_SA_L001', 'PRJ0003S69_SA_L001', 'PRJ0003S70_SA_L001', 'PRJ0003S71_SA_L001', 'PRJ0003S72_SA_L001', 'PRJ0003S73_SA_L001', 'PRJ0003S74_SA_L001']
+#SAMPLES=['CRC1502NLH0000000000D03000', 'CRC1502-08-0', 'CRC1502-09-0', 'CRC1502-08-1-A', 'CRC1502-08-1-C', 'CRC1502-08-1-D', 'CRC1502-09-1-A', 'CRC1502-09-1-C', 'CRC1502-09-1-E']
+NORMAL=["CRC1502NLH0000000000D03000"]*(len(SAMPLES)-1)
+
+# to reduce platypus to only in vitro:
+#TUMOR=SAMPLES[1:13]
+TUMOR=SAMPLES[1:]
+
+
+#REF=""
+#SAMPLESD=[]
+#SAMPS=",".join(SAMPLESD)
+
+XENOMED_SAMPLES=[]
+TRIMMED_SAMPLES=[]
+
+
+FASTQ_SUFFIX="_{pair}.fastq.gz"
+FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
+
+PAIRS=['R1_001','R2_001']
+PAIRS_XENOME=['1','2']
+CORES=12
+CORESMD=4
+# TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
+PATTERNED=2500 
+# HiSeq4000, otherwise 100 for unpatterned
+#–o recal.bam
+
+
+### TODO REMOVE ME FOR BULK!
+AFPARAM="--default-af 0"
+# https://gatkforums.broadinstitute.org/gatk/discussion/24633/mutect2-4-1-4-0-stats-file-with-a-negative-number#latest
+# use --default-af 0 to avoid 0.5 AF calls filtering 
+
+wildcard_constraints:
+    sample="[a-zA-Z0-9]+-?[0-9A-Z]+-?[A-Z0-9]+-?[A-Z0-9]?"
+
+
+CALLABLE="5:10,10:50,50:100,100:150,150:inf"
+CALLABLE_STRICT="50:100,100:150,150:inf"
+
+SPLIT=12
+SPLIT_INTERVAL=GNOMAD_TASK_DIR+'/GRCh38.d1.vd1.n'+str(SPLIT)
+if SPLIT >= 10:
+    SPLITS=['000'+str(x) for x in range(0,10)] + ['00'+str(x) for x in range(10,SPLIT)]
+else:
+    SPLITS=['000'+str(x) for x in range(0, SPLIT)]
+
+#+'-scattered.interval_list'
+
+PLOIDY=2
+PURITY=1

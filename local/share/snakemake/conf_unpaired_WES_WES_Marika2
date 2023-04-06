@@ -30,11 +30,12 @@ ANNOVAR=ROOT+"/task/variant_annotations/dataset/annovar/hg38/humandb/"
 PON=""
 DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
 INTERVAL=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.interval_list'
-GCFILE=GNOMAD_TASK_DIR+'sequenza_gc_w200.wig.gz'
+GCFILE=GNOMAD_TASK_DIR+'sequenza_gc_w50.wig.gz'
 CALLABLE_BED=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.bed.gz'
 # Singularity containers and occam docker images
 GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
-GATK_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/gatk_fixedov:1"
+#GATK_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/gatk_fixedov:1"
+GATK_ODOCKER="broadinstitute/gatk:4.2.5.0"
 XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
 ALIGN_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/align_recalibrate:1"
 SEQUENZA_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/sequenza:1"
@@ -42,23 +43,36 @@ VARSCAN_ODOCKER="egrassi/occamsnakes/varscan:1"
 PLATYPUS_ODOCKER="egrassi/occamsnakes/platypus:1"
 
 ## This dataset:
-DATA=ROOT+'/prj/biobanca/local/share/data/targeted/fastq'
+DATA=PRJ_ROOT+'/local/share/data/WES_100x_Marika_2'
 FQ_XENOME_DIR="xenome"
 
-MAP=ROOT+'/prj/biobanca/local/share/data/targeted/map_lmo_double.tsv'
+
+# cannot do like this due to the f* biodiversa naming, resorting to glob
+MAP=DATA+'/map_marika_2.tsv'
 
 def get_orig_samples():
+    import glob
+    import os
     o = []
     s = []
     with open(MAP, 'r') as map:
         for line in map.readlines():
             line = line.rstrip('\n')
             elems = line.split('\t')
-            o.append(elems[0])
-            s.append(elems[1])
+            lookfor = elems[0]
+	    pathlook = os.path.join(DATA, lookfor+"_*R1*")
+	    found = glob.glob(pathlook)
+	    if len(found) == 1:
+                basename = os.path.basename(found[0])
+		        # remove _R1_001.fastq.gz from found
+                f = basename.replace('_R1_001.fastq.gz','')
+                o.append(f)
+                s.append(elems[1])
+            else:
+                raise Exception(elems[1]+" not found! " + pathlook)
     assert(len(o) == len(s))
-    print(len(o))
-    print(len(s))
+    print(o)
+    print(s)
     return (o, s)
 
 SAMPLES_PAIRS = get_orig_samples()
@@ -80,16 +94,16 @@ XENOME_PREFIX=''
 XENOME_TOOL=''
 XENOME_WAIT=''
 
-EXONS=ROOT+'/prj/biobanca/local/share/data/targeted/all_target_segments_covered_by_probes_Integragen_PJ2008298_TE-95760481_hg38_200911181926.bed'
-GENES=ROOT+'/prj/biobanca/local/share/data/targeted/panel_pdo_pdx_genesymbol.tsv'
-NAME="biobanca_targeted_pdo"
-SEXONS=EXONS
+# https://eu.idtdna.com/pages/products/next-generation-sequencing/workflow/xgen-ngs-hybridization-capture/pre-designed-hyb-cap-panels/exome-hyb-panel-v2#resources
+EXONS=DATA+'/xgen-exome-hyb-panel-v2-targets-hg38.sorted.bed'
+SEXONS=DATA+'/xgen-exome-hyb-panel-v2-targets-hg38.sorted.bed'
+PROBES=DATA+'/xgen-exome-hyb-panel-v2-probes-hg38.sorted.bed'
 PADDING=100
 
 
-PAIRS=['R1','R2']
+PAIRS=['R1_001','R2_001']
 PAIRS_XENOME=['1','2']
-CORES=8
+CORES=4
 CORESMD=4
 # TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
 PATTERNED=2500 
@@ -112,11 +126,9 @@ PURITY='plh'
 
 #PICARD="picard -Xmx10g -XX:ParallelGCThreads={params.cores}"
 PICARD="picard-tools"
+FQ_TRIM_DIR="placeholder"
+ADAPTERS="placeholder"
 
-SIZE=''
-ASSAY=''
-
-# needed here cause we do not recalibrate
 rule all_markedDup:
     input: expand("align/markedDup_{sample}.sorted.bam", sample=SAMPLES)
 
@@ -135,16 +147,20 @@ rule flagstat_dup:
 rule all_recalibrate:
     input: expand("align/realigned_{sample}.bam", sample=SAMPLES)
 
-rule xls_qc:
-    input:  o="all_metrics", x="../biobanca_targeted_pdx/all_metrics"
-    output: "targeted_qc.xlsx"
-    shell:
-        """
-            echo -e "sample\\tPF_UQ_READS_ALIGNED\\tMEAN_TARGET_COVERAGE" > {output}.tmp1
-            echo -e "sample\\tPF_UQ_READS_ALIGNED\\tMEAN_TARGET_COVERAGE" > {output}.tmp2
-            cut -f 11,23,58 {input.o} | sed 1d | bawk '{{print $3,$1,$2}}' | sed 's/align\///1; s/\.hsmetrics//1' >> {output}.tmp1
-            cut -f 11,23,58 {input.x} | sed 1d | bawk '{{print $3,$1,$2}}' | sed 's/align\///1; s/\.hsmetrics//1' >> {output}.tmp2
-            tsv_to_xls -i {output}.tmp1,{output}.tmp2 -s pdo,pdx -o {output}
-            rm {output}.tmp*
-        """
-        
+### version notes
+#bwa 0.7.17-r1188  (godot & ulisse)
+#picard 2.18.25 (godot & ulisse, picard-tools)
+#fastqc 0.11.8 (godot, & ulisse)
+#multiqc 1.8 (godot rnabioinfotree conda env)
+
+#SIZE=0.4 # biobanca targeted
+SIZE=34 # WES agilent sureselect
+ASSAY="WES" #   "TARGETED"
+
+GENES="genes.tsv"
+NAME="WES_MARIKA"
+
+rule g:
+    output: "genes.tsv"
+    shell: "echo WES > {output}"
+
