@@ -48,7 +48,8 @@ FQ_XENOME_DIR="xenome"
 
 
 # cannot do like this due to the f* biodiversa naming, resorting to glob
-MAP=DATA+'/map_marika_2.tsv'
+# now naming is ok but for the sake of uniformity I'll generate a map and use glob
+MAP=DATA+'/samples_map.tsv'
 
 def get_orig_samples():
     import glob
@@ -60,15 +61,16 @@ def get_orig_samples():
             line = line.rstrip('\n')
             elems = line.split('\t')
             lookfor = elems[0]
-	    pathlook = os.path.join(DATA, lookfor+"_*R1*")
-	    found = glob.glob(pathlook)
-	    if len(found) == 1:
+            pathlook = os.path.join(DATA, lookfor+"_*R1*.fastq.gz")
+            found = glob.glob(pathlook)
+            if len(found) == 1:
                 basename = os.path.basename(found[0])
-		        # remove _R1_001.fastq.gz from found
+                # remove _R1_001.fastq.gz from found
                 f = basename.replace('_R1_001.fastq.gz','')
                 o.append(f)
                 s.append(elems[1])
             else:
+                print(found)
                 raise Exception(elems[1]+" not found! " + pathlook)
     assert(len(o) == len(s))
     print(o)
@@ -85,21 +87,23 @@ TUMOR=[] # why is this needed?
 #SAMPLESD=[]
 #SAMPS=",".join(SAMPLESD)
 
-XENOMED_SAMPLES=[]
+XENOMED_SAMPLES=SAMPLES
 TRIMMED_SAMPLES=[]
 
 FASTQ_SUFFIX="_{pair}.fastq.gz"
 FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
-XENOME_PREFIX=''
-XENOME_TOOL=''
-XENOME_WAIT=''
+PAIRS=['SA_L001_R1_001','SA_L001_R2_001']
+PAIRS_XENOME=['1','2']
+XENOME_PREFIX='/mnt/trcanmed/snaketree/task/sequences/sequences/dataset/gdc/xenomidx'
+XENOME_TOOL='/mnt/trcanmed/snaketree/prj/snakegatk/local/src/gossamer/build/src/xenome'
+#XENOME_WAIT=10800 #28800 # 6h for one, giving 2h bonus - 3h for 100x - gave error for 10 samples
+XENOME_WAIT=28800
 
 
-# TODO FIX THIS SURESELECT NEW VERSION
-# https://eu.idtdna.com/pages/products/next-generation-sequencing/workflow/xgen-ngs-hybridization-capture/pre-designed-hyb-cap-panels/exome-hyb-panel-v2#resources
-EXONS=DATA+'/xgen-exome-hyb-panel-v2-targets-hg38.sorted.bed'
-SEXONS=DATA+'/xgen-exome-hyb-panel-v2-targets-hg38.sorted.bed'
-PROBES=DATA+'/xgen-exome-hyb-panel-v2-probes-hg38.sorted.bed'
+# https://earray.chem.agilent.com/suredesign/index.htm?sessiontimeout=true
+EXONS=DATA+'/SureSelect_XT_HS2_V8_S33266340_Covered.bed'
+SEXONS=DATA+'/SureSelect_XT_HS2_V8_S33266340_Covered.bed'
+PROBES=''
 PADDING=100
 
 
