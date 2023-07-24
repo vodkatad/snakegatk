@@ -184,7 +184,7 @@ PCGR='/mnt/trcanmed/snaketree/prj/snakegatk/local/src/pcgr/'
 rule pcgr:
     input: MUTECT_DIR+"/{sample}.pass.vcf.gz"
     output: MUTECT_DIR+"/{sample}.pcgr_acmg.grch38.snvs_indels.tiers.tsv"
-    params: pcgr=PCGR, size=SIZE, assay='TARGETED', mdir=MUTECT_DIR
+    params: pcgr=PCGR, size=SIZE, assay=ASSAY, mdir=MUTECT_DIR
     shell:
         """
             /usr/bin/python3 {params.pcgr}/pcgr.py --pcgr_dir {params.pcgr} \
