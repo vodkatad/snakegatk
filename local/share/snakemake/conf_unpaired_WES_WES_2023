@@ -101,8 +101,8 @@ XENOME_WAIT=28800
 
 
 # https://earray.chem.agilent.com/suredesign/index.htm?sessiontimeout=true
-EXONS=DATA+'/SureSelect_XT_HS2_V8_S33266340_Covered.bed'
-SEXONS=DATA+'/SureSelect_XT_HS2_V8_S33266340_Covered.bed'
+EXONS=DATA+'/SureSelect_XT_HS2_V8_S33266340_Covered_goodchrs.bed'
+SEXONS=DATA+'/SureSelect_XT_HS2_V8_S33266340_Covered_goodchrs.bed'
 PROBES=''
 PADDING=100
 
