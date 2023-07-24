@@ -45,13 +45,27 @@ samples <- gsub('.','-', samples, fixed=TRUE) # so sad, for CRC0282-
 #colnames(genes) <- 'gene'
 #rownames(genes) <- rownames(af)
 
+normalize_cds <- function(cds_change) {
+	#egrassi@ulisse:/mnt/cold2/snaketree/prj/snakegatk/dataset/WES_2023$ grep -w 178729491  mutect/*snvs_indels.tiers.tsv |sort | uniq | cut -f 27
+	#splice_donor_variant&splice_acceptor_variant&stop_lost&inframe_deletion&intron_variant:ENST00000589042.5:c.18539_18664del:exon63-64:p.A6180_X6222delinsV
+	#splice_acceptor_variant&splice_donor_variant&stop_lost&inframe_deletion&intron_variant:ENST00000589042.5:c.18539_18664del:exon63-64:p.A6180_X6222delinsV
+	#splice_acceptor_variant&splice_donor_variant&stop_lost&inframe_deletion&intron_variant:ENST00000589042.5:c.18539_18664del:exon63-64:p.A6180_X6222delinsV
+	#splice_donor_variant&splice_acceptor_variant&stop_lost&inframe_deletion&intron_variant:ENST00000589042.5:c.18539_18664del:exon63-64:p.A6180_X6222delinsV
+        fields <- strsplit(cds_change, ':', fixed=TRUE)
+        causes <- fields[[1]][1]
+        causes_arr <- unlist(strsplit(causes, '&', fixed=TRUE))
+        causes_sort <- paste0(unique(causes_arr[order(causes_arr)]), sep='', collapse='&')
+	return(paste0(causes_sort,":", fields[[1]][2],":",fields[[1]][3],":",fields[[1]][4],":",fields[[1]][5]))
+}
 
 load_filter_pcgr <- function(sample) {
   d <- read.table(paste0(mutect_dir, '/', sample, '.pcgr_acmg.grch38.snvs_indels.tiers.tsv'), sep="\t", header=T, stringsAsFactors = FALSE, quote='')
   d$id <- paste0(d$CHROM, ":", d$POS, ":", d$REF, ":", d$ALT)
-  #W_TIERS <- c('TIER 1', 'TIER 2', 'TIER 3')
+  #W_TIERS <- c('TIER 1', 'TIER 2', 'TIER 3')ad
   d <- d[d$TIER %in% W_TIERS,]
-  list(ids=paste0('chr', d$id), genes=d$SYMBOL, cds=d$CDS_CHANGE)
+  cds <- sapply(d$CDS_CHANGE, normalize_cds)
+  names(cds) <- NULL
+  list(ids=paste0('chr', d$id), genes=d$SYMBOL, cds=cds)
 }
 
 keepids <- c()
@@ -85,6 +99,7 @@ genes <- unique(genes) # what's the difference
 #genes <- genes[genes$symbol %in% unique(genes$symbol),, drop=FALSE]
 print(length(unique(keepids)))
 # We never remove anything cause it was not in af to start with...
+save.image('borf.Rdata')
 af[!rownames(af) %in% keepids,] <- rep(0, ncol(af))
 r <- rowSums(af) == 0
 print(table(r))
