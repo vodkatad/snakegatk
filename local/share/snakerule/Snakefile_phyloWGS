@@ -30,6 +30,7 @@ def phylowgs_input(wildcards):
 #Not in conda?
 #multievolve.py --num-chains {params.cores} --ssms {input[0]} --cnvs {input[1]} --burnin-samples 1 --mcmc-samples 1 --output-dir {output}
    #output: directory("{sample}_phylowgs")
+# 1h with 4 cores on 300x CRC1599PRX0A02002TUMD03000V2
 rule phylowgs:
     input: phylowgs_input
     params: cores=4, tdir=PWGS_PDIR
@@ -39,3 +40,16 @@ rule phylowgs:
             rm -rf {output}
             python2 {params.tdir}/multievolve.py --num-chains {params.cores} --output-dir {output} --ssms {input[0]} --cnvs {input[1]}
         """
+
+# python2 /path/to/phylowgs/write_results.py example_data ../trees.zip example_data.summ.json.gz example_data.muts.json.gz example_data.mutass.zip
+# 1'
+rule phylowgs_results:
+    input: PWGS_DIR+"/{sample}.dir/trees.zip"
+    params: cores=4, tdir=PWGS_PDIR
+    output: summ=PWGS_DIR+"/{sample}.summ.json.gz",  mutlist=PWGS_DIR+"/{sample}.mutlist.json.gz", mutass=PWGS_DIR+"/{sample}.mutass.json.gz"
+    shell:
+        """ 
+            python2 {params.tdir}/write_results.py --include-ssm-names pyWGStest {input} {output} 
+        """
+
+#https://rdrr.io/github/MathOnco/EvoFreq/src/R/EvoFreq_Parsers.R
