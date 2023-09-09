@@ -53,3 +53,15 @@ rule phylowgs_results:
         """
 
 #https://rdrr.io/github/MathOnco/EvoFreq/src/R/EvoFreq_Parsers.R
+rule parse_trees:
+    input: summ=PWGS_DIR+"/{sample}.summ.json.gz"
+    output: info=PWGS_DIR+"/{sample}.trees_summary.tsv.gz"
+    run:
+        import json
+        import gzip
+        with gzip.open(output.info, 'wb') as outf:
+            with gzip.open(input.summ, 'r') as fp:
+                ressum = json.load(fp)
+                for t in ressum['trees'].keys():
+                    outf.write("{}\t{}\t{}\t{}\t{}\n".format(ressum['trees'][t]['llh'], ressum['trees'][t]['clustering_index'], ressum['trees'][t]['branching_index'], ressum['trees'][t]['linearity_index'], len(ressum['trees'][t]['populations'].keys())).encode())
+                    #llhs.append(ressum['trees'][t]['llh'])
