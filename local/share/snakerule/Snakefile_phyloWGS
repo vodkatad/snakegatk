@@ -1,0 +1,41 @@
+PWGS_DIR="pWGS"
+#https://github.com/morrislab/phylowgs/tree/master/parser
+##  --output-params OUTPUT_PARAMS
+##  --tumor-sample TUMOR_SAMPLE
+rule ssm_input:
+    input: vcf=MUTECT_DIR+"/{sample}.pass.vcf.gz", cnvs=PWGS_DIR+"/{sample}.cnvs.txt"
+    output: ssm=PWGS_DIR+"/{sample}.ssm", cnv=PWGS_DIR+"/{sample}.cnv"
+    params: tdir=PWGS_PDIR
+    shell: 
+        """
+         python2 {params.tdir}/parser/create_phylowgs_inputs.py --regions=normal_and_abnormal_cn --vcf-type sample1=mutect_smchet sample1={input.vcf} --cnvs sample1={input.cnvs}
+         mv cnv_data.txt {output.cnv}
+         mv ssm_data.txt {output.ssm}
+        """
+
+# https://github.com/morrislab/phylowgs/issues/71
+#./parse_cnvs.py -f battenberg -c 1 {TODO} --cnv-output {output.cnv}
+rule cnv_input:
+    input: CNV_DIR+"/{sample}/{sample}_segments.txt"
+    output: cnv=PWGS_DIR+"/{sample}.cnvs.txt"
+    params: tdir=PWGS_PDIR
+    shell: 
+        """
+            python2 {params.tdir}/parser/parse_cnvs.py -f sequenza -c 1 {input} --cnv-output {output.cnv}
+        """
+
+def phylowgs_input(wildcards):
+    return [PWGS_DIR+'/'+wildcards.sample+".ssm", PWGS_DIR+'/'+wildcards.sample+".cnv"]
+
+#Not in conda?
+#multievolve.py --num-chains {params.cores} --ssms {input[0]} --cnvs {input[1]} --burnin-samples 1 --mcmc-samples 1 --output-dir {output}
+   #output: directory("{sample}_phylowgs")
+rule phylowgs:
+    input: phylowgs_input
+    params: cores=4, tdir=PWGS_PDIR
+    output: tree=PWGS_DIR+"/{sample}.dir"
+    shell:
+        """ 
+            rm -rf {output}
+            python2 {params.tdir}/multievolve.py --num-chains {params.cores} --output-dir {output} --ssms {input[0]} --cnvs {input[1]}
+        """

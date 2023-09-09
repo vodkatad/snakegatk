@@ -123,6 +123,8 @@ AFPARAM=""
 # https://gatkforums.broadinstitute.org/gatk/discussion/24633/mutect2-4-1-4-0-stats-file-with-a-negative-number#latest
 # use --default-af 0 to avoid 0.5 AF calls filtering 
 
+PWGS_PDIR='/scratch/trcanmed/task/common_tools/local/src/phylowgs'
+
 wildcard_constraints:
     sample="[a-zA-Z0-9]+"
 
@@ -359,7 +361,7 @@ rule subcl_mut_burden:
         import pandas as pd
         import numpy as np
         data = pd.read_csv(input.muts, sep="\t", index_col=0)
-        tot = np.count_nonzero(np.logical_and(data > 0.1, data < 0.2), axis=0)
+        tot = np.count_nonzero(np.logical_and(data > 0.12, data < 0.24), axis=0)
         target_len = 0
         with open(input.tsize, 'r') as tsize:
             line = tsize.readline()
@@ -375,7 +377,7 @@ rule cl_mut_burden:
         import pandas as pd
         import numpy as np
         data = pd.read_csv(input.muts, sep="\t", index_col=0)
-        tot = np.count_nonzero(data > 0.2, axis=0)
+        tot = np.count_nonzero(data > 0.24, axis=0)
         target_len = 0
         with open(input.tsize, 'r') as tsize:
             line = tsize.readline()
@@ -383,3 +385,21 @@ rule cl_mut_burden:
         target_len = target_len / 1000000
         res = pd.DataFrame(data = {'totmut': tot, 'burden': tot/target_len}, index=data.columns)
         res.to_csv(output[0], sep="\t", index=True)
+
+rule annotate_vcf_with_cn:
+    input: cn="sequenza/{sample}/{sample}_segments.txt", vcf="mutect_paired/{sample}.pass.vcf.gz"
+    output: "mutect_paired/{sample}.ABannot.pass.vcf.gz"
+    shell:
+        """
+            echo -e "#CHROM\\tFROM\\tTO\\tA\\tB" > {output}.tmp
+            sed 1d {input.cn} | cut -f 1,2,3,11,12 >> {output}.tmp
+            bcftools annotate -a {output}.tmp -c CHROM,FROM,TO,+A,+B \\
+            -h <(echo -e "##INFO=<ID=A,Number=1,Type=Integer,Description=\"MajorAlleleCN\">\\n##INFO=<ID=B,Number=1,Type=Integer,Description=\"MinorAlleleCN\">") {input.vcf} | bgzip > {output}
+            rm {output}.tmp
+            N1=`zcat {output} | grep -v "^#" | wc -l`
+            N2=`zcat {input.vcf} | grep -v "^#" | wc -l`
+            if [ "$N1" -ne "$N2" ]; then exit 1; fi
+        """
+
+rule all_annotate_vcf:
+    input: expand("mutect_paired/{sample}.ABannot.pass.vcf.gz", sample=TUMOR)
