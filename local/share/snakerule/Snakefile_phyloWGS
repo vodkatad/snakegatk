@@ -34,7 +34,7 @@ def phylowgs_input(wildcards):
 rule phylowgs:
     input: phylowgs_input
     params: cores=4, tdir=PWGS_PDIR
-    output: tree=PWGS_DIR+"/{sample}.dir"
+    output: tree=directory(PWGS_DIR+"/{sample}.dir")
     shell:
         """ 
             rm -rf {output}
@@ -65,3 +65,42 @@ rule parse_trees:
                 for t in ressum['trees'].keys():
                     outf.write("{}\t{}\t{}\t{}\t{}\n".format(ressum['trees'][t]['llh'], ressum['trees'][t]['clustering_index'], ressum['trees'][t]['branching_index'], ressum['trees'][t]['linearity_index'], len(ressum['trees'][t]['populations'].keys())).encode())
                     #llhs.append(ressum['trees'][t]['llh'])
+                    #
+
+PYDIR='pyclone'
+# pyclone-vi, needs conda
+#rule pyd:
+#    output: directory(PYDIR)
+#    shell: "mkdir {output}"
+
+rule input:
+    input: vcf=MUTECT_DIR+"/{sample}.ABannot.pass.vcf.gz", dir=PYDIR
+    output: outtsv=PYDIR+"/{sample}.pyc.tsv"
+    script: SRC_DIR+"/pyclone_in.R"
+
+#(pyclone-vi) egrassi@godot:/mnt/trcanmed/snaketree/prj/snakegatk/dataset/Pri_Mets_godot/pyclone$ time pyclone-vi fit -i CRC1599PRX0A02002TUMD03000V2.pyc.tsv -o CRC1599PRX0A02002TUMD03000V2.hdf5 --seed 42 &> CRC1
+#599PRX0A02002TUMD03000V2.hdf5.load
+#real    0m3.315s
+#user    0m4.042s
+#sys     0m5.711s
+
+#(pyclone-vi) egrassi@godot:/mnt/trcanmed/snaketree/prj/snakegatk/dataset/Pri_Mets_godot/pyclone$ time pyclone-vi write-results-file -i CRC1599PRX0A02002TUMD03000V2.hdf5 -o CRC1599PRX0A02002TUMD03000V2.hdf5.tsv.gz -c
+#real    0m0.755s
+#user    0m1.727s
+rule fit:
+    input: PYDIR+"/{sample}.pyc.tsv"
+    output: PYDIR+"/{sample}.hdf5"
+    log: PYDIR+"/{sample}.log"
+    shell:
+        """
+            pyclone-vi fit -i {input} -o {output} --seed 42 &> {log}
+        """
+
+
+rule output:
+    input: PYDIR+"/{sample}.hdf5"
+    output: PYDIR+"/{sample}.tsv.gz"
+    shell:
+        """
+            pyclone-vi write-results-file -i {input} -o {output} -c
+        """
