@@ -51,8 +51,8 @@ SAMPLES_ORIG=SAMPLES_ORIG[0:third]
 SAMPLES=SAMPLES_ORIG
 
 # https://eu.idtdna.com/pages/products/next-generation-sequencing/workflow/xgen-ngs-hybridization-capture/pre-designed-hyb-cap-panels/exome-hyb-panel-v2#resources
-EXONS=DATA+'/targets_idt.bed'
-SEXONS=DATA+'/targets_idt_sorted.bed'
+EXONS=DATA+'/xgen-exome-hyb-panel-v2-probes-hg38.bed'
+SEXONS=DATA+'/xgen-exome-hyb-panel-v2-probes-hg38.sorted.bed'
 PADDING=100
 
 #REF=""
@@ -135,3 +135,7 @@ SIZE=34 # WES agilent sureselect
 ASSAY="WES" #   "TARGETED"
 
 GCFILE=GNOMAD_TASK_DIR+'sequenza_gc_w50.wig.gz'
+
+rule all_markedDup:
+    input: expand("align/markedDup_{sample}.sorted.bam", sample=SAMPLES)
+

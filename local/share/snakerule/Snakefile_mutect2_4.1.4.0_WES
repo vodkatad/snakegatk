@@ -132,14 +132,16 @@ rule merge_targeted:
         """
 
 
+# Removed cause we no longer use VEP
+#output: txt=MUTECT_DIR+"/merged.vep.txt", html=MUTECT_DIR+"/merged.vep.stats.html"
+#vep -i {output.vcf}  --cache --dir_cache {params.cd} --output_file {output.txt} --stats_file {output.html} --pick
 rule VEP:
     input: MUTECT_DIR+"/merged_targeted.vcf"
-    output: txt=MUTECT_DIR+"/merged.vep.txt", html=MUTECT_DIR+"/merged.vep.stats.html", vcf=MUTECT_DIR+"/merged.vcf.id"
+    output: vcf=MUTECT_DIR+"/merged.vcf.id"
     params: cd=VEP_CACHE_DIR
     shell:
         """
              bcftools annotate -I +'%CHROM:%POS:%REF:%ALT' {input} > {output.vcf}
-             vep -i {output.vcf}  --cache --dir_cache {params.cd} --output_file {output.txt} --stats_file {output.html} --pick
         """
 
 rule vcf_to_aftable:
@@ -246,3 +248,27 @@ rule samples:
             ls -1 {params.dir}/*pcgr*pass.vcf.gz |  tr "//" "\\t" | tr "." "\\t" | cut -f 2 | sort | uniq > {output} 
         """
         
+
+rule size:
+    input: SEXONS
+    output: "targeted_size.txt"
+    shell:
+        """
+            bawk 'BEGIN{{t=0}} {{t=t+($3-$2)}} END {{print t}}' {input} > {output}
+        """
+
+rule mut_burden:
+    input: tsize="targeted_size.txt", muts=MUTECT_DIR+"/merged.table_nomultiallele"
+    output: MUTECT_DIR+"/mut_burden.tsv"
+    run:
+        import pandas as pd
+        import numpy as np
+        data = pd.read_csv(input.muts, sep="\t", index_col=0)
+        tot = np.count_nonzero(data > 0.1, axis=0)
+        target_len = 0
+        with open(input.tsize, 'r') as tsize:
+            line = tsize.readline()
+            target_len = float(line.rstrip())
+        target_len = target_len / 1000000
+        res = pd.DataFrame(data = {'totmut': tot, 'burden': tot/target_len}, index=data.columns)
+        res.to_csv(output[0], sep="\t", index=True)

@@ -11,6 +11,10 @@ if (debug == "yes") {
   save.image(file=paste0(fit,'.debug','.RData'))
 }
 
+if (grepl('-', afcolumn)) {
+        afcolumn <- gsub('-', '.', afcolumn)
+}
+
 data <- read.table(gzfile(data), sep="\t", header=TRUE)
 af <- data[,afcolumn, drop=FALSE]
 
