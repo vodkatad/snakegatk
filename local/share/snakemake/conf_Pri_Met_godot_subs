@@ -138,6 +138,8 @@ PICARD="export JAVA_OPTIONS='-Xmx10g -XX:ParallelGCThreads=12' && picard-tools"
 
 SIZE=34 # WES agilent sureselect
 ASSAY="WES" #   "TARGETED"
+GENES= "TODO"
+NAME="Pri_met_subs_godot"
 
 GCFILE=GNOMAD_TASK_DIR+'/sequenza_gc_w50.wig.gz'
 
@@ -205,7 +207,7 @@ rule bet_bin:
             grep -v intercept {input} | sort -k1,1 >> {output}
         """
 
-order: sub_bam > bwa_mem
+ruleorder: sub_bam > bwa_mem
 rule sub_bam:
     input: "../Pri_Mets_godot/align/{sample}.bam"
     output: "align/{sample}.bam"
@@ -220,6 +222,7 @@ rule allsubset:
 
 rule all_subs_mut_seq:
     input: expand("mutect_paired/{sample}.pass.vcf.gz", sample=SUBS), expand("sequenza/{sample}", sample=SUBS)
+
 
 ### defor cnv
 
