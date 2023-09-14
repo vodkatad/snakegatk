@@ -60,7 +60,8 @@ SAMPLES=SAMPLES_ORIG
 EXONS=DATA+'/xgen-exome-hyb-panel-v2-targets-hg38.bed'
 SEXONS=DATA+'/xgen-exome-hyb-panel-v2-targets-hg38.sorted.bed'
 PADDING=100
-
+GENES=""
+NAME=""
 #REF=""
 #SAMPLESD=[]
 #SAMPS=",".join(SAMPLESD)
@@ -205,7 +206,7 @@ rule bet_bin:
             grep -v intercept {input} | sort -k1,1 >> {output}
         """
 
-order: sub_bam > bwa_mem
+ruleorder: sub_bam > bwa_mem
 rule sub_bam:
     input: "../Pri_Mets_godot/align/{sample}.bam"
     output: "align/{sample}.bam"
