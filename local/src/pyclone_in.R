@@ -19,5 +19,6 @@ pyclone_in <- data.frame(mutation_id=rownames(AD), sample_id=sample, ref_counts=
 
 pyclone_in <- pyclone_in[!is.na(pyclone_in$major_cn) & !is.na(pyclone_in$minor_cn),]
 pyclone_in[grepl('chrY', pyclone_in$mutation_id), 'normal_cn'] <- 1
-
+#try with a thr on VAF
+pyclone_in <- pyclone_in[(pyclone_in$alt / (pyclone_in$ref+pyclone_in$alt)) > 0.05,]
 write.table(pyclone_in, file=out_f, quote=FALSE, sep="\t")
