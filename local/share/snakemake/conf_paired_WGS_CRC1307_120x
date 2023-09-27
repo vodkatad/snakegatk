@@ -117,3 +117,10 @@ rule neutral_sottoriva_bin:
     script: SRC_DIR+"/neutral_sottoriva_bin.R"
 
 get_ppos = None
+
+XENOME_PREFIX=""
+XENOME_TOOL=""
+XENOME_WAIT=""
+PICARD=""
+SIZE=""
+ASSAY=""
