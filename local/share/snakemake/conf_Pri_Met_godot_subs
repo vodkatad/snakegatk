@@ -230,6 +230,7 @@ rule all_subs_mut_seq:
 rule transformers:
     input: input_f="align/markedDup_{sample}.sorted.bam", ref=REF_DIR+"/GRCh38.d1.vd1.fa"
     output: "defor/mpileuppati/markedDup_{sample}.sorted.mpileup"
+    benchmark:"benchmarks/{sample}.mpileup.benchmark.txt"
     shell:
         """
             samtools mpileup -q 10 -d 200 -f {input.ref} {input.input_f} > {output}
@@ -239,6 +240,7 @@ rule transformers:
 rule calc_deprat:
     input: normal= "defor/mpileuppati/markedDup_{sample_te}.sorted.mpileup", tumor= "defor/mpileuppati/markedDup_{sample_tl}.sorted.mpileup"
     output: "defor/{sample_te}_{sample_tl}.dep"
+    benchmark:"benchmarks/{sample_te}_{sample_tl}.dep.benchmark.txt"
     shell:
         """
             calc_deprat {input.normal} {input.tumor} > {output}
@@ -248,6 +250,7 @@ rule calc_deprat:
 rule calc_freq_single:
     input: normal= "defor/mpileuppati/markedDup_{sample}.sorted.mpileup"
     output: normal_out= "defor/markedDup_{sample}.sorted.freq"
+    benchmark:"benchmarks/{sample}.sorted.freq.benchmark.txt"
     shell:
         """
         cat {input.normal} | calc_freq.pl -d 30 -f 0.01 -F 0.99 > {output.normal_out}
@@ -257,6 +260,7 @@ rule calc_freq_single:
 rule calc_nclust:
     input: normal= "defor/markedDup_{sample_te}.sorted.freq", tumor= "defor/markedDup_{sample_tl}.sorted.freq"
     output: output="defor/{sample_te}_{sample_tl}.nclust.seg"
+    benchmark:"benchmarks/{sample_te}_{sample_tl}.nclust.seg.benchmark.txt"
     shell:
         """
             calc_nclust {input.normal} {input.tumor} > {output}.tmp1
@@ -267,7 +271,60 @@ rule calc_nclust:
 rule calc_cna:
     input: dep="defor/{sample_te}_{sample_tl}.dep", seg="defor/{sample_te}_{sample_tl}.nclust.seg"
     output: cna="defor/{sample_te}_{sample_tl}.cna"
+    benchmark:"benchmarks/{sample_te}_{sample_tl}.cna.benchmark.txt"
     shell:
          """
              calc_cna.pl -r {input.dep} -c {input.seg} > {output.cna}
         """
+
+rule LOH_for_sequenza:
+    input: 'sequenza/{sample}/{sample}_segments.txt'
+    output:'sequenza/loh/{sample}.bed'
+    run:
+        import pandas as pd 
+        import numpy as numpy
+        data=pd.read_csv(input[0],sep='\t',header=0)
+        data_filtered=data[data['B']==0]
+        data_filtered=data_filtered.loc[:,['chromosome','start.pos','end.pos']]
+        data_filtered.to_csv(output[0],sep='\t',index=False,header=False)
+
+rule LOH_for_DEFOR:
+    input:'defor/{sample_te}_{sample_tl}.cna'
+    output:'defor/loh/{sample_te}_{sample_tl}_loh.bed'
+    run:
+        import pandas as pd
+        data=pd.read_csv(input[0],sep='\t',header=None)
+        data.columns=['chromosome','start.pos','end.pos','cna','cp','ciao']
+        data_filtered=data[(data['cna']=='loh') | (data['cna']=='loh-amp') | (data['cna']=='loss')]
+        data_filtered=data_filtered.loc[:,['chromosome','start.pos','end.pos']]
+        data_filtered.to_csv(output[0],sep='\t',index=False,header=False)
+
+rule sequenza_vs_defor:
+    input:defor='defor/loh/{sample_te}_{sample_tl}_loh.bed',seq='sequenza/loh/{sample_tl}.bed'
+    output:dvs='SEQvsDEF/{sample_te}_{sample_tl}.bed'
+    shell:
+        """
+             bedtools intersect -a {input.seq} -b {input.defor} > {output.dvs}
+        """
+#creo il bed perdo le teste che si chiameranno cois 'chromosome','start.pos','end.pos','A','B'     
+
+rule sequenza_to_BED:
+    input: 'sequenza/{sample}/{sample}_segments.txt'
+    output:'loh/bed/{sample}.bed'
+    run:
+        import pandas as pd 
+        import numpy as numpy
+        data=pd.read_csv(input[0],sep='\t',header=0)
+        print(data.head())
+        data_filtered=data.loc[:,['chromosome','start.pos','end.pos','A','B']]
+        data_filtered.to_csv(output[0],sep='\t',index=False,header=False)
+
+rule PRX_vs_LMX:
+    input: PRX='loh/bed/{sample_te}.bed',LMX='loh/bed/{sample_tl}.bed'
+    output: mixed='loh/mixed_bed/{sample_te}_{sample_tl}.bed'
+    shell:
+        """
+             bedtools intersect -wo -a {input.PRX} -b {input.LMX} > {output.mixed}
+        """
+
+
