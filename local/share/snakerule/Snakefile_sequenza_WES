@@ -5,6 +5,8 @@ CHRS=["chr"+str(x) for x in range(1,23)]+["chrX","chrY"]
 rule allseqz:
     input: expand(CNV_DIR+"/{{sample}}_{ch}.seqz.gz", ch=CHRS)
     output: CNV_DIR+"/{sample}.all.seqz.gz"
+    benchmark: "bench/{sample}.all.seqz.gz.times"
+    docker: SEQUENZA_ODOCKER
     shell:
         """
             zcat {input} | gawk '{{if (NR!=1 && $1 != "chromosome") {{print $0}}}}' | bgzip > {output};
@@ -18,6 +20,8 @@ rule sseqz:
     input:  unpack(find_matched_normal_seq), tumor=ALIGN_DIR+"/markedDup_{sample}.sorted.bam", ref=REF_DIR+"/GRCh38.d1.vd1.fa", gc=GCFILE
     output: expand(CNV_DIR+"/{{sample}}_{ch}.seqz.gz", ch=CHRS)
     params: dir=CNV_DIR, ch=CHRS, n=len(CHRS)
+    benchmark: "bench/{sample}.seqz.gz.times"
+    docker: SEQUENZA_ODOCKER
     shell:
         """
             mkdir -p {params.dir};
@@ -29,6 +33,8 @@ rule bin_seqz:
     input: CNV_DIR+"/{sample}.all.seqz.gz"
     output: CNV_DIR+"/{sample}.all.bin.seqz.gz"
     params: bin=50
+    benchmark: "bench/{sample}.all.bin.seqz.times"
+    docker: SEQUENZA_ODOCKER
     shell:
         """
          sequenza-utils seqz_binning -w {params.bin} -s {input} | gzip -c > {output}
@@ -38,6 +44,8 @@ rule r_seqz:
     input: CNV_DIR+"/{sample}.all.bin.seqz.gz"
     output: directory(CNV_DIR+"/{sample}")
     params: tool=BIN_DIR+"/sequenza", cores=CORES
+    benchmark: "bench/{sample}.times"
+    docker: SEQUENZA_ODOCKER
     shell:
         """
          {params.tool} {wildcards.sample} {input} {output}

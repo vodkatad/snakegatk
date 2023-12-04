@@ -144,6 +144,7 @@ rule murine_content:
 rule sort_targeted:
     input: bed=EXONS, fai=REF_DIR+"/GRCh38.d1.vd1.fa.fai" 
     output: SEXONS
+    docker: ALIGN_ODOCKER
     shell:
         """
             bedtools sort -faidx {input.fai} -i {input.bed} > {output}

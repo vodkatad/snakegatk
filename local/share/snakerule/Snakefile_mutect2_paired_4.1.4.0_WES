@@ -7,6 +7,8 @@ if PON != "":
         input: unpack(find_matched_normal), bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", bed=SEXONS, reference=REF_DIR+"/GRCh38.d1.vd1.fa", pon=PON
         output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", f1r2=MUTECT_DIR+"/{sample}_f1r2.tar.gz"
         singularity: GATK_SING
+        docker: GATK_ODOCKER
+        benchmark: "bench/{sample}.vcf.gz.times"
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
         params: padding=PADDING, cores=CORES, normal=find_matched_normal_sample
         shell: 
@@ -18,6 +20,8 @@ else:
         input: unpack(find_matched_normal), bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", bed=SEXONS, reference=REF_DIR+"/GRCh38.d1.vd1.fa"
         output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", f1r2=MUTECT_DIR+"/{sample}_f1r2.tar.gz"
         singularity: GATK_SING
+        docker: GATK_ODOCKER
+        benchmark: "bench/{sample}.vcf.gz.times"
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
         params: padding=PADDING, cores=CORES, normal=find_matched_normal_sample
         shell: 
@@ -29,6 +33,8 @@ rule getpileup:
     input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/gnomad.forcontamination.noalt.exomes.vcf", bed=SEXONS
     output: temp(MUTECT_DIR+"/{sample}.pileup.table")
     singularity: GATK_SING
+    docker: GATK_ODOCKER
+    benchmark: "bench/{sample}.pileup.table.times"
     params: padding=PADDING
     log: MUTECT_DIR+"/{sample}.pileup.table.log"
     shell: 
@@ -41,6 +47,8 @@ rule learnOrientationModel:
     input:  MUTECT_DIR+"/{sample}_f1r2.tar.gz"
     output: MUTECT_DIR+"/{sample}_read-orientation-model.tar.gz"
     singularity: GATK_SING
+    docker: GATK_ODOCKER
+    benchmark: "bench/{sample}_read-orientation-model.tar.gz.times"
     log: MUTECT_DIR+"/{sample}_read-orientation-model.tar.gz.log"
     shell:
         """
@@ -55,6 +63,8 @@ rule calculatecontamination:
     input: unpack(find_matched_normal_contable), tumor=MUTECT_DIR+"/{sample}.pileup.table"
     output: table=MUTECT_DIR+"/{sample}.contamination.table", seg=MUTECT_DIR+"/{sample}.tum.seg"
     singularity: GATK_SING
+    docker: GATK_ODOCKER
+    benchmark: "bench/{sample}.contamination.table.times"
     log: MUTECT_DIR+"/{sample}.contamination.table.log"
     shell:
         """
@@ -70,6 +80,8 @@ rule filtercalls:
     input: vcf=MUTECT_DIR+"/{sample}.vcf.gz", ref=REF_DIR+"/GRCh38.d1.vd1.fa", stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", contam=MUTECT_DIR+"/{sample}.contamination.table", seg=MUTECT_DIR+"/{sample}.tum.seg", f1r2=MUTECT_DIR+"/{sample}_read-orientation-model.tar.gz"
     output: vcf=MUTECT_DIR+"/{sample}.filtered.vcf.gz", stats=MUTECT_DIR+"/{sample}_filtering_stats.tsv"
     singularity: GATK_SING
+    docker: GATK_ODOCKER
+    benchmark: "bench/{sample}.fitered.vcf.gz.times"
     log: MUTECT_DIR+"/{sample}_filtering_stats.tsv.log"
     shell:
         """
@@ -82,6 +94,7 @@ rule filtercalls:
 rule passFilter:
     input: MUTECT_DIR+"/{sample}.filtered.vcf.gz"
     output: MUTECT_DIR+"/{sample}.pass.vcf.gz"
+    docker: ALIGN_ODOCKER
     shell:
         """
         zcat {input} |  awk '/^#/ || $7=="PASS"' | bgzip > {output}
@@ -98,6 +111,7 @@ rule single_table:
     input: vcf=MUTECT_DIR+"/{sample}.pass.vcf.gz"
     output: MUTECT_DIR+"/{sample}.pass.table.gz"
     params: nsamples=1, pos=get_pos
+    docker: ALIGN_ODOCKER
     shell:
         """
       zcat {input} | grep -v "^##" |  perl -ane '@gt=splice(@F,{params.pos},{params.nsamples}); $gt=""; foreach $g (@gt) {{ if ($.==1) {{$gt.=$g."\\t";}} else {{ @afs = split(":",$g); if ($afs[2] eq ".") {{$afs[2]=0;}} $gt.=$afs[2]."\\t";}} }} chop($gt) ; print $F[2]."\\t".$gt."\\n";' | grep -v "," | gzip > {output}
@@ -107,6 +121,7 @@ rule single_table:
 rule single_table_bis:
     input: vcf=MUTECT_DIR+"/{sample}.pass.vcf.gz"
     output: MUTECT_DIR+"/{sample}.pass.tsv.gz"
+    docker: ALIGN_ODOCKER
     shell:
         """
             bcftools query -s {wildcards.sample} -f '%CHROM:%POS:%REF:%ALT[\\t%SAMPLE\\t%GT\\t%AF]\n' {input.vcf} | gzip > {output}
@@ -116,12 +131,14 @@ rule neutral_sottoriva:
     input: afmatrix=MUTECT_DIR+"/{sample}.pass.table.gz"
     params: debug=DEBUG, afcolumn="{sample}"
     output: hist="{sample}.hist.{loweraf}_{higheraf}.pdf", fit="{sample}.fit.{loweraf}_{higheraf}.pdf", r2="{sample}.fit.{loweraf}_{higheraf}.r2"
+    docker: ALIGN_ODOCKER
     script: SRC_DIR+"/neutral_sottoriva.R"
 
 
 rule merge_targeted:
     input: vcf=expand(MUTECT_DIR+"/{sample}.pass.vcf.gz", sample=TUMOR), bed=SEXONS
     output: MUTECT_DIR+"/merged_targeted.vcf"
+    docker: ALIGN_ODOCKER
     shell:
         """
             bcftools merge --missing-to-ref -m none -o {output}.vcf.tmp {input.vcf}
@@ -144,6 +161,7 @@ rule vcf_to_aftable:
     input: MUTECT_DIR+"/merged.vcf.id"
     output: table=MUTECT_DIR+"/merged.table_nomultiallele"
     params: nsamples=len(SAMPLES)
+    docker: ALIGN_ODOCKER
     shell:
         """
              cat {input} | grep -v "^##" |  perl -ane '@gt=splice(@F,9,{params.nsamples}); $gt=""; foreach $g (@gt) {{ if ($.==1) {{$gt.=$g."\\t";}} else {{ @afs = split(":",$g); if ($afs[2] eq ".") {{$afs[2]=0;}} $gt.=$afs[2]."\\t";}} }} chop($gt) ; print $F[2]."\\t".$gt."\\n";' | grep -v "," > {output.table}
