@@ -1,0 +1,141 @@
+import os
+ROOT=os.environ.get('BIOINFO_ROOT')
+def find_prj_root(path=os.getcwd()):
+    if os.path.isfile(os.path.join(path,".PRJ_ROOT")):
+        return path
+    else:
+        if path:
+            return find_prj_root(os.path.dirname(path))
+        else:
+            raise Exception("Can not find the PRJ_ROOT directory")
+
+
+PRJ_ROOT=find_prj_root()
+TMP="/tmp"
+
+SRC_DIR=PRJ_ROOT+'/local/src'
+BIN_DIR=PRJ_ROOT+'/local/bin'
+FQ_REMOVED=False
+DEBUG="yes"
+TYPE="WES"
+PAIRED=True
+
+# Needed references and annotations
+GNOMAD_TASK_DIR=ROOT+'/task/annotations/dataset/gnomad'
+REF_DIR=GNOMAD_TASK_DIR
+GNOMAD=GNOMAD_TASK_DIR
+VEP_CACHE_DIR=ROOT+"/task/variant_annotations/dataset/VEP"
+ANNOVAR=ROOT+"/task/variant_annotations/dataset/annovar/hg38/humandb/"
+PON=GNOMAD_TASK_DIR+"/1000g_pon.hg38.vcf.gz"
+DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
+# Singularity containers and occam docker images
+GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
+GATK_ODOCKER="egrassi/occamsnakes/gatk:1"
+#GATK_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/gatk_fixedov:1" TODO
+
+XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
+ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
+PLH_DOCKER="bubusettete"
+
+
+## This dataset:
+DATA=PRJ_ROOT+"/local/share/data/Pri_Met_pairs"
+FQ_XENOME_DIR="xenome"
+
+# $ ls ../../local/share/data/Pri_Met_pairs/*fastq.gz | sed 's/..\/..\/local\/share\/data\/Pri_Met_pairs\///' | sed 's/_SA_L001_R._001.fastq.gz//1' | sort | uniq | tr "\n" "," | sed 's/,/","/g'
+SAMPLES_ORIG=["CRC0053LMX0A02204TUMD07000","CRC0053NLH0000000000D05000","CRC0053PRX0A01201TUMD05000","CRC0065LMX0B02205TUMD02000","CRC0065NLH0000000000D08000","CRC0065PRX0A01201TUMD03000","CRC0071LMX0A02204TUMD09000","CRC0071NLH0000000000D04000","CRC0071PRX0A01201TUMD06000","CRC0094LMX0A02201TUMD05000","CRC0094NLH0000000000D04000","CRC0094PRX0A01201TUMD06000","CRC0333LMX0A02204TUMD07000","CRC0333NLH0000000000D08000","CRC0333PRX0A01201TUMD07000","CRC0440LMX0A02001TUMD08000","CRC0440NLH0000000000D09000","CRC0440PRX0A01001TUMD12000","CRC0449LMX0A01001TUMD08000","CRC0449NLH0000000000D07000","CRC0449PRX0A01001TUMD11000","CRC0468LMX0B02004TUMD07000","CRC0468NLH0000000000D08000","CRC0468PRX0B01001TUMD08000","CRC0481LMX0A02001TUMD08000","CRC0481NLH0000000000D08000","CRC0481PRX0A01001TUMD08000","CRC0498LMX0A02001TUMD08000","CRC0498NLH0000000000D07000","CRC0498PRX0A01001TUMD08000","CRC0549LMX0B02004TUMD10000","CRC0549NLH0000000000D07000","CRC0549PRX0A02004TUMD08000","CRC0740LMX0A02001TUMD08000","CRC0740NLH0000000000D08000","CRC0740PRX0A02001TUMD08000","CRC1063LMX0A01001TUMD07000","CRC1063NLH0000000000D07000","CRC1063PRX0B02001TUMD08000","CRC1144LMX0A01001TUMD08000","CRC1144NLH0000000000D07000","CRC1144PRX0B02002TUMD08000","CRC1169LMX0A02001TUMD08000","CRC1169NLH0000000000D07000","CRC1169PRX0A01001TUMD08000","CRC1182LMX0A01001TUMD08000","CRC1182NLH0000000000D07000","CRC1182PRX0A01001TUMD08000","CRC1240LMX0A01001TUMD08000","CRC1240NLH0000000000D07000","CRC1240PRX0B01001TUMD08000","CRC1251LMX0A02001TUMD08000","CRC1251NLH0000000000D07000","CRC1251PRX0A01001TUMD08000","CRC1331LMX0A02005TUMD03000","CRC1331NMH0000000000D05000","CRC1331PRX0A01001TUMD05000","CRC1387LMX0A02001TUMD03000","CRC1387NLH0000000000D05000","CRC1387PRX0B01001TUMD05000","CRC1473LMX0B02002TUMD03000","CRC1473NMH0000000000D05000","CRC1473PRX0B01001TUMD03000","CRC1486LMX0B02002TUMD03000","CRC1486NLH0000000000D05000","CRC1486PRX0A01001TUMD03000","CRC1599LMX0A02001TUMD03000","CRC1599NLH0000000000D03000","CRC1599PRX0A02002TUMD03000","CRC1624LMX0B02001TUMD03000","CRC1624NLH0000000000D03000","CRC1624PRX0B02001TUMD03000","CRC1673LMX0B02004TUMD03000","CRC1673NMH0000000000D03000","CRC1673PRX0B02001TUMD03000","CRC1824LMX0A02001TUMD03000","CRC1824NMH0000000000D05000","CRC1824PRX0A02003TUMD03000","CRC2790LMX0A02001TUMD03000","CRC2790NLH0000000000D03000","CRC2790PRX0A02001TUMD03000"]
+
+third=int(len(SAMPLES_ORIG)/3)
+SAMPLES_ORIG=SAMPLES_ORIG[0:third]
+#SAMPLES_ORIG=['CRC0333LMX0A02204TUMD07000', 'CRC0333PRX0A01201TUMD07000', 'CRC0333NLH0000000000D08000']
+SAMPLES=SAMPLES_ORIG
+
+# https://eu.idtdna.com/pages/products/next-generation-sequencing/workflow/xgen-ngs-hybridization-capture/pre-designed-hyb-cap-panels/exome-hyb-panel-v2#resources
+EXONS=DATA+'/xgen-exome-hyb-panel-v2-probes-hg38.bed'
+SEXONS=DATA+'/xgen-exome-hyb-panel-v2-probes-hg38.sorted.bed'
+PADDING=100
+
+#REF=""
+#SAMPLESD=[]
+#SAMPS=",".join(SAMPLESD)
+
+
+def find_normal():
+    import re
+    all_h=[]
+    all_x=[]
+    for sample in SAMPLES:
+        if re.search('H', sample):
+            all_h.append(sample)
+            all_h.append(sample)
+        elif re.search('X', sample):
+            all_x.append(sample)
+        else:
+            raise Exception('There is a bad sample here! ' + sample)
+    all_h.sort()
+    all_x.sort()
+    if len(all_x) != len(all_h):
+            print(all_x)
+            print(all_h)
+            raise Exception('Not all X have their H!')
+    for i in range(0,len(all_x)):
+        model_x = all_x[i][0:7]
+        model_h = all_h[i][0:7]
+        if model_x != model_h:
+            raise Exception('Your logic is flawed, llama!')
+    return(all_h, all_x)            
+
+NORMAL_TUMOR_PAIRS=find_normal()
+
+NORMAL=NORMAL_TUMOR_PAIRS[0]
+TUMOR=NORMAL_TUMOR_PAIRS[1]
+
+
+#XENOMED_SAMPLES=SAMPLES
+XENOMED_SAMPLES=TUMOR
+TRIMMED_SAMPLES=[]
+
+FASTQ_SUFFIX="_{pair}.fastq.gz"
+FASTQ_PRE="."
+FASTQ_POST=".fastq.gz"
+FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
+
+PAIRS=['SA_L001_R1_001','SA_L001_R2_001']
+PAIRS_XENOME=['1','2']
+XENOME_PREFIX='/mnt/trcanmed/snaketree/task/sequences/sequences/dataset/gdc/xenomidx'
+XENOME_TOOL='/mnt/trcanmed/snaketree/prj/snakegatk/local/src/gossamer/build/src/xenome'
+XENOME_WAIT=28800 # 6h for one, giving 2h bonus
+
+CORES=12
+CORESMD=2
+# TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
+PATTERNED=2500 
+# HiSeq4000, otherwise 100 for unpatterned
+#–o recal.bam
+
+AFPARAM=""
+#AFPARAM="--default-af 0"
+# https://gatkforums.broadinstitute.org/gatk/discussion/24633/mutect2-4-1-4-0-stats-file-with-a-negative-number#latest
+# use --default-af 0 to avoid 0.5 AF calls filtering 
+
+wildcard_constraints:
+    sample="[a-zA-Z0-9]+"
+
+
+CALLABLE="5:10,10:50,50:100,100:150,150:inf"
+CALLABLE_STRICT="50:100,100:150,150:inf"
+
+PLOIDY='plh'
+PURITY='plh'
+
+#PICARD="picard -Xmx10g -XX:ParallelGCThreads={params.cores}"
+PICARD="picard-tools"
+
+SIZE=34 # WES agilent sureselect
+ASSAY="WES" #   "TARGETED"
+
+GCFILE=GNOMAD_TASK_DIR+'sequenza_gc_w50.wig.gz'
+
+rule all_markedDup:
+    input: expand("align/markedDup_{sample}.sorted.bam", sample=SAMPLES)
+

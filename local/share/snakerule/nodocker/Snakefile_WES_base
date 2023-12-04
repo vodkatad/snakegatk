@@ -1,0 +1,155 @@
+include: "conf.sk"
+
+rule all_ln:
+    input: expand("{sample}_{pair}.fastq.gz", pair=PAIRS, sample=SAMPLES)
+
+def find_ln(wildcards):
+    import os
+    i = SAMPLES.index(wildcards.sample)
+    w = DATA+"/"+SAMPLES_ORIG[i]+"_"+wildcards.rep+".fastq.gz"
+    print(w)
+    if os.path.isfile(w):
+        return w
+    else:
+        raise ValueError("Check you SAMPLES_ORIG and SAMPLES in conf.sk!")
+            
+rule ln:
+    input: find_ln
+    output: "{sample}_{rep}.fastq.gz"
+    shell:
+        """
+            ln -s {input} {output}
+        """
+
+rule all_fastqc:
+    input: expand("fastqc_{sample}", sample=SAMPLES)
+
+rule fastqc:
+    input: expand("{{sample}}_{pair}.fastq.gz", pair=PAIRS)
+    output: directory("fastqc_{sample}")
+    shell: "mkdir -p {output}; fastqc --extract -t " + str(CORES) + " -o {output} {input}; rm {output}/*_fastqc.zip"
+
+
+### multiQC
+# needs a separate conda env with py 3.6 - ewels/MultiQC docker (meh)
+rule multiqc:
+    input: expand("fastqc_{sample}", sample=SAMPLES)
+    output: "multiqc_report.html"
+    shell: "multiqc {input}"
+
+### trimming (optional)
+#https://gatkforums.broadinstitute.org/gatk/discussion/2957/read-trimming not based on quality
+
+### xenome (optional)
+rule all_xenome:
+    input: expand("xenome/{sample}.xenome.placeholder", sample=XENOMED_SAMPLES)
+    output: "xenome/done"
+    shell:
+        """
+            touch {output}
+        """
+
+
+def produce_pairs(wildcards):
+        if wildcards.sample in TRIMMED_SAMPLES:
+            # we need depend on trimmed fastqs (decided looking at fastqc)
+            fastqs = expand(FQ_TRIM_DIR+'/'+wildcards.sample+FASTQ_SUFFIX, pair=PAIRS)
+        else:
+            # we depend on normal fastqs
+            fastqs = expand(wildcards.sample+FASTQ_SUFFIX, pair=PAIRS)
+        return { 'fastq1': fastqs[0], 'fastq2': fastqs[1] }
+
+
+rule xenome:
+    input: unpack(produce_pairs)
+    #output: "xenome/{sample}.xenome.placeholder"
+    params: cores=8, mem=20, xenome="/home/egrassi/common/task/sequences/dataset/gdc/xenomidx"
+    log: "{sample}.xenome"
+    singularity: ROOT+"/gossamer/gossamer.img"
+    shell: 
+        """
+            mkdir -p xenome
+            xenome classify -v -T {params.cores} -M {params.mem} -P {params.xenome} --graft-name human --host-name mouse -l {log}\\
+            --pairs --output-filename-prefix xenome/{wildcards.sample} -i {input.fastq1} -i {input.fastq2}
+        """
+
+rule checkxenome:
+    input: unpack(produce_pairs)
+    output: "xenome/{sample}.xenome.placeholder"
+    shell:
+       """
+        tot1=$(zcat {input.fastq2} {input.fastq1} | wc -l)
+        tot2=$(cat xenome/{wildcards.sample}_*.fastq | wc -l)
+        if [ $tot1 = $tot2 ]; then
+            echo -e "ok\t$tot1\t$tot2" > {output}
+        else
+            echo -e "error\t$tot1\t$tot2" > {output}
+        fi
+       """  
+
+#xenome classify -T 8 -P idx --pairs \ --graft-name human --host-name mouse \ --output-filename-prefix XYZ -i XYZ_1.fastq -i XYZ_2.fastq
+#8 AMD Opteron cores running at 2 GHz and with 32 GB of RAM Xenome processes ∼ 15 000 read pairs per sec
+##[~]egrassi@hactarlogin$ zcat /work/egrassi/WXS/local/share/data/bardelli_wes/CRC0106LMX0B01201TUMD08000.xenome_graft_1.fastq.gz | wc -l
+#260820876
+#65205219
+#4347
+#73'
+#echo "touch -d ${{times[$i]}} ${{fq[$i]}}"
+def find_xenome(wildcards):
+    import glob
+    return glob.glob("xenome/"+wildcards.sample+"*.fastq")
+
+
+rule xenomeinfo:
+    input: find_xenome
+    output: "xenome/{sample}.xenomeinfo"
+    shell: 
+        """
+            wc -l {input} > {output}
+        """
+
+rule murine_content:
+    input: info="xenome/{sample}.xenomeinfo"
+    output: percs="xenome/{sample}.murine"
+    run: 
+        with open(input.info, 'r') as info:
+            dictio_reads = {}
+            for l in info.readlines():
+                l = l.strip()
+                values = l.split(" ")
+                reads = values[0]
+                sample_kind = values[1]
+                sk = sample_kind.split("_")
+                if len(sk) == 3:
+                    if dictio_reads.get(sk[0]) is None:
+                        dictio_reads[sk[0]] = [0,0]
+                    if sk[1] == "human":
+                        dictio_reads[sk[0]][0] = reads 
+                    if sk[1] == "mouse":
+                        dictio_reads[sk[0]][1] = reads 
+            with open(output.percs, 'w') as out:
+                for s in dictio_reads.keys():
+                    tupl = dictio_reads[s]
+                    ratio = 0
+                    if float(tupl[0]) != 0:
+                        ratio = float(tupl[1]) / float(tupl[0])
+                    out.write('{}\t{}\n'.format(s, ratio))
+    
+### misc
+
+rule add_chr_to_vcf:
+    input: DBSNP
+    output: "dbsnp.all.vcf.gz"
+    shell:
+        """
+        zcat {input} | perl -ane 'if (/^#/) {{print "$_"}} else {{print "chr$_"}}' | bgzip > {output}
+        tabix -p vcf {output}
+        """
+
+rule sort_targeted:
+    input: bed=EXONS, fai=REF_DIR+"/GRCh38.d1.vd1.fa.fai" 
+    output: SEXONS
+    shell:
+        """
+            bedtools sort -faidx {input.fai} -i {input.bed} > {output}
+        """

@@ -72,6 +72,12 @@ TUMOR=SAMPLES[1:]
 XENOMED_SAMPLES=[]
 TRIMMED_SAMPLES=[]
 
+XENOME_PREFIX=''
+XENOME_TOOL=''
+XENOME_WAIT=0
+PICARD=""
+
+#data@rotpunkt:~/work/snakegatk/local/src$ ./tsv_to_json_metadata.py -i ~/Dropbox/work/evol/MA/second_shipment/samples/ss_282.txt -j /tmp/test
 
 FASTQ_SUFFIX="_{pair}.fastq.gz"
 FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
