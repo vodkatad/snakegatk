@@ -1,0 +1,8 @@
+FROM mgibio/gossamer:1.0.0
+
+MAINTAINER Elena Grassi <elena.grassi@ircc.it>
+
+RUN apt-get update
+RUN apt-get install -y snakemake
+
+CMD ["/bin/bash"]

@@ -1,0 +1,3 @@
+FROM quay.io/biocontainers/r-sequenza:3.0.0--r351h6115d3f_0
+
+CMD ["bash"]
