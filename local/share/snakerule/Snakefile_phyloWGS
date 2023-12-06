@@ -35,7 +35,7 @@ def phylowgs_input(wildcards):
 rule phylowgs:
     input: phylowgs_input
     params: cores=4, tdir=PWGS_PDIR
-    output: tree=directory(PWGS_DIR+"/{sample}.dir/trees.zip")
+    output: tree=PWGS_DIR+"/{sample}.dir/trees.zip"
     shell:
         """ 
             rm -rf {output}
@@ -44,6 +44,7 @@ rule phylowgs:
 
 # python2 /path/to/phylowgs/write_results.py example_data ../trees.zip example_data.summ.json.gz example_data.muts.json.gz example_data.mutass.zip
 # 1'
+# # in subs is trees.zip/trees.zip because I added directory wrongly to the previous output :(
 rule phylowgs_results:
     input: PWGS_DIR+"/{sample}.dir/trees.zip"
     params: cores=4, tdir=PWGS_PDIR
