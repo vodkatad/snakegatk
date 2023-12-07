@@ -197,3 +197,17 @@ rule all_realign:
 
 # phyloWGS
 include: PRJ_ROOT+"/local/share/snakerule/Snakefile_phyloWGS"
+
+rule sequenza_to_BED:
+    input: 'sequenza/{sample}/{sample}_segments.txt'
+    output:'loh/bed/{sample}.bed'
+    run:
+        import pandas as pd 
+        import numpy as numpy
+        data=pd.read_csv(input[0],sep='\t',header=0)
+        print(data.head())
+        data_filtered=data.loc[:,['chromosome','start.pos','end.pos','A','B']]
+        data_filtered.to_csv(output[0],sep='\t',index=False,header=False)
+
+rule all_sequenza_to_BED:
+    input: expand('loh/bed/{sample}.bed',sample=SAMPLES)
