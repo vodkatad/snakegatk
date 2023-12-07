@@ -1,3 +1,4 @@
+PASTE_NAMEFQ_EXT="_" # will be renamed in conf.sk when needed
 include: "conf.sk"
 
 rule all_ln:
@@ -6,7 +7,7 @@ rule all_ln:
 def find_ln(wildcards):
     import os
     i = SAMPLES.index(wildcards.sample)
-    w = DATA+"/"+SAMPLES_ORIG[i]+"_"+wildcards.pair+".fastq.gz"
+    w = DATA+"/"+SAMPLES_ORIG[i]+PASTE_NAMEFQ_EXT+wildcards.pair+".fastq.gz"
     print(w)
     if os.path.isfile(w) or FQ_REMOVED:
         return w
