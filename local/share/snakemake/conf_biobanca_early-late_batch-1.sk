@@ -1,0 +1,153 @@
+import os
+ROOT=os.environ.get('BIOINFO_ROOT')
+def find_prj_root(path=os.getcwd()):
+    if os.path.isfile(os.path.join(path,".PRJ_ROOT")):
+        return path
+    else:
+        if path:
+            return find_prj_root(os.path.dirname(path))
+        else:
+            raise Exception("Can not find the PRJ_ROOT directory")
+
+
+PRJ_ROOT=find_prj_root()
+TMP="/scratch/home/gcorti"
+
+SRC_DIR=PRJ_ROOT+'/local/src'
+BIN_DIR=PRJ_ROOT+'/local/bin'
+FQ_REMOVED=False
+DEBUG="yes"
+TYPE="WES"
+PAIRED=True
+
+# Needed references and annotations
+GNOMAD_TASK_DIR=ROOT+'/task/annotations/dataset/gnomad'
+REF_DIR=GNOMAD_TASK_DIR
+GNOMAD=GNOMAD_TASK_DIR
+VEP_CACHE_DIR=ROOT+"/task/variant_annotations/dataset/VEP"
+ANNOVAR=ROOT+"/task/variant_annotations/dataset/annovar/hg38/humandb/"
+PON=GNOMAD_TASK_DIR+"/1000g_pon.hg38.vcf.gz"
+DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
+# Singularity containers and occam docker images
+GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
+GATK_ODOCKER="egrassi/occamsnakes/gatk_fixedov:1"
+XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
+ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
+PLH_DOCKER="bubusettete"
+
+
+## This dataset:
+DATA="/archive/home/gcorti/biobanca_WES_earlylate/fastq" #PRJ_ROOT+"/local/share/data/biobanca_early-late"
+FQ_XENOME_DIR="xenome"
+PICARD="picard -Xmx10g"
+XENOME_PREFIX=""
+XENOME_TOOL=""
+XENOME_WAIT=""
+
+# sed 1d PJ1903090-SF-Integragen-Targeted-Seq.tsv  | cut -f 1 | tr "_" "\t" | cut -f 1 | tr "\n" "," | sed 's/,/","/g'
+SAMPLES=[
+"CRC0095LMO0A01003001VT0600_7D",
+"CRC0095LMO0A04010001VT0700_8D",
+"CRC0095NLH0000000000D02000",
+"CRC0099LMO0A01003001VT0600D",
+"CRC0099LMO0A04010001VT0300D",
+"CRC0099NLH0000000000D02000",
+"CRC0152LMO0C01003001VT0800D",
+"CRC0152LMO0C04010001D02000_3",
+"CRC0152NLH0000000000D02000",
+"CRC0464LMO0A01003001VT0700D",
+"CRC0464LMO0A04010001D02000D",
+"CRC0464NLH0000000000D05000",
+"CRC1446LMO0A01003001VT0800D",
+"CRC1446LMO0A04009001VT0300D",
+"CRC1446NLH0000000000RL0200D",
+"CRC1449LMO0A01003001VT0800D",
+"CRC1449LMO0A04009001VT0300D",
+"CRC1449NLH0000000000RL0500D",
+"CRC1588LMO0A01003001VT0700D",
+"CRC1588LMO0A04008001VT0600D",
+"CRC1588NLH0000000000D03000",
+"CRC1598LMO0A01003001VT0600D",
+"CRC1598LMO0A04011001D01000",
+"CRC1598NLH0000000000D03000"
+]
+SAMPLES_ORIG=SAMPLES #["example","examplen"]
+
+#
+EXONS=PRJ_ROOT+'/local/share/data/'+'xgen-exome-hyb-panel-v2-targets-hg38.bed'
+SEXONS='targeted_sorted.bed'
+
+#XENOMED_SAMPLES=SAMPLES
+XENOMED_SAMPLES=[]
+TRIMMED_SAMPLES=[]
+
+def find_pairs():
+    import re
+    all_h=[]
+    all_o=[]
+    for sample in SAMPLES:
+        if re.search('H', sample):
+            all_h.append(sample)
+            all_h.append(sample)
+        elif re.search('O', sample):
+            all_o.append(sample)
+        else:
+            raise Exception('There is a bad sample here! ' + sample)
+    all_h.sort()
+    all_o.sort()
+    if len(all_o) != len(all_h):
+#            print(all_o)
+#            print(all_h)
+            raise Exception('Not all "O" have their H!')
+    for i in range(0,len(all_o)):
+        model_o = all_o[i][0:7]
+        model_h = all_h[i][0:7]
+        if model_o != model_h:
+            raise Exception('Your logic is flawed, llama!')
+    return(all_h, all_o)
+
+NORMAL_TUMOR_PAIRS = find_pairs()
+
+NORMAL = NORMAL_TUMOR_PAIRS[0]
+TUMOR = NORMAL_TUMOR_PAIRS[1]
+
+FASTQ_SUFFIX="_{pair}.fastq.gz"
+FASTQ_PRE="."
+FASTQ_POST=".fastq.gz"
+FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
+
+PAIRS=['R1','R2']
+PAIRS_XENOME=['R1','R2']
+
+CORES=24
+CORESMD = 4
+
+# TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
+PATTERNED=2500 
+# HiSeq4000, otherwise 100 for unpatterned
+
+AFPARAM=""
+#AFPARAM="--default-af 0"
+# https://gatkforums.broadinstitute.org/gatk/discussion/24633/mutect2-4-1-4-0-stats-file-with-a-negative-number#latest
+# use --default-af 0 to avoid 0.5 AF calls filtering 
+
+wildcard_constraints:
+    sample="CRC[a-zA-Z0-9_]+",
+    pair="R[12]"
+
+CALLABLE="5:10,10:50,50:100,100:150,150:inf"
+CALLABLE_STRICT="50:100,100:150,150:inf"
+PADDING=100
+
+GENES="genes.tsv"
+rule g:
+    output: "genes.tsv"
+    params: wes=EXONS
+    shell: "echo {params.wes} > {output}"
+
+NAME = "biobanca_early-late"
+SIZE = 34
+ASSAY = "WES"
+SEQUENZA_ODOCKER = "gitlab.c3s.unito.it:5000/egrassi/occamsnakes/sequenza:1"
+GCFILE = GNOMAD_TASK_DIR+'/sequenza_gc_w50.wig.gz' 
+
