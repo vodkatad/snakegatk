@@ -11,9 +11,11 @@ def produce_pairs(wildcards):
 
 rule bwa_mem:
     input: unpack(produce_pairs)
-    output: ALIGN_DIR+"/{sample}.bam"
-    params: cores=CORES, ref=REF_DIR+"/GRCh38.d1.vd1.fa", dir=ALIGN_DIR
-    log: ALIGN_DIR+"/{sample}.bam.log"
+    output: temp(ALIGN_DIR+"/{sample}.sorted.bam")
+    params: ref=REF_DIR+"/GRCh38.d1.vd1.fa", dir=ALIGN_DIR
+    threads: CORES
+    log: ALIGN_DIR+"/{sample}.sorted.bam.log"
+    benchmark: "bench/{sample}.sorted.bam.times"
     shell: 
         """
         mkdir -p {params.dir};
@@ -25,27 +27,30 @@ rule bwa_mem:
         id=$(echo $header | cut -f 1-4 -d":" | sed "s/^@//" | sed "s/:/_/g");
         smnh=$(echo $header | grep -Eo "[ATGCN\+]+$");
         sm={wildcards.sample};
-        bwa mem -R "@RG\\tID:$id\\tSM:$sm\\tLB:$sm"_"$id"_"$smnh\\tPL:ILLUMINA" -t {params.cores} -K 100000000 -Y {params.ref} {input.fastq1} {input.fastq2} 2> {log} | samtools view -Shb -o {output};
+        bwa mem -R "@RG\\tID:$id\\tSM:$sm\\tLB:$sm"_"$id"_"$smnh\\tPL:ILLUMINA" -t {threads} -K 100000000 -Y {params.ref} {input.fastq1} {input.fastq2} 2> {log} | samtools sort -@1 -O BAM -T {output} -o {output}; #samtools view -Shb -o {output};
         """
 
 rule mark_duplicates_picard:
-    input: ALIGN_DIR+"/{sample}.bam"
-    output: bam=temp(ALIGN_DIR+"/markedDup_{sample}.bam"), metrics=ALIGN_DIR+"/{sample}.dupMetrics.txt"
+    input: ALIGN_DIR+"/{sample}.sorted.bam"
+    output: bam=temp(ALIGN_DIR+"/markedDup_{sample}.sorted.bam"), metrics=ALIGN_DIR+"/{sample}.dupMetrics.txt"
     params: pixel_dist=PATTERNED, cores=CORESMD, picard=PICARD
-    log: ALIGN_DIR+"/markedDup_{sample}.bam.log"
+    log: ALIGN_DIR+"/markedDup_{sample}.sorted.bam.log"
+    threads: 1
+    benchmark: "bench/markedDup_{sample}.sorted.bam.times"
     shell: 
         """
-        {params.picard} MarkDuplicates INPUT="{input}" OUTPUT="{output.bam}" METRICS_FILE="{output.metrics}" \
-        ASSUME_SORT_ORDER="queryname" OPTICAL_DUPLICATE_PIXEL_DISTANCE="{params.pixel_dist}" \
+        {params.picard} -XX:ParallelGCThreads={threads} MarkDuplicates INPUT="{input}" OUTPUT="{output.bam}" METRICS_FILE="{output.metrics}" \
+        OPTICAL_DUPLICATE_PIXEL_DISTANCE="{params.pixel_dist}" \
         ADD_PG_TAG_TO_READS=false VALIDATION_STRINGENCY="STRICT" 2> {log}
         """
 
 rule recalibrate_quality:
     input: bam=ALIGN_DIR+"/markedDup_{sample}.sorted.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa", snps=DBSNP, bed=SEXONS, bai=ALIGN_DIR+"/markedDup_{sample}.sorted.bam.bai"
     singularity: GATK_SING
-    output: bam=protected(ALIGN_DIR+"/realigned_{sample}.bam"), table=ALIGN_DIR+"/{sample}.table"
+    output: bam=protected(ALIGN_DIR+"/realigned_{sample}.sorted.bam"), table=ALIGN_DIR+"/{sample}.table"
     params: padding=PADDING
-    log: bam=ALIGN_DIR+"/realigned_{sample}.bam.log", table=ALIGN_DIR+"/{sample}.table.log"
+    log: bam=ALIGN_DIR+"/realigned_{sample}.sorted.bam.log", table=ALIGN_DIR+"/{sample}.table.log"
+    benchmark: "bench/realigned_{sample}.times"
     shell:
         """
             gatk BaseRecalibrator --interval-padding {params.padding} -R {input.reference} -I {input.bam} --known-sites {input.snps} -O {output.table} -L {input.bed} 2> {log.table};
@@ -53,7 +58,7 @@ rule recalibrate_quality:
         """
 
 rule recalibrate_plot:
-    input: reference=REF_DIR+"/GRCh38.d1.vd1.fa", table=ALIGN_DIR+"/{sample}.table", bam=ALIGN_DIR+"/realigned_{sample}.bam", snps=DBSNP, bed=SEXONS
+    input: reference=REF_DIR+"/GRCh38.d1.vd1.fa", table=ALIGN_DIR+"/{sample}.table", bam=ALIGN_DIR+"/realigned_{sample}.sorted.bam", snps=DBSNP, bed=SEXONS
     output: ALIGN_DIR+"/{sample}.recal_plots.pdf"
     singularity: GATK_SING
     params: padding=PADDING
@@ -67,14 +72,13 @@ rule recalibrate_plot:
 rule sort_all_realigned:
     input: expand(ALIGN_DIR+"/realigned_{samples}.sorted.bam", samples=SAMPLES)
     
-rule sorted_bai:
-    input: ALIGN_DIR+"/{whatever}.bam"
-    output: bai=ALIGN_DIR+"/{whatever}.sorted.bam.bai", bam=ALIGN_DIR+"/{whatever}.sorted.bam"
+rule bai:
+    input: ALIGN_DIR+"/{whatever}.sorted.bam"
+    output: bai=ALIGN_DIR+"/{whatever}.sorted.bam.bai" #, bam=ALIGN_DIR+"/{whatever}.sorted.bam"
     params: threads=str(CORES)
     shell: 
         """
-        samtools sort --threads {params.threads} -o {output.bam} {input}
-        samtools index {output.bam} {output.bai}
+        samtools index {input} {output.bai}
         """
 
 # --fast-mode is not available in conda's version
@@ -138,7 +142,7 @@ rule interval:
 
 # tODO change in CollectHsMetrics -I realigned_CRC1979NORM.sorted.bam -O CRC1979NORM.hsmetrics -R /work/egrassi/WXS/local/share/data/GRCh38.d1.vd1.fa -BAIT_INTERVALS target.interval_list -TARGET_INTERVALS target.interval_list  it was suggested but it did not work ... !?
 rule hsmetrics:
-    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa", il="target.interval_list"
+    input: bam=ALIGN_DIR+"/realigned_{sample}.sorted.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa", il="target.interval_list"
     output: ALIGN_DIR+"/{sample}.hsmetrics"
     params: picard=PICARD
     shell:
@@ -179,7 +183,7 @@ rule bam_flagstat:
 
 # multiqc (the align_output is horrible)
 rule multiqc_align:
-    input: expand(ALIGN_DIR+"/realigned_{sample}.bam.flagstat", sample=SAMPLES) 
+    input: expand(ALIGN_DIR+"/realigned_{sample}.sorted.bam.flagstat", sample=SAMPLES) 
     output: "multiqc_report.align.html"
     shell: 
         """

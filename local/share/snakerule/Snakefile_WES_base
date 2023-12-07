@@ -185,3 +185,6 @@ rule all_single_something:
     input: expand("{{dir}}/{sample}.{{something}}", sample=SAMPLES)
     output: "{dir}/all_samples.{something}"
     shell: "mkdir -p {wildcards.dir}; touch {output}"
+
+rule all_realign:
+	input: expand(ALIGN_DIR+'/'+"realigned_{sample}.sorted.bam", sample=SAMPLES)
