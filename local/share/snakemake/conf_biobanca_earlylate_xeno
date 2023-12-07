@@ -1,0 +1,180 @@
+import os
+import re
+ROOT=os.environ.get('SNAKE_ROOT')
+def find_prj_root(path=os.getcwd()):
+    if os.path.isfile(os.path.join(path,".PRJ_ROOT")):
+        return path
+    else:
+        if path:
+            return find_prj_root(os.path.dirname(path))
+        else:
+            raise Exception("Can not find the PRJ_ROOT directory")
+
+
+PRJ_ROOT=find_prj_root()
+TMP="/tmp"
+
+SRC_DIR=PRJ_ROOT+'/local/src'
+BIN_DIR=PRJ_ROOT+'/local/bin'
+FQ_REMOVED=True
+DEBUG="yes"
+TYPE="WES"
+PAIRED=False # FOR NOW XXX WE JUST RUN XENOME
+
+# Needed references and annotations
+GNOMAD_TASK_DIR=ROOT+'/task/annotations/dataset/gnomad'
+REF_DIR=GNOMAD_TASK_DIR
+GNOMAD=GNOMAD_TASK_DIR
+VEP_CACHE_DIR=ROOT+"/task/variant_annotations/dataset/VEP"
+ANNOVAR=ROOT+"/task/variant_annotations/dataset/annovar/hg38/humandb/"
+PON=GNOMAD_TASK_DIR+"/1000g_pon.hg38.vcf.gz"
+DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
+# Singularity containers and occam docker images
+GATK_SING="/home/egrassi/gatk4140/gatk.img"
+#GATK_ODOCKER="egrassi/occamsnakes/gatk:1"
+GATK_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/gatk_fixedov:1" # we keep this for this project and accept the filtering bug, even if it's not that small..
+SEQUENZA_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/sequenza:1" # we keep this for this project and accept the filtering bug, even if it's not that small..
+
+XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
+ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
+PLH_DOCKER="bubusettete"
+
+
+## This dataset:
+DATA=ROOT+"/data/biobanca_WES_earlylate/merged_fastq"
+FQ_XENOME_DIR="xenome"
+
+# $ ls ../../local/share/data/Pri_Met_pairs/*fastq.gz | sed 's/..\/..\/local\/share\/data\/Pri_Met_pairs\///' | sed 's/_SA_L001_R._001.fastq.gz//1' | sort | uniq | tr "\n" "," | sed 's/,/","/g'
+SAMPLES_ORIG=["1740FL-327-01-49","1740FL-327-01-50","1740FL-327-01-51","1740FL-327-01-52","1740FL-327-01-53","1740FL-327-01-57","1740FL-327-01-58","1740FL-327-01-59","1740FL-327-01-60","1740FL-327-01-61","1740FL-327-01-62","1740FL-327-01-63","1740FL-327-01-64","1740FL-327-01-66","1740FL-327-01-67","1740FL-327-01-68","1740FL-327-01-69"]
+SAMPLES=["CRC0099LMX0A04215TUMD02000_3","CRC0123LMX0A04040TUMD02000","CRC0148LMX0A04002TUMD02000","CRC0152LMX0B03003TUMD02000","CRC0169LMX0B04003TUMD02000","CRC0464LMX0A03005TUMD02000","CRC0542LMX0B06001TUMD02000","CRC1169LMX0B05004TUMD02000","CRC1430LMX0A02002TUMD02000","CRC1446LMX0A01001TUMD02000","CRC1449LMX0B01001TUMD02000","CRC1460LMX0A02001TUMD02000","CRC1502LMX0A01001TUMD02000","CRC1588LMX0B02001TUMD02000","CRC1598LMX0B02001TUMD02000","CRC1599LMX0A02001TUMD02000","CRC1628LMX0A02003TUMD02000"]
+
+rule checklen:
+    run:
+        print(len(SAMPLES_ORIG))
+
+# https://eu.idtdna.com/pages/products/next-generation-sequencing/workflow/xgen-ngs-hybridization-capture/pre-designed-hyb-cap-panels/exome-hyb-panel-v2#resources
+EXONS=DATA+'/xgen-exome-hyb-panel-v2-targets-hg38.bed'
+SEXONS=DATA+'/xgen-exome-hyb-panel-v2-targets-hg38.sorted.bed'
+PADDING=100
+
+#REF=""
+#SAMPLESD=[]
+#SAMPS=",".join(SAMPLESD)
+
+
+#def find_normal():
+    #import re
+    #all_h=[]
+    #all_x=[]
+    #for sample in SAMPLES:
+        #if re.search('H', sample):
+            #all_h.append(sample)
+            #all_h.append(sample)
+        #elif re.search('X', sample):
+            #all_x.append(sample)
+        #else:
+            #raise Exception('There is a bad sample here! ' + sample)
+    #all_h.sort()
+    #all_x.sort()
+    #if len(all_x) != len(all_h):
+            #print(all_x)
+            #print(all_h)
+            #raise Exception('Not all X have their H!')
+    #for i in range(0,len(all_x)):
+        #model_x = all_x[i][0:7]
+        #model_h = all_h[i][0:7]
+        #if model_x != model_h:
+            #raise Exception('Your logic is flawed, llama!')
+    #return(all_h, all_x)            
+
+#NORMAL_TUMOR_PAIRS=find_normal()
+
+#NORMAL=NORMAL_TUMOR_PAIRS[0]
+#TUMOR=NORMAL_TUMOR_PAIRS[1]
+TUMOR=SAMPLES
+
+XENOMED_SAMPLES=TUMOR
+TRIMMED_SAMPLES=[]
+
+FASTQ_SUFFIX="_{pair}.fastq.gz"
+FASTQ_PRE="."
+FASTQ_POST=".fastq.gz"
+FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
+PASTE_NAMEFQ_EXT="."
+
+
+PAIRS=['R1','R2']
+# needed because we have a _3 in sample names
+wildcard_constraints:
+    pair="R[12]"
+
+PAIRS_XENOME=['1','2']
+XENOME_PREFIX='/mnt/trcanmed/snaketree/task/sequences/sequences/dataset/gdc/xenomidx'
+XENOME_TOOL='/mnt/trcanmed/snaketree/prj/snakegatk/local/src/gossamer/build/src/xenome'
+XENOME_WAIT=14400 # conti per 17 campioni con 4h a testa (larghe, avevo stimato 3h) sono 68h, può girare con 20 core l'uno con -j3 e ci mettiamo 1 giorno.
+
+CORES=12
+CORESMD=2
+# TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
+PATTERNED=2500 
+# HiSeq4000, otherwise 100 for unpatterned
+#–o recal.bam
+
+AFPARAM=""
+#AFPARAM="--default-af 0"
+# https://gatkforums.broadinstitute.org/gatk/discussion/24633/mutect2-4-1-4-0-stats-file-with-a-negative-number#latest
+# use --default-af 0 to avoid 0.5 AF calls filtering 
+
+wildcard_constraints:
+    sample="CRC[a-zA-Z0-9_]+"
+
+
+CALLABLE="5:10,10:50,50:100,100:150,150:inf"
+CALLABLE_STRICT="50:100,100:150,150:inf"
+
+PLOIDY='plh'
+PURITY='plh'
+
+#PICARD="picard -Xmx10g -XX:ParallelGCThreads={params.cores}"
+PICARD="export JAVA_OPTIONS='-Xmx10g -XX:ParallelGCThreads=12' && picard-tools"
+
+SIZE=34 # WES agilent sureselect
+ASSAY="WES" #   "TARGETED"
+
+GCFILE=GNOMAD_TASK_DIR+'/sequenza_gc_w50.wig.gz'
+GENES="genes.tsv"
+NAME="early_late_biobanca_xeno"
+
+rule all_markedDup:
+    input: expand("align/markedDup_{sample}.sorted.bam", sample=SAMPLES)
+
+rule xls_qc:
+    input:  "all_metrics"
+    output: "qc.xlsx"
+    shell:
+        """
+            echo -e "sample\\tPF_UQ_READS_ALIGNED\\tMEAN_TARGET_COVERAGE" > {output}.tmp1
+            cut -f 11,23,58 {input} | sed 1d | bawk '{{print $3,$1,$2}}' | sed 's/align\///1; s/\.hsmetrics//1' >> {output}.tmp1
+            tsv_to_xls -i {output}.tmp1 -s WES -o {output}
+            rm {output}.tmp*
+        """
+        
+
+def get_ppos(wildcards):
+    if re.match(r'.*LMX.*', wildcards.sample):
+        return 9
+    else:
+        return 10
+
+rule all_deDup_flagstat:
+    input: expand("align/deDup_{sample}.sorted.bam.flagstat", sample=SAMPLES)
+
+rule all_murine:
+    input: expand("xenome/{sample}.murine", sample=TUMOR)
+
+
+GENES="genes.tsv"
+rule g:
+    output: "genes.tsv"
+    params: wes=EXONS
+    shell: "echo {params.wes} > {output}"
