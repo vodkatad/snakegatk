@@ -1,0 +1,127 @@
+PWGS_DIR="pWGS"
+PWGS_PDIR="/scratch/trcanmed/task/common_tools/local/src/phylowgs"
+#https://github.com/morrislab/phylowgs/tree/master/parser
+##  --output-params OUTPUT_PARAMS
+##  --tumor-sample TUMOR_SAMPLE
+rule ssm_input:
+    input: vcf=MUTECT_DIR+"/{sample}.pass.vcf.gz", cnvs=PWGS_DIR+"/{sample}.cnvs.txt"
+    output: ssm=PWGS_DIR+"/{sample}.ssm", cnv=PWGS_DIR+"/{sample}.cnv"
+    params: tdir=PWGS_PDIR
+    shell: 
+        """
+         python2 {params.tdir}/parser/create_phylowgs_inputs.py --regions=normal_and_abnormal_cn --vcf-type sample1=mutect_smchet sample1={input.vcf} --cnvs sample1={input.cnvs}
+         mv cnv_data.txt {output.cnv}
+         mv ssm_data.txt {output.ssm}
+        """
+
+# https://github.com/morrislab/phylowgs/issues/71
+#./parse_cnvs.py -f battenberg -c 1 {TODO} --cnv-output {output.cnv}
+rule cnv_input:
+    input: CNV_DIR+"/{sample}/{sample}_segments.txt"
+    output: cnv=PWGS_DIR+"/{sample}.cnvs.txt"
+    params: tdir=PWGS_PDIR
+    shell: 
+        """
+            python2 {params.tdir}/parser/parse_cnvs.py -f sequenza -c 1 {input} --cnv-output {output.cnv}
+        """
+
+def phylowgs_input(wildcards):
+    return [PWGS_DIR+'/'+wildcards.sample+".ssm", PWGS_DIR+'/'+wildcards.sample+".cnv"]
+
+#Not in conda?
+#multievolve.py --num-chains {params.cores} --ssms {input[0]} --cnvs {input[1]} --burnin-samples 1 --mcmc-samples 1 --output-dir {output}
+   #output: directory("{sample}_phylowgs")
+# 1h with 4 cores on 300x CRC1599PRX0A02002TUMD03000V2
+rule phylowgs:
+    input: phylowgs_input
+    params: cores=4, tdir=PWGS_PDIR
+    output: tree=PWGS_DIR+"/{sample}.dir/trees.zip"
+    shell:
+        """ 
+            rm -rf {output}
+            python2 {params.tdir}/multievolve.py --num-chains {params.cores} --output-dir {output} --ssms {input[0]} --cnvs {input[1]}
+        """
+
+# python2 /path/to/phylowgs/write_results.py example_data ../trees.zip example_data.summ.json.gz example_data.muts.json.gz example_data.mutass.zip
+# 1'
+# # in subs is trees.zip/trees.zip because I added directory wrongly to the previous output :(
+rule phylowgs_results:
+    input: PWGS_DIR+"/{sample}.dir/trees.zip"
+    params: cores=4, tdir=PWGS_PDIR
+    output: summ=PWGS_DIR+"/{sample}.summ.json.gz",  mutlist=PWGS_DIR+"/{sample}.mutlist.json.gz", mutass=PWGS_DIR+"/{sample}.mutass.json.gz"
+    shell:
+        """ 
+            python2 {params.tdir}/write_results.py --include-ssm-names pyWGStest {input} {output} 
+        """
+
+#https://rdrr.io/github/MathOnco/EvoFreq/src/R/EvoFreq_Parsers.R
+rule parse_trees:
+    input: summ=PWGS_DIR+"/{sample}.summ.json.gz"
+    output: info=PWGS_DIR+"/{sample}.trees_summary.tsv.gz"
+    run:
+        import json
+        import gzip
+        with gzip.open(output.info, 'wb') as outf:
+            with gzip.open(input.summ, 'r') as fp:
+                ressum = json.load(fp)
+                for t in ressum['trees'].keys():
+                    outf.write("{}\t{}\t{}\t{}\t{}\n".format(ressum['trees'][t]['llh'], ressum['trees'][t]['clustering_index'], ressum['trees'][t]['branching_index'], ressum['trees'][t]['linearity_index'], len(ressum['trees'][t]['populations'].keys())).encode())
+                    #llhs.append(ressum['trees'][t]['llh'])
+                    #
+
+PYDIR='pyclone'
+# pyclone-vi, needs conda
+#rule pyd:
+#    output: directory(PYDIR)
+#    shell: "mkdir {output}"
+
+rule py_annotate_vcf_with_cn:
+    input: cn="sequenza/{sample}/{sample}_segments.txt", vcf="mutect_paired/{sample}.pass.vcf.gz"
+    output: "mutect_paired/{sample}.ABannot.pass.vcf.gz"
+    shell:
+        """
+            echo -e "#CHROM\\tFROM\\tTO\\tA\\tB" > {output}.tmp
+            sed 1d {input.cn} | cut -f 1,2,3,11,12 >> {output}.tmp
+            bcftools annotate -a {output}.tmp -c CHROM,FROM,TO,+A,+B \\
+            -h <(echo -e "##INFO=<ID=A,Number=1,Type=Integer,Description=\"MajorAlleleCN\">\\n##INFO=<ID=B,Number=1,Type=Integer,Description=\"MinorAlleleCN\">") {input.vcf} | bgzip > {output}
+            rm {output}.tmp
+            N1=`zcat {output} | grep -v "^#" | wc -l`
+            N2=`zcat {input.vcf} | grep -v "^#" | wc -l`
+            if [ "$N1" -ne "$N2" ]; then exit 1; fi
+        """
+
+rule py_all_annotate_vcf:
+    input: expand("mutect_paired/{sample}.ABannot.pass.vcf.gz", sample=TUMOR)
+
+
+rule input:
+    input: vcf=MUTECT_DIR+"/{sample}.ABannot.pass.vcf.gz"
+    output: outtsv=PYDIR+"/{sample}.pyc.tsv"
+    script: SRC_DIR+"/pyclone_in.R"
+
+#(pyclone-vi) egrassi@godot:/mnt/trcanmed/snaketree/prj/snakegatk/dataset/Pri_Mets_godot/pyclone$ time pyclone-vi fit -i CRC1599PRX0A02002TUMD03000V2.pyc.tsv -o CRC1599PRX0A02002TUMD03000V2.hdf5 --seed 42 &> CRC1
+#599PRX0A02002TUMD03000V2.hdf5.load
+#real    0m3.315s
+#user    0m4.042s
+#sys     0m5.711s
+
+#(pyclone-vi) egrassi@godot:/mnt/trcanmed/snaketree/prj/snakegatk/dataset/Pri_Mets_godot/pyclone$ time pyclone-vi write-results-file -i CRC1599PRX0A02002TUMD03000V2.hdf5 -o CRC1599PRX0A02002TUMD03000V2.hdf5.tsv.gz -c
+#real    0m0.755s
+#user    0m1.727s
+rule fit:
+    input: PYDIR+"/{sample}.pyc.tsv"
+    output: PYDIR+"/{sample}.hdf5"
+    log: PYDIR+"/{sample}.log"
+    shell:
+        """
+            pyclone-vi fit -i {input} -o {output} --seed 42 &> {log}
+        """
+
+
+rule output:
+    input: PYDIR+"/{sample}.hdf5"
+    output: PYDIR+"/{sample}.tsv.gz"
+    shell:
+        """
+            pyclone-vi write-results-file -i {input} -o {output} -c
+        """
