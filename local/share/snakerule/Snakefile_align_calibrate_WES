@@ -29,8 +29,8 @@ rule bwa_mem:
         """
 
 rule mark_duplicates_picard:
-    input: ALIGN_DIR+"/{sample}.bam"
-    output: bam=temp(ALIGN_DIR+"/markedDup_{sample}.bam"), metrics=ALIGN_DIR+"/{sample}.dupMetrics.txt"
+    input: ALIGN_DIR+"/{sample}.sorted.bam"
+    output: bam=temp(ALIGN_DIR+"/markedDup_{sample}.sorted.bam"), metrics=ALIGN_DIR+"/{sample}.dupMetrics.txt"
     params: pixel_dist=PATTERNED, cores=CORESMD, picard=PICARD
     log: ALIGN_DIR+"/markedDup_{sample}.bam.log"
     shell: 
@@ -43,7 +43,7 @@ rule mark_duplicates_picard:
 rule recalibrate_quality:
     input: bam=ALIGN_DIR+"/markedDup_{sample}.sorted.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa", snps=DBSNP, bed=SEXONS, bai=ALIGN_DIR+"/markedDup_{sample}.sorted.bam.bai"
     singularity: GATK_SING
-    output: bam=ALIGN_DIR+"/realigned_{sample}.bam", table=ALIGN_DIR+"/{sample}.table"
+    output: bam=ALIGN_DIR+"/realigned_{sample}.sorted.bam", table=ALIGN_DIR+"/{sample}.table"
     params: padding=PADDING
     docker: GATK_ODOCKER
     log: bam=ALIGN_DIR+"/realigned_{sample}.bam.log", table=ALIGN_DIR+"/{sample}.table.log"
@@ -54,7 +54,7 @@ rule recalibrate_quality:
         """
 
 rule recalibrate_plot:
-    input: reference=REF_DIR+"/GRCh38.d1.vd1.fa", table=ALIGN_DIR+"/{sample}.table", bam=ALIGN_DIR+"/realigned_{sample}.bam", snps=DBSNP, bed=SEXONS
+    input: reference=REF_DIR+"/GRCh38.d1.vd1.fa", table=ALIGN_DIR+"/{sample}.table", bam=ALIGN_DIR+"/realigned_{sample}.sorted.bam", snps=DBSNP, bed=SEXONS
     output: ALIGN_DIR+"/{sample}.recal_plots.pdf"
     singularity: GATK_SING
     params: padding=PADDING
@@ -69,13 +69,12 @@ rule sort_all_realigned:
     input: expand(ALIGN_DIR+"/realigned_{samples}.sorted.bam", samples=SAMPLES)
     
 rule sorted_bai:
-    input: ALIGN_DIR+"/{whatever}.bam"
-    output: bai=ALIGN_DIR+"/{whatever}.sorted.bam.bai", bam=ALIGN_DIR+"/{whatever}.sorted.bam"
+    input: ALIGN_DIR+"/{whatever}.sorted.bam"
+    output: bai=ALIGN_DIR+"/{whatever}.sorted.bam.bai" #, bam=ALIGN_DIR+"/{whatever}.sorted.bam"
     params: threads=str(CORES)
     shell: 
         """
-        samtools sort --threads {params.threads} -o {output.bam} {input}
-        samtools index {output.bam} {output.bai}
+        samtools index {input} {output.bai}
         """
 
 # --fast-mode is not available in conda's version

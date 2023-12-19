@@ -45,9 +45,8 @@ DATA=ROOT+"/data/biobanca_WES_earlylate/merged_fastq"
 FQ_XENOME_DIR="xenome"
 
 # $ ls ../../local/share/data/Pri_Met_pairs/*fastq.gz | sed 's/..\/..\/local\/share\/data\/Pri_Met_pairs\///' | sed 's/_SA_L001_R._001.fastq.gz//1' | sort | uniq | tr "\n" "," | sed 's/,/","/g'
-SAMPLES_ORIG=["1740FL-327-01-49","1740FL-327-01-50","1740FL-327-01-51","1740FL-327-01-52","1740FL-327-01-53","1740FL-327-01-57","1740FL-327-01-58","1740FL-327-01-59","1740FL-327-01-60","1740FL-327-01-61","1740FL-327-01-62","1740FL-327-01-63","1740FL-327-01-64","1740FL-327-01-66","1740FL-327-01-67","1740FL-327-01-68","1740FL-327-01-69"]
-SAMPLES=["CRC0099LMX0A04215TUMD02000_3","CRC0123LMX0A04040TUMD02000","CRC0148LMX0A04002TUMD02000","CRC0152LMX0B03003TUMD02000","CRC0169LMX0B04003TUMD02000","CRC0464LMX0A03005TUMD02000","CRC0542LMX0B06001TUMD02000","CRC1169LMX0B05004TUMD02000","CRC1430LMX0A02002TUMD02000","CRC1446LMX0A01001TUMD02000","CRC1449LMX0B01001TUMD02000","CRC1460LMX0A02001TUMD02000","CRC1502LMX0A01001TUMD02000","CRC1588LMX0B02001TUMD02000","CRC1598LMX0B02001TUMD02000","CRC1599LMX0A02001TUMD02000","CRC1628LMX0A02003TUMD02000"]
-
+SAMPLES_ORIG=["1740FL-327-01-93","1740FL-327-01-94","1740FL-327-01-95","1740FL-327-01-96","1740FL-327-01-97","1740FL-327-01-98","1740FL-327-01-99","1740FL-327-01-100","1740FL-327-01-101","1740FL-327-01-102"]
+SAMPLES=["CRC0095LMX0B03211TUMD02000","CRC0171LMX0B04008TUMRL0200","CRC0188LMX0A04007TUMRL0200","CRC0196LMX0B10011TUMD02000","CRC1568LMX0B02001TUMD02000","CRC1961LMX0A02001TUMD02000"]
 rule checklen:
     run:
         print(len(SAMPLES_ORIG))
@@ -111,7 +110,7 @@ wildcard_constraints:
 PAIRS_XENOME=['1','2']
 XENOME_PREFIX='/mnt/trcanmed/snaketree/task/sequences/sequences/dataset/gdc/xenomidx'
 XENOME_TOOL='/mnt/trcanmed/snaketree/prj/snakegatk/local/src/gossamer/build/src/xenome'
-XENOME_WAIT=14400 # conti per 17 campioni con 4h a testa (larghe, avevo stimato 3h) sono 68h, può girare con 20 core l'uno con -j3 e ci mettiamo 1 giorno.
+XENOME_WAIT=10800 # conti per 17 campioni con 4h a testa (larghe, avevo stimato 3h) sono 68h, può girare con 20 core l'uno con -j3 e ci mettiamo 1 giorno.
 
 CORES=12
 CORESMD=2
@@ -143,7 +142,7 @@ ASSAY="WES" #   "TARGETED"
 
 GCFILE=GNOMAD_TASK_DIR+'/sequenza_gc_w50.wig.gz'
 GENES="genes.tsv"
-NAME="early_late_biobanca_xeno"
+NAME="redo_agilent"
 
 rule all_markedDup:
     input: expand("align/markedDup_{sample}.sorted.bam", sample=SAMPLES)
