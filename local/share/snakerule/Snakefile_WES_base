@@ -210,4 +210,4 @@ rule sequenza_to_BED:
         data_filtered.to_csv(output[0],sep='\t',index=False,header=False)
 
 rule all_sequenza_to_BED:
-    input: expand('loh/bed/{sample}.bed',sample=SAMPLES)
+    input: expand('loh/bed/{sample}.bed',sample=TUMOR)
