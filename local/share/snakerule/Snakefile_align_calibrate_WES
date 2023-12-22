@@ -11,9 +11,9 @@ def produce_pairs(wildcards):
 
 rule bwa_mem:
     input: unpack(produce_pairs)
-    output: ALIGN_DIR+"/{sample}.bam"
+    output: temp(ALIGN_DIR+"/{sample}.sorted.bam")
     params: cores=CORES, ref=REF_DIR+"/GRCh38.d1.vd1.fa", dir=ALIGN_DIR
-    log: ALIGN_DIR+"/{sample}.bam.log"
+    log: ALIGN_DIR+"/{sample}.sorted.bam.log"
     shell: 
         """
         mkdir -p {params.dir};
@@ -25,7 +25,7 @@ rule bwa_mem:
         id=$(echo $header | cut -f 1-4 -d":" | sed "s/^@//" | sed "s/:/_/g");
         smnh=$(echo $header | grep -Eo "[ATGCN\+]+$");
         sm={wildcards.sample};
-        bwa mem -R "@RG\\tID:$id\\tSM:$sm\\tLB:$sm"_"$id"_"$smnh\\tPL:ILLUMINA" -t {params.cores} -K 100000000 -Y {params.ref} {input.fastq1} {input.fastq2} 2> {log} | samtools view -Shb -o {output};
+        bwa mem -R "@RG\\tID:$id\\tSM:$sm\\tLB:$sm"_"$id"_"$smnh\\tPL:ILLUMINA" -t {params.cores} -K 100000000 -Y {params.ref} {input.fastq1} {input.fastq2} 2> {log} | samtools sort -@1 -O BAM -T {output} -o {output};
         """
 
 rule mark_duplicates_picard:
@@ -36,7 +36,7 @@ rule mark_duplicates_picard:
     shell: 
         """
         {params.picard} MarkDuplicates INPUT="{input}" OUTPUT="{output.bam}" METRICS_FILE="{output.metrics}" \
-        ASSUME_SORT_ORDER="queryname" OPTICAL_DUPLICATE_PIXEL_DISTANCE="{params.pixel_dist}" \
+        OPTICAL_DUPLICATE_PIXEL_DISTANCE="{params.pixel_dist}" \
         ADD_PG_TAG_TO_READS=false VALIDATION_STRINGENCY="STRICT" 2> {log}
         """
 
