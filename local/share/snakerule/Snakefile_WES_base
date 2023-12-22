@@ -179,6 +179,9 @@ else:
         shell: "mkdir -p {wildcards.dir}; touch {output}"
     rule all:
         input: "multiqc_report.html","multiqc_report.coverage.html","multiqc_report.align.html", MUTECT_DIR+"/all_samples_paired.pass.table.gz"
+    # include a varscan basic Snakefile for germline calls on normal
+    VARSCANGERM_DIR="vcf_varscan_germline"
+    include: PRJ_ROOT+"/local/share/snakerule/Snakefile_varscangermline_"+TYPE
 
 CNV_DIR="sequenza"
 include: PRJ_ROOT+"/local/share/snakerule/Snakefile_sequenza_"+TYPE
@@ -189,6 +192,7 @@ rule all_single_something:
     output: "{dir}/all_samples.{something}"
     shell: "mkdir -p {wildcards.dir}; touch {output}"
 
+<<<<<<< HEAD
 rule all_realign:
 	input: expand(ALIGN_DIR+'/'+"realigned_{sample}.sorted.bam", sample=SAMPLES)
 
@@ -208,3 +212,6 @@ rule sequenza_to_BED:
 
 rule all_sequenza_to_BED:
     input: expand('loh/bed/{sample}.bed',sample=TUMOR)
+
+# phyloWGS
+include: PRJ_ROOT+"/local/share/snakerule/Snakefile_phyloWGS"

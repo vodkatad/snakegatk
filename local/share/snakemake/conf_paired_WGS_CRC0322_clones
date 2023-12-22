@@ -18,7 +18,7 @@ BIN_DIR=PRJ_ROOT+'/local/bin'
 FQ_REMOVED=True
 DEBUG="yes"
 TYPE="WGS"
-PAIRED=True
+PAIRED=False
 SUBSAMPLE=1 # if == 1 do not downsample (downsampling is done right after alignment and dup removal, not before calling, to also recalibrate on less data).
 
 # Needed references and annotations
@@ -39,26 +39,20 @@ XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
 ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
 SEQUENZA_ODOCKER="egrassi/occamsnakes/sequenza:1"
 VARSCAN_ODOCKER="egrassi/occamsnakes/varscan:1"
+PLATYPUS_ODOCKER="egrassi/occamsnakes/platypus:1"
 PLH_DOCKER="bubusettete"
 
 
 ## This dataset:
-DATA=PRJ_ROOT+"/local/share/data/WGS_biodiversa/test"
+DATA=PRJ_ROOT+"/local/share/data/third_shipment"
 FQ_XENOME_DIR="xenome"
 
-# sed 1d PJ1903090-SF-Integragen-Targeted-Seq.tsv  | cut -f 1 | tr "_" "\t" | cut -f 1 | tr "\n" "," | sed 's/,/","/g'
-#SAMPLES_ORIG=['ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6', 'ex7', 'ex8', 'ex9']
-#SAMPLES=['CRC1307_02_0', 'CRC1307_08_0', 'CRC1307_09_0', 'CRC1307_02_1_0', 'CRC1307_02_1_1', 'CRC1307_02_1_2', 'CRC1307_08_1_0', 'CRC1307_08_1_1', 'CRC1307_08_1_2']
-SAMPLES_ORIG=["1740D-84-01_S48_L004","1740D-84-02_S52_L005"]
-SAMPLES=["CRC1307NLH","CRC1307LMO"]
+SAMPLES_ORIG=['plh','PRJ004S62_SA_L001', 'PRJ004S63_SA_L001', 'PRJ004S64_SA_L001', 'PRJ004S65_SA_L001', 'PRJ004S66_SA_L001', 'PRJ004S67_SA_L001', 'PRJ004S68_SA_L001', 'PRJ004S69_SA_L001', 'PRJ004S70_SA_L001', 'PRJ004S71_SA_L001', 'PRJ004S72_SA_L001', 'PRJ004S73_SA_L001', 'PRJ004S74_SA_L001', 'PRJ004S75_SA_L001', 'PRJ004S76_SA_L001', 'PRJ004S77_SA_L001', 'PRJ004S79_SA_L001', 'PRJ004S80_SA_L001', 'PRJ004S81_SA_L001', 'PRJ004S82_SA_L001', 'PRJ004S83_SA_L001', 'PRJ004S84_SA_L001', 'PRJ004S85_SA_L001', 'PRJ004S86_SA_L001', 'PRJ004S87_SA_L001', 'PRJ004S88_SA_L001', 'PRJ004S89_SA_L001', 'PRJ004S90_SA_L001', 'PRJ004S91_SA_L001','Biodiversa-18_SA_L001', 'Biodiversa-17_SA_L001', 'Biodiversa-16_SA_L001']
+SAMPLES=['CRC0322NLHTODO','CRC0322-04-0', 'CRC0322-09-0', 'CRC0322-04-1-B', 'CRC0322-04-1-E', 'CRC0322-04-1-F', 'CRC0322-09-1-A', 'CRC0322-09-1-B', 'CRC0322-09-1-C', 'CRC0322-09-MC-E', 'CRC0322-09-MC-C', 'CRC0322-09-MC-F', 'CRC0322-09-MI-B', 'CRC0322-09-MI-E', 'CRC0322-09-MI-C', 'CRC0322-09-MA-D', 'CRC0322-09-MA-A', 'CRC0322-02-0', 'CRC0322-03-0', 'CRC0322-10-0', 'CRC0322-11-0', 'CRC0322-02-1-A', 'CRC0322-02-1-B', 'CRC0322-02-1-C', 'CRC0322-03-1-D', 'CRC0322-03-1-E', 'CRC0322-03-1-F', 'CRC0322-10-1-A', 'CRC0322-10-1-B', 'CRC0322-10-1-C','CRC0322-11-1-F', 'CRC0322-11-1-D', 'CRC0322-11-1-C']
 
-NORMAL=["CRC1307NLH"]
-TUMOR=["CRC1307LMO"]
+NORMAL=SAMPLES[0]*(len(SAMPLES)-1)
+TUMOR=SAMPLES[1:]
 
-XENOME_PREFIX=""
-XENOME_TOOL=''
-XENOME_WAIT=0
-PICARD=''
 #REF=""
 #SAMPLESD=[]
 #SAMPS=",".join(SAMPLESD)
@@ -79,12 +73,14 @@ PATTERNED=2500
 # HiSeq4000, otherwise 100 for unpatterned
 #–o recal.bam
 
+
+### TODO REMOVE ME FOR BULK!
 AFPARAM="--default-af 0"
 # https://gatkforums.broadinstitute.org/gatk/discussion/24633/mutect2-4-1-4-0-stats-file-with-a-negative-number#latest
 # use --default-af 0 to avoid 0.5 AF calls filtering 
 
 wildcard_constraints:
-    sample="[a-zA-Z0-9]+"
+    sample="[a-zA-Z0-9]+-?[0-9]+-?[A-Z0-9]+-?[A-Z0-9]?"
 
 
 CALLABLE="5:10,10:50,50:100,100:150,150:inf"
@@ -98,11 +94,6 @@ else:
     SPLITS=['000'+str(x) for x in range(0, SPLIT)]
 
 #+'-scattered.interval_list'
-PLOIDY=''
-XENOME_PREFIX=""
-XENOME_TOOL=''
-XENOME_WAIT=0
-PICARD=''
-PURITY=''
-SIZE=""
-ASSAY=""
+
+PLOIDY=2
+PURITY=1

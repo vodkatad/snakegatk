@@ -11,6 +11,9 @@ if (debug == "yes") {
 }
 
 data <- read.table(gzfile(data), sep="\t", header=TRUE)
+if (grepl('-', afcolumn)) {
+    afcolumn <- gsub('-', '.', afcolumn)
+}
 af <- data[,afcolumn, drop=FALSE]
 
 #https://github.com/andreasottoriva/neutral-tumor-evolution/blob/master/Identification%20of%20neutral%20tumor%20evolution%20across%20cancer%20types%20-%20%20Simulation%20Results.ipynb

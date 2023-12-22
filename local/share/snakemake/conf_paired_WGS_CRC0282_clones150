@@ -39,26 +39,20 @@ XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
 ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
 SEQUENZA_ODOCKER="egrassi/occamsnakes/sequenza:1"
 VARSCAN_ODOCKER="egrassi/occamsnakes/varscan:1"
+PLATYPUS_ODOCKER="egrassi/occamsnakes/platypus:1"
 PLH_DOCKER="bubusettete"
 
 
 ## This dataset:
-DATA=PRJ_ROOT+"/local/share/data/WGS_biodiversa/test"
+DATA=PRJ_ROOT+"/local/share/data/WGS_cleverers_treats_LD150"
 FQ_XENOME_DIR="xenome"
 
-# sed 1d PJ1903090-SF-Integragen-Targeted-Seq.tsv  | cut -f 1 | tr "_" "\t" | cut -f 1 | tr "\n" "," | sed 's/,/","/g'
-#SAMPLES_ORIG=['ex1', 'ex2', 'ex3', 'ex4', 'ex5', 'ex6', 'ex7', 'ex8', 'ex9']
-#SAMPLES=['CRC1307_02_0', 'CRC1307_08_0', 'CRC1307_09_0', 'CRC1307_02_1_0', 'CRC1307_02_1_1', 'CRC1307_02_1_2', 'CRC1307_08_1_0', 'CRC1307_08_1_1', 'CRC1307_08_1_2']
-SAMPLES_ORIG=["1740D-84-01_S48_L004","1740D-84-02_S52_L005"]
-SAMPLES=["CRC1307NLH","CRC1307LMO"]
+#data@rotpunkt:~/work/snakegatk/local/src$ ./tsv_to_json_metadata.py -i ~/Dropbox/work/evol/MA/second_shipment/samples/ss_282.txt -j /tmp/test
+SAMPLES_ORIG=['PRJ0003S1_SA_L001', 'BIOMEDICA-1-1-45_SA_L001', 'BIOMEDICA-1-1-46_SA_L001']
+SAMPLES=['CRC0282NMH0000000000D07000', 'CRC0282-05-0', 'CRC0282-05-1-C']
+NORMAL=["CRC0282NMH0000000000D07000"*(len(SAMPLES)-1)]
+TUMOR=SAMPLES[1:]
 
-NORMAL=["CRC1307NLH"]
-TUMOR=["CRC1307LMO"]
-
-XENOME_PREFIX=""
-XENOME_TOOL=''
-XENOME_WAIT=0
-PICARD=''
 #REF=""
 #SAMPLESD=[]
 #SAMPS=",".join(SAMPLESD)
@@ -79,12 +73,14 @@ PATTERNED=2500
 # HiSeq4000, otherwise 100 for unpatterned
 #–o recal.bam
 
+
+### TODO REMOVE ME FOR BULK!
 AFPARAM="--default-af 0"
 # https://gatkforums.broadinstitute.org/gatk/discussion/24633/mutect2-4-1-4-0-stats-file-with-a-negative-number#latest
 # use --default-af 0 to avoid 0.5 AF calls filtering 
 
 wildcard_constraints:
-    sample="[a-zA-Z0-9]+"
+    sample="[a-zA-Z0-9]+-?[0-9]+-?[A-Z0-9]+-?[A-Z0-9]?"
 
 
 CALLABLE="5:10,10:50,50:100,100:150,150:inf"
@@ -98,11 +94,6 @@ else:
     SPLITS=['000'+str(x) for x in range(0, SPLIT)]
 
 #+'-scattered.interval_list'
-PLOIDY=''
-XENOME_PREFIX=""
-XENOME_TOOL=''
-XENOME_WAIT=0
-PICARD=''
-PURITY=''
-SIZE=""
-ASSAY=""
+
+PLOIDY=3
+PURITY=1
