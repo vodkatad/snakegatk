@@ -192,7 +192,6 @@ rule all_single_something:
     output: "{dir}/all_samples.{something}"
     shell: "mkdir -p {wildcards.dir}; touch {output}"
 
-<<<<<<< HEAD
 rule all_realign:
 	input: expand(ALIGN_DIR+'/'+"realigned_{sample}.sorted.bam", sample=SAMPLES)
 
@@ -212,6 +211,3 @@ rule sequenza_to_BED:
 
 rule all_sequenza_to_BED:
     input: expand('loh/bed/{sample}.bed',sample=TUMOR)
-
-# phyloWGS
-include: PRJ_ROOT+"/local/share/snakerule/Snakefile_phyloWGS"

@@ -1,10 +1,10 @@
 def find_matched_normal(wildcards):
-    return {'normal': ALIGN_DIR+"/realigned_"+find_matched_normal_sample(wildcards)+".bam"}
+    return {'normal': ALIGN_DIR+"/realigned_"+find_matched_normal_sample(wildcards)+".sorted.bam"}
     
 
 if PON != "":
     rule mutect:
-        input: unpack(find_matched_normal), bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", bed=SEXONS, reference=REF_DIR+"/GRCh38.d1.vd1.fa", pon=PON
+        input: unpack(find_matched_normal), bam=ALIGN_DIR+"/realigned_{sample}.sorted.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", bed=SEXONS, reference=REF_DIR+"/GRCh38.d1.vd1.fa", pon=PON
         output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", f1r2=MUTECT_DIR+"/{sample}_f1r2.tar.gz"
         singularity: GATK_SING
         docker: GATK_ODOCKER
@@ -16,7 +16,7 @@ if PON != "":
             """
 else:
     rule mutect:
-        input: unpack(find_matched_normal), bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", bed=SEXONS, reference=REF_DIR+"/GRCh38.d1.vd1.fa"
+        input: unpack(find_matched_normal), bam=ALIGN_DIR+"/realigned_{sample}.sorted.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", bed=SEXONS, reference=REF_DIR+"/GRCh38.d1.vd1.fa"
         output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), stats=MUTECT_DIR+"/{sample}.vcf.gz.stats", f1r2=MUTECT_DIR+"/{sample}_f1r2.tar.gz"
         singularity: GATK_SING
         docker: GATK_ODOCKER
@@ -28,7 +28,7 @@ else:
             """
 
 rule getpileup:
-    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/gnomad.forcontamination.noalt.exomes.vcf", bed=SEXONS
+    input: bam=ALIGN_DIR+"/realigned_{sample}.sorted.bam", gnomad=GNOMAD+"/gnomad.forcontamination.noalt.exomes.vcf", bed=SEXONS
     output: temp(MUTECT_DIR+"/{sample}.pileup.table")
     singularity: GATK_SING
     docker: GATK_ODOCKER
