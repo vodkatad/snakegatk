@@ -147,23 +147,35 @@ rule merge_targeted:
         """
 
 
+#rule VEP:
+#    input: MUTECT_DIR+"/merged_targeted.vcf"
+#    output: txt=MUTECT_DIR+"/merged.vep.txt", html=MUTECT_DIR+"/merged.vep.stats.html", vcf=MUTECT_DIR+"/merged.vcf.id"
+#    params: cd=VEP_CACHE_DIR
+#    shell:
+#        """
+#             bcftools annotate -I +'%CHROM:%POS:%REF:%ALT' {input} > {output.vcf}
+#             vep -i {output.vcf}  --cache --dir_cache {params.cd} --output_file {output.txt} --stats_file {output.html} --pick
+#        """
+
 rule VEP:
     input: MUTECT_DIR+"/merged_targeted.vcf"
-    output: txt=MUTECT_DIR+"/merged.vep.txt", html=MUTECT_DIR+"/merged.vep.stats.html", vcf=MUTECT_DIR+"/merged.vcf.id"
+    output: vcf=MUTECT_DIR+"/merged.vcf.id"
     params: cd=VEP_CACHE_DIR
     shell:
         """
              bcftools annotate -I +'%CHROM:%POS:%REF:%ALT' {input} > {output.vcf}
-             vep -i {output.vcf}  --cache --dir_cache {params.cd} --output_file {output.txt} --stats_file {output.html} --pick
         """
+
 
 rule vcf_to_aftable:
     input: MUTECT_DIR+"/merged.vcf.id"
     output: table=MUTECT_DIR+"/merged.table_nomultiallele"
-    params: nsamples=len(SAMPLES)
+    params: nsamples=len(SAMPLES), normal="NLH"
     shell:
         """
-             cat {input} | grep -v "^##" |  perl -ane '@gt=splice(@F,9,{params.nsamples}); $gt=""; foreach $g (@gt) {{ if ($.==1) {{$gt.=$g."\\t";}} else {{ @afs = split(":",$g); if ($afs[2] eq ".") {{$afs[2]=0;}} $gt.=$afs[2]."\\t";}} }} chop($gt) ; print $F[2]."\\t".$gt."\\n";' | grep -v "," > {output.table}
+            cat {input} | grep -v "^##" |  perl -ane '@gt=splice(@F,9,{params.nsamples}); $gt=""; foreach $g (@gt) {{ if ($.==1) {{$gt.=$g."\\t";}} else {{ @afs = split(":",$g); if ($afs[2] eq ".") {{$afs[2]=0;}} $gt.=$afs[2]."\\t";}} }} chop($gt) ; print $F[2]."\\t".$gt."\\n";' | grep -v "," > {output.table}.tmp
+            Rscript -e 'd <- read.table("{output.table}.tmp", sep="\\t", header=T); d <- d[, !grepl("{params.normal}",colnames(d))]; write.table(d, file="{output.table}", sep="\\t", quote=F, row.names=F);'
+            rm {output.table}.tmp
         """
 
 ### annovar

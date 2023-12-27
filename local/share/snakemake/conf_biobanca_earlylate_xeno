@@ -95,7 +95,7 @@ def find_normal():
         model_x = all_x[i][0:7]
         model_h = all_h[i][0:7]
         if model_x != model_h:
-           raise Exception('Your logic is flawed, llama!')
+            raise Exception('Your logic is flawed, llama!')
     return(all_h, all_x)            
 
 NORMAL_TUMOR_PAIRS=find_normal()
