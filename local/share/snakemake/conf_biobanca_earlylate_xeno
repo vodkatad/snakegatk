@@ -74,29 +74,29 @@ PADDING=100
 #SAMPS=",".join(SAMPLESD)
 
 
-#def find_normal():
-    #import re
-    #all_h=[]
-    #all_x=[]
-    #for sample in SAMPLES:
-        #if re.search('H', sample):
-            #all_h.append(sample)
-        #elif re.search('X', sample):
-            #all_x.append(sample)
-        #else:
-            #raise Exception('There is a bad sample here! ' + sample)
-    #all_h.sort()
-    #all_x.sort()
-    #if len(all_x) != len(all_h):
-            #print(all_x)
-            #print(all_h)
-            #raise Exception('Not all X have their H!')
-    #for i in range(0,len(all_x)):
-        #model_x = all_x[i][0:7]
-        #model_h = all_h[i][0:7]
-        #if model_x != model_h:
-            #raise Exception('Your logic is flawed, llama!')
-    #return(all_h, all_x)            
+def find_normal():
+    import re
+    all_h=[]
+    all_x=[]
+    for sample in SAMPLES:
+        if re.search('H', sample):
+            all_h.append(sample)
+        elif re.search('X', sample):
+            all_x.append(sample)
+        else:
+            raise Exception('There is a bad sample here! ' + sample)
+    all_h.sort()
+    all_x.sort()
+    if len(all_x) != len(all_h):
+            print(all_x)
+            print(all_h)
+            raise Exception('Not all X have their H!')
+    for i in range(0,len(all_x)):
+        model_x = all_x[i][0:7]
+        model_h = all_h[i][0:7]
+        if model_x != model_h:
+            raise Exception('Your logic is flawed, llama!')
+    return(all_h, all_x)            
 
 NORMAL_TUMOR_PAIRS=find_normal()
 
