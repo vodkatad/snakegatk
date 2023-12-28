@@ -136,6 +136,8 @@ rule neutral_sottoriva:
     script: SRC_DIR+"/neutral_sottoriva.R"
 
 
+# --force-samples had to be added for biobanca early-late due to shared LMH
+#bcftools merge --force-samples --missing-to-ref -m none -o {output}.vcf.tmp {input.vcf}
 rule merge_targeted:
     input: vcf=expand(MUTECT_DIR+"/{sample}.pass.vcf.gz", sample=TUMOR), bed=SEXONS
     output: MUTECT_DIR+"/merged_targeted.vcf"
@@ -173,7 +175,7 @@ rule vcf_to_aftable:
     params: nsamples=len(SAMPLES), normal="NLH"
     shell:
         """
-            cat {input} | grep -v "^##" |  perl -ane '@gt=splice(@F,9,{params.nsamples}); $gt=""; foreach $g (@gt) {{ if ($.==1) {{$gt.=$g."\\t";}} else {{ @afs = split(":",$g); if ($afs[2] eq ".") {{$afs[2]=0;}} $gt.=$afs[2]."\\t";}} }} chop($gt) ; print $F[2]."\\t".$gt."\\n";' | grep -v "," > {output.table}.tmp
+            cat {input} | grep -v "^##" |  perl -ane '@gt=splice(@F,9); $gt=""; foreach $g (@gt) {{ if ($.==1) {{$gt.=$g."\\t";}} else {{ @afs = split(":",$g); if ($afs[2] eq ".") {{$afs[2]=0;}} $gt.=$afs[2]."\\t";}} }} chop($gt) ; print $F[2]."\\t".$gt."\\n";' | grep -v "," > {output.table}.tmp
             Rscript -e 'd <- read.table("{output.table}.tmp", sep="\\t", header=T); d <- d[, !grepl("{params.normal}",colnames(d))]; write.table(d, file="{output.table}", sep="\\t", quote=F, row.names=F);'
             rm {output.table}.tmp
         """
