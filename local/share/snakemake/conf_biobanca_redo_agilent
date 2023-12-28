@@ -180,6 +180,6 @@ rule g:
     params: wes=EXONS
     shell: "echo {params.wes} > {output}"
 
-rule all_realign:
-        input: expand("align/realigned_{sample}.sorted.bam", sample=SAMPLES)
+#rule all_realign:
+#        input: expand("align/realigned_{sample}.sorted.bam", sample=SAMPLES)
 
