@@ -189,3 +189,36 @@ rule g:
     output: "genes.tsv"
     params: wes=EXONS
     shell: "echo {params.wes} > {output}"
+
+
+rule mut_burden_tot:
+    input: tsize="targeted_size.txt", muts="mutect_paired/merged.table_nomultiallele"
+    output: "mutect_paired/tot_mut_burden.tsv"
+    run:
+        import pandas as pd
+        import numpy as np
+        data = pd.read_csv(input.muts, sep="\t", index_col=0)
+        tot = np.count_nonzero(data, axis=0)
+        target_len = 0
+        with open(input.tsize, 'r') as tsize:
+            line = tsize.readline()
+            target_len = float(line.rstrip())
+        target_len = target_len / 1000000
+        res = pd.DataFrame(data = {'totmut': tot, 'burden': tot/target_len}, index=data.columns)
+        res.to_csv(output[0], sep="\t", index=True)
+
+rule bed:
+    input: "mutect_paired/merged.table_nomultiallele"
+    output: "muts.bed"
+    shell: 
+        """
+            sed 1d {input} | cut -f 1 | tr ":" "\\t" | bawk '{{print $1, $2-1, $2}}' > {output}
+        """
+
+rule annotatr:
+    input: gained_bed="muts.bed"
+    params: custom_annot="no"
+    output: plot_n="muts.genomicregions.svg", plot_corr="muts.genomicregionsnorm.svg"
+    script: SRC_DIR+"/annotatr.R"
+
+

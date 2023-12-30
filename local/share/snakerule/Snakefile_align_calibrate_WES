@@ -156,7 +156,7 @@ rule hsmetrics:
        """
 
 rule hsmetrics_summary:
-    input: expand(ALIGN_DIR+"/{sample}.hsmetrics", sample=SAMPLES)
+    input: expand(ALIGN_DIR+"/{sample}.hsmetrics", sample=TUMOR)
     output: "all_metrics"
     shell:
         """
