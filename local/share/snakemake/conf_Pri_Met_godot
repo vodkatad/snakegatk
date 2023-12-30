@@ -421,3 +421,22 @@ rule annotate_vcf_with_cn:
 
 rule all_annotate_vcf:
     input: expand("mutect_paired/{sample}.ABannot.pass.vcf.gz", sample=TUMOR)
+
+
+
+rule mut_burden_tot:
+    input: tsize="targeted_size.txt", muts="mutect_paired/merged.table_nomultiallele"
+    output: "mutect_paired/tot_mut_burden.tsv"
+    run:
+        import pandas as pd
+        import numpy as np
+        data = pd.read_csv(input.muts, sep="\t", index_col=0)
+        tot = np.count_nonzero(data, axis=0)
+        target_len = 0
+        with open(input.tsize, 'r') as tsize:
+            line = tsize.readline()
+            target_len = float(line.rstrip())
+        target_len = target_len / 1000000
+        res = pd.DataFrame(data = {'totmut': tot, 'burden': tot/target_len}, index=data.columns)
+        res.to_csv(output[0], sep="\t", index=True)
+

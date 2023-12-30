@@ -138,7 +138,7 @@ rule interval:
 
 # tODO change in CollectHsMetrics -I realigned_CRC1979NORM.sorted.bam -O CRC1979NORM.hsmetrics -R /work/egrassi/WXS/local/share/data/GRCh38.d1.vd1.fa -BAIT_INTERVALS target.interval_list -TARGET_INTERVALS target.interval_list  it was suggested but it did not work ... !?
 rule hsmetrics:
-    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa", il="target.interval_list"
+    input: bam=ALIGN_DIR+"/realigned_{sample}.sorted.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa", il="target.interval_list"
     output: ALIGN_DIR+"/{sample}.hsmetrics"
     params: picard=PICARD
     shell:
@@ -152,7 +152,7 @@ rule hsmetrics:
        """
 
 rule hsmetrics_summary:
-    input: expand(ALIGN_DIR+"/{sample}.hsmetrics", sample=SAMPLES)
+    input: expand(ALIGN_DIR+"/{sample}.hsmetrics", sample=TUMOR)
     output: "all_metrics"
     shell:
         """
