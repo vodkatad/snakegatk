@@ -272,3 +272,24 @@ rule mut_burden:
         target_len = target_len / 1000000
         res = pd.DataFrame(data = {'totmut': tot, 'burden': tot/target_len}, index=data.columns)
         res.to_csv(output[0], sep="\t", index=True)
+
+rule signature:
+    input: MUTECT_DIR+"/{sample}.pass.vcf.gz"
+    output: "signatures/{sample}.cosmic.fit.tsv"
+    params: tool=BIN_DIR+'/mut_pat_signatures_fit_one'
+    shell: 
+        """
+            mkdir -p signatures
+            {params.tool} {input} {output} {wildcards.sample}
+        """
+
+rule all_signatures:
+    input: expand('signatures/{sample}.cosmic.fit.tsv', sample=SAMPLES)
+    output: 'signatures/all_cosmic_fit.tsv'
+    run:    
+        import pandas as pd
+        res = pd.read_csv(input[0], sep="\t")
+        for i in range(1,len(input)):
+            resi = pd.read_csv(input[i], sep="\t")
+            res = res.merge(resi, left_index=True, right_index=True)
+        res.to_csv(output[0], sep="\t")
