@@ -147,4 +147,21 @@ rule xls_qc:
             tsv_to_xls -i {output}.tmp1,{output}.tmp2 -s pdo,pdx -o {output}
             rm {output}.tmp*
         """
-        
+
+
+rule mut_burden_tot:
+    input: tsize="targeted_size.txt", muts="mutect/merged.table_nomultiallele"
+    output: "mutect/tot_mut_burden.tsv"
+    run:
+        import pandas as pd
+        import numpy as np
+        data = pd.read_csv(input.muts, sep="\t", index_col=0)
+        tot = np.count_nonzero(data, axis=0)
+        target_len = 0
+        with open(input.tsize, 'r') as tsize:
+            line = tsize.readline()
+            target_len = float(line.rstrip())
+        target_len = target_len / 1000000
+        res = pd.DataFrame(data = {'totmut': tot, 'burden': tot/target_len}, index=data.columns)
+        res.to_csv(output[0], sep="\t", index=True)
+

@@ -153,6 +153,8 @@ SIZE=34 # WES agilent sureselect
 ASSAY="WES" #   "TARGETED"
 
 GCFILE=GNOMAD_TASK_DIR+'/sequenza_gc_w50.wig.gz'
+SAINT_THOMAS="yes"
+
 GENES="genes.tsv"
 NAME="early_late_biobanca_xeno"
 
