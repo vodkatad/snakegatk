@@ -227,9 +227,6 @@ rule sequenza_to_BED_depth_ratio:
 rule all_sequenza_to_BED_depth_ratio:
     input:expand('loh/bed_depth/{sample}.bed',sample=TUMOR)
 
-if SAINT_THOMAS == "yes": 
-    include: PRJ_ROOT+"/local/share/snakerule/Snakefile_saint_thomas"
-
 rule sequenza_to_BED_cnv:
     input:'sequenza/{sample}/{sample}_segments.txt'
     output:'loh/bed_cnv/{sample}.bed'
@@ -254,11 +251,6 @@ rule good_regions:
         """
 rule all_good_regions:
     input:expand('loh/bed_cnv_good/{sample}.bed', sample=TUMOR)
-
-if SAINT_THOMAS == "yes": 
-    include: PRJ_ROOT+"/local/share/snakerule/Snakefile_saint_thomas"
-
-
 
 ######### MSI-SENSOR MARCO ##########
 def find_matched_normal_path(wildcards):
@@ -315,3 +307,10 @@ rule consis:
         """
 
 
+rule all_sequenza_to_BED_depth_ratio:
+    input:expand('loh/bed_depth/{sample}.bed',sample=TUMOR)
+
+
+if SAINT_THOMAS == "yes": 
+    include: PRJ_ROOT+"/local/share/snakerule/Snakefile_saint_thomas"
+    

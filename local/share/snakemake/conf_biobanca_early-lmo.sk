@@ -44,6 +44,7 @@ DATA="/mnt/trcanmed/snaketree/data/biobanca_WES_earlylate/merged_fastq" #PRJ_ROO
 FQ_XENOME_DIR="xenome"
 PICARD="picard -Xmx10g"
 #PICARD="picard-tools"
+
 XENOME_PREFIX='/mnt/trcanmed/snaketree/task/sequences/sequences/dataset/gdc/xenomidx'
 XENOME_TOOL='/mnt/trcanmed/snaketree/prj/snakegatk/local/src/gossamer/build/src/xenome'
 XENOME_WAIT=10800
@@ -198,7 +199,6 @@ rule fgfr:
         """
             /scratch/trcanmed/task/common_tools/local/src/count_bam_many_ref.py {input.bam} {input.muts} > {output}
         """
-
 
 ######### MSI-SENSOR MARCO ##########
 MSISENSOR_DOCKER="pengjia1110/msisensor-pro"
