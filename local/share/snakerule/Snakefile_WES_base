@@ -212,6 +212,7 @@ rule sequenza_to_BED:
 
 rule all_sequenza_to_BED:
     input: expand('loh/bed/{sample}.bed',sample=TUMOR)
+
 rule sequenza_to_BED_depth_ratio:
     input:'sequenza/{sample}/{sample}_segments.txt'
     output:'loh/bed_depth/{sample}.bed'
@@ -222,10 +223,92 @@ rule sequenza_to_BED_depth_ratio:
         print(data.head())
         data_filtered=data.loc[:,['chromosome','start.pos','end.pos','depth.ratio']]
         data_filtered.to_csv(output[0],sep='\t',index=False,header=False)
+
 rule all_sequenza_to_BED_depth_ratio:
     input:expand('loh/bed_depth/{sample}.bed',sample=TUMOR)
 
+rule sequenza_to_BED_cnv:
+    input:'sequenza/{sample}/{sample}_segments.txt'
+    output:'loh/bed_cnv/{sample}.bed'
+    run:
+        import pandas as pd 
+        import numpy as numpy
+        data=pd.read_csv(input[0],sep='\t',header=0)
+        print(data.head())
+        data_filtered=data.loc[:,['chromosome','start.pos','end.pos','CNt']]
+        data_filtered.to_csv(output[0],sep='\t',index=False,header=False)
+
+rule all_sequenza_to_BED_cnv:
+    input:expand('loh/bed_cnv/{sample}.bed',sample=TUMOR)
+
+rule good_regions:
+    input: cnv='loh/bed_cnv/{sample}.bed', bad_bed='/mnt/trcanmed/snaketree/task/annotations/dataset/gnomad/wgs_calling_regions.hg38.bed.gz'
+    output:cnvg='loh/bed_cnv_good/{sample}.bed'
+    shell:
+        """
+             bedtools intersect -a <(sed 1d {input.cnv}) -b {input.bad_bed} > {output.cnvg}
+
+        """
+rule all_good_regions:
+    input:expand('loh/bed_cnv_good/{sample}.bed', sample=TUMOR)
 
 if SAINT_THOMAS == "yes": 
     include: PRJ_ROOT+"/local/share/snakerule/Snakefile_saint_thomas"
-    
+
+
+
+######### MSI-SENSOR MARCO ##########
+def find_matched_normal_path(wildcards):
+    try:
+        index = TUMOR.index(wildcards.sample)
+        return ROOT+"/data/biobanca_WES_earlylate/align/realigned_"+NORMAL[index]+".sorted.bam"
+    except:
+        raise ValueError("Check you TUMOR and NORMAL in conf.sk, cannot find matched normal for " + wildcards.sample)
+
+# rule all_msi:
+#     input: expand("msipro_{sample}.txt", sample=TUMOR)
+# rule sensor:
+#     input: normal=find_matched_normal_path, tumor=ROOT+"/data/biobanca_WES_earlylate/align/realigned_{sample}.sorted.bam"
+#     params: gnomad=GNOMAD_TASK_DIR+":/home/gnomad", root=ROOT+":"+ROOT, docker_img=MSISENSOR_DOCKER
+#     output:  ROOT+"/data/biobanca_WES_earlylate/msipro_{sample}.txt"
+#     shell:
+#         """
+#             docker run --volume {params.gnomad} --volume {params.root} {params.docker_img} \\
+#             msisensor-pro msi -d /home/gnomad/GRCh38.d1.vd1_repeats_msisensor.list \\
+#             -n {input.normal} \\
+#             -t {input.tumor} \\
+#             -o {output}
+#         """
+def find_matched_normal_rel_path(wildcards):
+    try:
+        index = TUMOR.index(wildcards.sample)
+        return "align/realigned_"+NORMAL[index]+".sorted.bam"
+    except:
+        raise ValueError("Check you TUMOR and NORMAL in conf.sk, cannot find matched normal for " + wildcards.sample)
+
+rule all_msi:
+    input: expand("msipro/msipro_{sample}.txt", sample=TUMOR)
+rule sensord:
+    input: normal=find_matched_normal_rel_path, tumor="align/realigned_{sample}.sorted.bam"
+    params: gnomad=GNOMAD_TASK_DIR
+    docker: MSISENSOR_DOCKER
+    output: "msipro/msipro_{sample}.txt"
+    shell:
+        """
+            msisensor-pro msi -d {params.gnomad}/GRCh38.d1.vd1_repeats_msisensor.list \\
+            -n {input.normal} \\
+            -t {input.tumor} \\
+            -o {output}
+        """
+
+### consistency
+rule consis:
+    input: o="samples_st.tsv", x="../biobanca_earlylate_xeno/samples_st.tsv"
+    params: tool=BIN_DIR+"/msisensor_concordancy_check"
+    output: results="msipro/msi_consistency_earlylate_pdo-pdx/mnt/trcanmed/snaketree/prj/snakegatk/dataset/biobanca_earlylate_pdo/msipro/msi_consistency_earlylate_pdo.tsv.tsv"
+    shell:
+        """ 
+            {params.tool} -o {input.o} -x {input.x} -r {output.results} 
+        """
+
+

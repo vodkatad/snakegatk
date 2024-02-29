@@ -31,7 +31,7 @@ DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
 # Singularity containers and occam docker images
 GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
 XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
-ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
+ALIGN_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/align_recalibrate:1"
 PLH_DOCKER="bubusettete"
 #GATK_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/gatk_fixedov1" # we keep this for this project and accept the filtering bug, even if it's not that small..
 GATK_ODOCKER="broadinstitute/gatk:4.1.3.0"
@@ -43,6 +43,7 @@ DATA="/mnt/trcanmed/snaketree/data/biobanca_WES_earlylate/merged_fastq" #PRJ_ROO
 #DATA="/archive/home/gcorti/biobanca_WES_earlylate/fastq" #PRJ_ROOT+"/local/share/data/biobanca_early-late"
 FQ_XENOME_DIR="xenome"
 PICARD="picard -Xmx10g"
+#PICARD="picard-tools"
 XENOME_PREFIX='/mnt/trcanmed/snaketree/task/sequences/sequences/dataset/gdc/xenomidx'
 XENOME_TOOL='/mnt/trcanmed/snaketree/prj/snakegatk/local/src/gossamer/build/src/xenome'
 XENOME_WAIT=10800
@@ -198,3 +199,7 @@ rule fgfr:
         """
             /scratch/trcanmed/task/common_tools/local/src/count_bam_many_ref.py {input.bam} {input.muts} > {output}
         """
+
+
+######### MSI-SENSOR MARCO ##########
+MSISENSOR_DOCKER="pengjia1110/msisensor-pro"
