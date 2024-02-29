@@ -224,3 +224,5 @@ rule annotatr:
     script: SRC_DIR+"/annotatr.R"
 
 
+######### MSI-SENSOR MARCO ##########
+MSISENSOR_DOCKER="pengjia1110/msisensor-pro"
