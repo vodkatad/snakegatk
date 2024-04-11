@@ -151,7 +151,7 @@ NAME = "biobanca_early-late"
 SIZE = 34
 ASSAY = "WES"
 GCFILE = GNOMAD_TASK_DIR+'/sequenza_gc_w50.wig.gz' 
-SAINT_THOMAS="no"
+SAINT_THOMAS="yes"
 
 rule mut_burden_tot:
     input: tsize="targeted_size.txt", muts="mutect_paired/merged.table_nomultiallele"
