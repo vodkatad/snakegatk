@@ -33,7 +33,8 @@ rule mark_duplicates_picard:
     output: bam=temp(ALIGN_DIR+"/markedDup_{sample}.sorted.bam"), metrics=ALIGN_DIR+"/{sample}.dupMetrics.txt"
     params: pixel_dist=PATTERNED, cores=CORESMD, picard=PICARD
     log: ALIGN_DIR+"/markedDup_{sample}.bam.log"
-    docker: GATK_ODOCKER
+    #docker: GATK_ODOCKER
+    docker: ALIGN_ODOCKER
     shell: 
         """
         {params.picard} MarkDuplicates INPUT="{input}" OUTPUT="{output.bam}" METRICS_FILE="{output.metrics}" \
