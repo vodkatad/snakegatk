@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 rule saint_thomas:
         input: bam=ALIGN_DIR+"/realigned_{sample}.sorted.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa", vcf=MUTECT_DIR+"/{sample}.pass.vcf.gz"
         output: "mutect_paired_st/{sample}.OK.vcf.gz"
@@ -11,33 +10,11 @@ rule saint_thomas:
 
 # change MUTECT_DIR to work there
 MUTECT_DIR="mutect_paired_st"
-=======
-# change MUTECT_DIR to work there
-MUTECT_DIR="mutect_paired_st"
-
->>>>>>> 4e8ef8e... Saint Thomas + sequenza bins + misc
-# right now we cp (not ln due to pcgr) the filtered vcf, TODO add pipeline here
-rule all_ln_m:
-    input: expand(MUTECT_DIR+"/{sample}.pass.vcf.gz", sample=TUMOR)
-
-rule ln_m:
-<<<<<<< HEAD
-    #input: "/scratch/Giorgio/check_VCF_calls/whole_early-late_dataset/{sample}.OK.vcf.gz"
-    input: MUTECT_DIR+"/{sample}.OK.vcf.gz"
-=======
-    input: "/scratch/Giorgio/check_VCF_calls/whole_early-late_dataset/{sample}.OK.vcf.gz"
->>>>>>> 4e8ef8e... Saint Thomas + sequenza bins + misc
-    output: MUTECT_DIR+"/{sample}.pass.vcf.gz"
-    shell:
-        """
-            zcat {input} | bgzip > {output}
-        """
-#(snakemake) egrassi@godot:/mnt/trcanmed/snaketree/prj/snakegatk/dataset/biobanca_earlylate_pdo/mutect_paired_st$ for f in *vcf.gz; do tabix $f; done
 
 # --force-samples had to be added for biobanca early-late due to shared LMH
 #bcftools merge --force-samples --missing-to-ref -m none -o {output}.vcf.tmp {input.vcf}
 rule merge_targeted_st:
-    input: vcf=expand(MUTECT_DIR+"/{sample}.pass.vcf.gz", sample=TUMOR), bed=SEXONS
+    input: vcf=expand(MUTECT_DIR+"/{sample}.OK.vcf.gz", sample=TUMOR), bed=SEXONS
     output: MUTECT_DIR+"/merged_targeted.vcf"
     shell:
         """
