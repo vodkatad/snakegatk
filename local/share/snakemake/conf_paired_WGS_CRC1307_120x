@@ -45,7 +45,7 @@ PLH_DOCKER="bubusettete"
 XENOME_PREFIX=""
 XENOME_TOOL=""
 XENOME_WAIT=0
-PICARD=""
+PICARD='picard -Xmx10g -XX:ParallelGCThreads='
 
 ## This dataset:
 DATA=PRJ_ROOT+"/local/share/data/second_shipment"
@@ -53,7 +53,6 @@ FQ_XENOME_DIR="xenome"
 XENOME_PREFIX=''
 XENOME_TOOL=''
 XENOME_WAIT=0
-PICARD=""
 
 #data@rotpunkt:~/work/snakegatk/local/src$ ./tsv_to_json_metadata.py -i ~/Dropbox/work/evol/MA/second_shipment/samples/ss_282.txt -j /tmp/test
 SAMPLES_ORIG=['1740D-84-01_S48_L004', 'BD0018_SA_L001','BD0020_SA_L001']

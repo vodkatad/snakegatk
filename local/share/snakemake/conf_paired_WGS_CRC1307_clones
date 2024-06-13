@@ -49,7 +49,7 @@ FQ_XENOME_DIR="xenome"
 XENOME_PREFIX=""
 XENOME_TOOL=""
 XENOME_WAIT=""
-PICARD=""
+PICARD="picard -Xmx10g -XX:ParallelGCThreads="
 
 # data@rotpunkt:~/work/snakegatk$ python local/src/tsv_to_json_metadata.py -i ~/Dropbox/work/evol/MA/CRC1307/samples_sheet.tsv -j ~/Dropbox/work/evol/MA/CRC1307/metadata_partial.json
 #SAMPLES_ORIG=['1740D-84-01_S48_L004', 'BD0002_SA_L001', 'BD0011_SA_L001', 'BD0009_SA_L001', 'BD0013_SA_L001', 'BD0010_SA_L001', 'BD0012_SA_L001', 'BD0001_SA_L001', 'BD0014_SA_L001', 'BD0015_SA_L001']
@@ -104,3 +104,10 @@ else:
 
 PLOIDY=3
 PURITY=1
+
+CSAMPLES=['CRC1307-02-0', 'CRC1307-08-0', 'CRC1307-09-0', 'CRC1307-02-1-A', 'CRC1307-02-1-B', 'CRC1307-02-1-E', 'CRC1307-08-1-B', 'CRC1307-08-1-D', 'CRC1307-08-1-E', 'CRC1307-09-1-B', 'CRC1307-09-1-C', 'CRC1307-09-1-E']
+rule all_mpile:
+    input: expand("varscan_paired/{sample}.mpileup.gz", sample=CSAMPLES)
+    output: "all_mpile_alb"
+    shell: "touch all_mpile_alb"
+

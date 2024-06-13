@@ -122,3 +122,8 @@ XENOME_TOOL=''
 XENOME_WAIT=''
 PICARD='picard'
 
+CSAMPLES=['CRC1502-03-0', 'CRC1502-08-0', 'CRC1502-09-0', 'CRC1502-03-1-A', 'CRC1502-03-1-C', 'CRC1502-03-1-D', 'CRC1502-08-1-A', 'CRC1502-08-1-C', 'CRC1502-08-1-D', 'CRC1502-09-1-A', 'CRC1502-09-1-C', 'CRC1502-09-1-E', 'CRC1502-10-0', 'CRC1502-10-1-A', 'CRC1502-10-1-B', 'CRC1502-10-1-D']
+rule all_mpile:
+    input: expand("varscan_paired/{sample}.mpileup.gz", sample=CSAMPLES)
+    output: "all_mpile_alb"
+    shell: "touch all_mpile_alb"

@@ -39,9 +39,10 @@ PLH_DOCKER="bubusettete"
 ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
 SEQUENZA_ODOCKER="egrassi/occamsnakes/sequenza:1"
 PLATYPUS_ODOCKER="egrassi/occamsnakes/platypus:1"
+VARSCAN_ODOCKER="egrassi/occamsnakes/varscan:1"
 
 
-CORESMD=8
+CORESMD=12
 TUMOR=['plh']
 CALLABLE_BED="plh"
 AFPARAM="plh"
@@ -68,11 +69,20 @@ FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
 
 PAIRS=['R1_001','R2_001']
 PAIRS_XENOME=['1','2']
-CORES=5
+CORES=12
 # TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
 PATTERNED=2500 
 # HiSeq4000, otherwise 100 for unpatterned
 #–o recal.bam
+
+SPLIT=12
+SPLIT_INTERVAL=GNOMAD_TASK_DIR+'/GRCh38.d1.vd1.n'+str(SPLIT)
+if SPLIT >= 10:
+    SPLITS=['000'+str(x) for x in range(0,10)] + ['00'+str(x) for x in range(10,SPLIT)]
+else:
+    SPLITS=['000'+str(x) for x in range(0, SPLIT)]
+
+
 
 #LOWERAF="0.0000025"
 #Starting with v4.0.4.0, GATK recommends the default setting of --af-of-alleles-not-in-resource, which the tool dynamically adjusts for different modes. tumor-only calling sets the default to 5e-8, tumor-normal calling sets it to 1e-6 and mitochondrial mode sets it to 4e-3.
@@ -84,4 +94,10 @@ wildcard_constraints:
 
 CALLABLE="5:10,10:50,50:100,100:150,150:inf"
 CALLABLE_STRICT="50:100,100:150,150:inf"
+
+XENOME_PREFIX=''
+XENOME_TOOL=''
+XENOME_WAIT=''
+PICARD='picard -Xmx10g -XX:ParallelGCThreads='
+
 

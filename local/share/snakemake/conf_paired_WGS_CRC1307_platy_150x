@@ -43,20 +43,22 @@ PLATYPUS_ODOCKER="egrassi/occamsnakes/platypus:1"
 PLH_DOCKER="bubusettete"
 
 XENOME_PREFIX=""
-XENOME_TOOL=''
+XENOME_TOOL=""
 XENOME_WAIT=0
-PICARD=''
+PICARD='picard -Xmx10g -XX:ParallelGCThreads='
 
 ## This dataset:
 DATA=PRJ_ROOT+"/local/share/data/second_shipment"
 FQ_XENOME_DIR="xenome"
+XENOME_PREFIX=''
+XENOME_TOOL=''
+XENOME_WAIT=0
 
-# TODO FA LINK NMH
 #data@rotpunkt:~/work/snakegatk/local/src$ ./tsv_to_json_metadata.py -i ~/Dropbox/work/evol/MA/second_shipment/samples/ss_282.txt -j /tmp/test
-SAMPLES_ORIG=['PRJ0003S1_SA_L001', 'PRJ0003S2_SA_L001',"PRJ0003S45_SA_L001","PRJ0003S46_SA_L001","CRC1502NLH0000000000D03000", "PRJ0003S62_SA_L001", "CRC0327NLH0000000000D04000","PRJ0003S24_SA_L001"]
-SAMPLES=['CRC0282NMH0000000000D07000', 'CRC0282LMO-0-B', "CRC1078NLH0000000000D08000","CRC1078LMO-0-B", "CRC1502NLH0000000000D03000", "CRC1502LMO-0-B", "CRC0327NLH0000000000D04000","CRC0327LMO-0-B"]
-NORMAL=["CRC0282NMH0000000000D07000", "CRC1078NLH0000000000D08000","CRC1502NLH0000000000D03000","CRC0327NLH0000000000D04000"]
-TUMOR=["CRC0282LMO-0-B", "CRC1078LMO-0-B","CRC1502LMO-0-B","CRC0327LMO-0-B"]
+SAMPLES_ORIG=['1740D-84-01_S48_L004','BIOMEDICA-1-1-55_SA_L001','BD0020_SA_L001']
+SAMPLES=['CRC1307NLH-0-B','CRC1307-09-0','CRC1307-09-1-B']
+NORMAL=["CRC1307NLH-0-B"]*(len(SAMPLES)-1)
+TUMOR=SAMPLES[1:]
 
 #REF=""
 #SAMPLESD=[]
@@ -80,8 +82,7 @@ PATTERNED=2500
 
 
 ### TODO REMOVE ME FOR BULK!
-#AFPARAM="--default-af 0" # warning this has run with this flag set! need to rerun or at least check
-AFPARAM=""
+AFPARAM="--default-af 0"
 # https://gatkforums.broadinstitute.org/gatk/discussion/24633/mutect2-4-1-4-0-stats-file-with-a-negative-number#latest
 # use --default-af 0 to avoid 0.5 AF calls filtering 
 
@@ -104,39 +105,7 @@ else:
 PLOIDY=3
 PURITY=1
 
-XENOME_PREFIX=''
-XENOME_TOOL=''
-XENOME_WAIT=''
-#PICARD='picard'
-PICARD='picard -Xmx10g -XX:ParallelGCThreads='
-# do_like_wes.sh
-#bcftools merge --missing-to-ref -m none -o mutect_paired/merged_targeted.vcf.vcf.tmp mutect_paired/CRC0282LMO-0-B.pass.vcf.gz mutect_paired/CRC1078LMO-0-B.pass.vcf.gz mutect_paired/CRC1502LMO-0-B.pass.vcf.gz mutect_paired/CRC0327LMO-0-B.pass.vcf.gz
-#bedtools intersect -header -u -a mutect_paired/merged_targeted.vcf.vcf.tmp -b  ../../local/share/data/Pri_Met_pairs/xgen-exome-hyb-panel-v2-targets-hg38.targets.bed > mutect_paired/merged_targeted_exons.vcf
-#rm mutect_paired/merged_targeted.vcf.*.tmp
-#bcftools annotate -I +'%CHROM:%POS:%REF:%ALT' mutect_paired/merged_targeted_exons.vcf > mutect_paired/merged_exons.vcf.id
-#cat mutect_paired/merged_exons.vcf.id | grep -v "^##" |  perl -ane '@gt=splice(@F,9,8); $gt=""; foreach $g (@gt) { if ($.==1) {$gt.=$g."\t";} else { @afs = split(":",$g); if ($afs[2] eq ".") {$afs[2]=0;} $gt.=$afs[2]."\t";} } chop($gt) ; print $F[2]."\t".$gt."\n";' | grep -v "," > mutect_paired/merged_exons.table_nomultiallele
-        
-rule size_wes:
-    input: '../../local/share/data/Pri_Met_pairs/xgen-exome-hyb-panel-v2-targets-hg38.targets.bed'
-    output: "wes_sequenced_size.txt"
-    shell:
-        """
-            cat {input} | bawk 'BEGIN{{t=0}} {{t=t+($3-$2)}} END {{print t}}' > {output}
-        """
 
+rule all_covered:
+    input: expand("depth/{sample}_callable_{depth}.covered.bed.gz", sample=TUMOR, depth=['10x','20x','30x','40x','50x', '60x', '70x', '80x', '90x', '100x','150x','200x'])
 
-rule mut_burden_wes:
-    input: tsize="wes_sequenced_size.txt", muts="mutect_paired/merged_exons.table_nomultiallele"
-    output: "mutect_paired/mut_burden_exons.tsv"
-    run:
-        import pandas as pd
-        import numpy as np
-        data = pd.read_csv(input.muts, sep="\t", index_col=0)
-        tot = np.count_nonzero(data > 0.1, axis=0)
-        target_len = 0
-        with open(input.tsize, 'r') as tsize:
-            line = tsize.readline()
-            target_len = float(line.rstrip())
-        target_len = target_len / 1000000
-        res = pd.DataFrame(data = {'totmut': tot, 'burden': tot/target_len}, index=data.columns)
-        res.to_csv(output[0], sep="\t", index=True)
