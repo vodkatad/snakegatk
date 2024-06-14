@@ -21,6 +21,11 @@ TYPE="WGS"
 PAIRED=True
 SUBSAMPLE=1 # if == 1 do not downsample (downsampling is done right after alignment and dup removal, not before calling, to also recalibrate on less data).
 
+XENOME_PREFIX=""
+XENOME_TOOL=""
+XENOME_WAIT=""
+PICARD=""
+
 # Needed references and annotations
 GNOMAD_TASK_DIR=ROOT+'/task/annotations/dataset/gnomad'
 REF_DIR=GNOMAD_TASK_DIR
@@ -111,3 +116,14 @@ else:
 
 PLOIDY=2
 PURITY=1
+
+XENOME_PREFIX=''
+XENOME_TOOL=''
+XENOME_WAIT=''
+PICARD='picard'
+
+CSAMPLES=['CRC1502-03-0', 'CRC1502-08-0', 'CRC1502-09-0', 'CRC1502-03-1-A', 'CRC1502-03-1-C', 'CRC1502-03-1-D', 'CRC1502-08-1-A', 'CRC1502-08-1-C', 'CRC1502-08-1-D', 'CRC1502-09-1-A', 'CRC1502-09-1-C', 'CRC1502-09-1-E', 'CRC1502-10-0', 'CRC1502-10-1-A', 'CRC1502-10-1-B', 'CRC1502-10-1-D']
+rule all_mpile:
+    input: expand("varscan_paired/{sample}.mpileup.gz", sample=CSAMPLES)
+    output: "all_mpile_alb"
+    shell: "touch all_mpile_alb"

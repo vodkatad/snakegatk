@@ -1,0 +1,134 @@
+# We look for the right file depending on conf, so the pipeline could
+# be called automatically (if only xenome finished instead of hanging and needing a manual check)
+def produce_pairs(wildcards):
+        if wildcards.sample in XENOMED_SAMPLES:
+            # we need depend on xenome fastqs (xenos)
+            fastqs = expand('xenome/'+wildcards.sample+FASTQ_SUFFIX_XENOME, pair=PAIRS_XENOME)
+        else:
+            # we depend on normal fastqs (normal samples, organoids)
+            fastqs = expand(wildcards.sample+FASTQ_SUFFIX, pair=PAIRS)
+        return { 'fastq1': fastqs[0], 'fastq2': fastqs[1] }
+
+rule bwa_mem:
+    input: unpack(produce_pairs)
+    output: temp(ALIGN_DIR+"/{sample}.bam")
+    params: cores=CORES, ref=REF_DIR+"/GRCh38.d1.vd1.fa", dir=ALIGN_DIR
+    shell: 
+        """
+        mkdir -p {params.dir};
+        if echo {input.fastq1} | grep -q .gz; then
+            header=$(zcat {input.fastq1} | head -n 1) || echo "pipehead";
+        else
+            header=$(cat {input.fastq1} | head -n 1) || echo "pipehead";
+        fi
+        id=$(echo $header | cut -f 1-4 -d":" | sed 's/^@//' | sed 's/:/_/g');
+        smnh=$(echo $header | grep -Eo "[ATGCN\+]+$");
+        sm={wildcards.sample};
+        bwa mem -R "@RG\\tID:$id\\tSM:$sm\\tLB:$sm"_"$id"_"$smnh\\tPL:ILLUMINA" -t {params.cores} -K 100000000 -Y {params.ref} {input.fastq1} {input.fastq2} | samtools view -Shb -o {output};
+        """
+
+rule mark_duplicates_picard:
+    input: ALIGN_DIR+"/{sample}.bam"
+    output: bam=temp(ALIGN_DIR+"/markedDup_{sample}.bam"), metrics=ALIGN_DIR+"/{sample}.dupMetrics.txt"
+    params: pixel_dist=PATTERNED
+    log: ALIGN_DIR+"/markedDup_{sample}.bam.log"
+    shell: 
+        """
+        picard -Xmx10g -XX:ParallelGCThreads=11 MarkDuplicates INPUT="{input}" OUTPUT="{output.bam}" METRICS_FILE="{output.metrics}" \
+        ASSUME_SORT_ORDER="queryname" OPTICAL_DUPLICATE_PIXEL_DISTANCE="{params.pixel_dist}" \
+        ADD_PG_TAG_TO_READS=false VALIDATION_STRINGENCY="STRICT" 2> {log}
+        """
+
+rule recalibrate_quality:
+    input: bam=ALIGN_DIR+"/markedDup_{sample}.sorted.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa", snps=DBSNP, bai=ALIGN_DIR+"/markedDup_{sample}.sorted.bam.bai"
+    singularity: GATK_SING
+    output: bam=protected(ALIGN_DIR+"/realigned_{sample}.bam"), table=ALIGN_DIR+"/{sample}.table"
+    log: bam=ALIGN_DIR+"/realigned_{sample}.bam.log", table=ALIGN_DIR+"/{sample}.table.log"
+    shell:
+        """
+            gatk BaseRecalibrator -R {input.reference} -I {input.bam} --known-sites {input.snps} -O {output.table} 2> {log.table};
+            gatk ApplyBQSR -R {input.reference} -I {input.bam} --bqsr-recal-file  {output.table} -O {output.bam} --create-output-bam-index true 2> {log.bam};
+        """
+
+rule recalibrate_plot:
+    input: reference=REF_DIR+"/GRCh38.d1.vd1.fa", table=ALIGN_DIR+"/{sample}.table", bam=ALIGN_DIR+"/realigned_{sample}.bam", snps=DBSNP
+    output: ALIGN_DIR+"/{sample}.recal_plots.pdf"
+    singularity: GATK_SING
+    log: ALIGN_DIR+"/{sample}.recal_plots.pdf.log"
+    shell: 
+        """
+        gatk BaseRecalibrator -R {input.reference} -I {input.bam} --known-sites {input.snps} -O {output}.table 2> {log};
+        gatk AnalyzeCovariates -before {input.table} -after {output}.table -plots {output} 2>> {log};
+        """
+
+rule sort_all_realigned:
+    input: expand(ALIGN_DIR+"/realigned_{samples}.sorted.bam", samples=SAMPLES)
+    
+rule sorted_bai:
+    input: ALIGN_DIR+"/{whatever}.bam"
+    output: bai=ALIGN_DIR+"/{whatever}.sorted.bam.bai", bam=ALIGN_DIR+"/{whatever}.sorted.bam"
+    params: threads="8"
+    shell: 
+        """
+        samtools sort --threads {params.threads} -o {output.bam} {input};
+        samtools index {output.bam} {output.bai};
+        """
+
+rule all_coverage:
+    input: bam=ALIGN_DIR+"/realigned_{sample}.sorted.bam", bai=ALIGN_DIR+"/realigned_{sample}.sorted.bam.bai"
+    output: "depth/{sample}.quantized.bed.gz"
+    params: prefix="depth/{sample}", thread=12
+    shell: 
+        """
+            mkdir -p depth;
+            mosdepth -t {params.thread} -n --quantize 0:1:5:10:50:100:150: {params.prefix} {input.bam};
+        """
+
+# thresholds gotten from Mutect2 default parameters that we are adopting
+rule wgs_metrics:
+    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
+    output: txt=ALIGN_DIR+"/{sample}.wgsmetrics", sens=ALIGN_DIR+"/{sample}.sens"
+    shell:
+        """
+            picard CollectWgsMetrics I={input.bam} O={output.txt} R={input.reference} INCLUDE_BQ_HISTOGRAM=true ALLELE_FRACTION=0.5 MINIMUM_BASE_QUALITY=18 THEORETICAL_SENSITIVITY_OUTPUT={output.sens} MINIMUM_MAPPING_QUALITY=20
+        """
+
+rule bam_stats:
+    input: ALIGN_DIR+"/{something}.bam"
+    output: ALIGN_DIR+"/{something}.bam.stats"
+    shell:
+        """
+             samtools stats {input} > {output}
+        """
+
+rule bam_flagstat:
+    input: ALIGN_DIR+"/{something}.bam"
+    output: ALIGN_DIR+"/{something}.bam.flagstat"
+    shell:
+       """
+          samtools flagstat {input} > {output}
+       """
+
+
+# UNTESTED multiqc
+#ewels/MultiQC for docker, not in align_recalibrate env
+rule multiqc_align:
+    input: expand(ALIGN_DIR+"/{sample}.bam.flagstat", sample=SAMPLES) 
+    output: "multiqc_report.align.html"
+    shell: 
+        """
+            echo {input} | tr " " "\\n" > {output}.tmp;
+            multiqc --file-list {output}.tmp -f -n {output};
+            rm {output}.tmp;
+        """
+
+
+rule multiqc_coverage:
+    input: expand(ALIGN_DIR+"/{sample}.bam.wgsmetrics", sample=SAMPLES) 
+    output: "multiqc_report.coverage.html"
+    shell: 
+        """
+            echo {input} | tr " " "\\n" > {output}.tmp;
+            multiqc --file-list {output}.tmp -f -n {output};
+            rm {output}.tmp;
+        """

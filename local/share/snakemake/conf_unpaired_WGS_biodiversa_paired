@@ -36,6 +36,7 @@ GATK_ODOCKER="egrassi/occamsnakes/gatk_fixedov:1"
 XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
 VARSCAN_ODOCKER="egrassi/occamsnakes/varscan:1"
 SEQUENZA_ODOCKER="egrassi/occamsnakes/sequenza:1"
+PLATYPUS_ODOCKER="egrassi/occamsnakes/platypus:1"
 PLH_DOCKER="bubusettete"
 ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
 CALLABLE_BED=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.bed.gz'
@@ -84,4 +85,19 @@ CALLABLE="5:10,10:50,50:100,100:150,150:inf"
 CALLABLE_STRICT="50:100,100:150,150:inf"
 
 GCFILE=GNOMAD_TASK_DIR+'/sequenza_gc_w200.wig.gz'
+XENOME_PREFIX=''
+XENOME_TOOL=''
+XENOME_WAIT=''
+PICARD='picard'
+
+
+PLOIDY=3
+PURITY=1
+
+SPLIT=12
+SPLIT_INTERVAL=GNOMAD_TASK_DIR+'/GRCh38.d1.vd1.n'+str(SPLIT)
+if SPLIT >= 10:
+    SPLITS=['000'+str(x) for x in range(0,10)] + ['00'+str(x) for x in range(10,SPLIT)]
+else:
+    SPLITS=['000'+str(x) for x in range(0, SPLIT)]
 

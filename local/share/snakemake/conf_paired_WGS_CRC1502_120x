@@ -46,6 +46,10 @@ PLH_DOCKER="bubusettete"
 ## This dataset:
 DATA=PRJ_ROOT+"/local/share/data/second_shipment"
 FQ_XENOME_DIR="xenome"
+XENOME_PREFIX=''
+XENOME_TOOL=''
+XENOME_WAIT=0
+PICARD='picard -Xmx10g -XX:ParallelGCThreads='
 
 #data@rotpunkt:~/work/snakegatk/local/src$ ./tsv_to_json_metadata.py -i ~/Dropbox/work/evol/MA/second_shipment/samples/ss_282.txt -j /tmp/test
 SAMPLES_ORIG=['1740D-109-02_S30_L003','PRJ0003S66_SA_L001','PRJ0003S63_SA_L001']
@@ -100,3 +104,9 @@ PURITY=1
 
 rule all_covered:
     input: expand("depth/{sample}_callable_{depth}.covered.bed.gz", sample=TUMOR, depth=['10x','20x','30x','40x','50x', '60x', '70x', '80x', '90x', '100x','150x','200x'])
+
+XENOME_PREFIX=""
+XENOME_TOOL=""
+XENOME_WAIT=0
+PICARD='picard -Xmx10g -XX:ParallelGCThreads='
+

@@ -1,0 +1,315 @@
+import os
+import re
+ROOT=os.environ.get('SNAKE_ROOT')
+def find_prj_root(path=os.getcwd()):
+    if os.path.isfile(os.path.join(path,".PRJ_ROOT")):
+        return path
+    else:
+        if path:
+            return find_prj_root(os.path.dirname(path))
+        else:
+            raise Exception("Can not find the PRJ_ROOT directory")
+
+
+PRJ_ROOT=find_prj_root()
+TMP="/tmp"
+
+SRC_DIR=PRJ_ROOT+'/local/src'
+BIN_DIR=PRJ_ROOT+'/local/bin'
+FQ_REMOVED=True
+DEBUG="yes"
+TYPE="WES"
+PAIRED=True
+
+# Needed references and annotations
+GNOMAD_TASK_DIR=ROOT+'/task/annotations/dataset/gnomad'
+REF_DIR=GNOMAD_TASK_DIR
+GNOMAD=GNOMAD_TASK_DIR
+VEP_CACHE_DIR=ROOT+"/task/variant_annotations/dataset/VEP"
+ANNOVAR=ROOT+"/task/variant_annotations/dataset/annovar/hg38/humandb/"
+PON=GNOMAD_TASK_DIR+"/1000g_pon.hg38.vcf.gz"
+DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
+# Singularity containers and occam docker images
+GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
+#GATK_ODOCKER="egrassi/occamsnakes/gatk:1"
+GATK_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/gatk_fixedov:1" # we keep this for this project and accept the filtering bug, even if it's not that small..
+SEQUENZA_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/sequenza:1" # we keep this for this project and accept the filtering bug, even if it's not that small..
+
+XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
+ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
+PLH_DOCKER="bubusettete"
+
+
+## This dataset:
+DATA=PRJ_ROOT+"/local/share/data/Pri_Met_pairs"
+FQ_XENOME_DIR="xenome"
+
+# $ ls ../../local/share/data/Pri_Met_pairs/*fastq.gz | sed 's/..\/..\/local\/share\/data\/Pri_Met_pairs\///' | sed 's/_SA_L001_R._001.fastq.gz//1' | sort | uniq | tr "\n" "," | sed 's/,/","/g'
+#SAMPLES_ORIG=["CRC0053LMX0A02204TUMD07000","CRC0053NLH0000000000D05000","CRC0053PRX0A01201TUMD05000","CRC0065LMX0B02205TUMD02000","CRC0065NLH0000000000D08000","CRC0065PRX0A01201TUMD03000","CRC0071LMX0A02204TUMD09000","CRC0071NLH0000000000D04000","CRC0071PRX0A01201TUMD06000","CRC0094LMX0A02201TUMD05000","CRC0094NLH0000000000D04000","CRC0094PRX0A01201TUMD06000","CRC0333LMX0A02204TUMD07000","CRC0333NLH0000000000D08000","CRC0333PRX0A01201TUMD07000","CRC0440LMX0A02001TUMD08000","CRC0440NLH0000000000D09000","CRC0440PRX0A01001TUMD12000","CRC0449LMX0A01001TUMD08000","CRC0449NLH0000000000D07000","CRC0449PRX0A01001TUMD11000","CRC0468LMX0B02004TUMD07000","CRC0468NLH0000000000D08000","CRC0468PRX0B01001TUMD08000","CRC0481LMX0A02001TUMD08000","CRC0481NLH0000000000D08000","CRC0481PRX0A01001TUMD08000","CRC0549LMX0B02004TUMD10000","CRC0549NLH0000000000D07000","CRC0549PRX0A02004TUMD08000","CRC0740LMX0A02001TUMD08000","CRC0740NLH0000000000D08000","CRC0740PRX0A02001TUMD08000","CRC1063LMX0A01001TUMD07000","CRC1063NLH0000000000D07000","CRC1063PRX0B02001TUMD08000","CRC1144LMX0A01001TUMD08000","CRC1144NLH0000000000D07000","CRC1144PRX0B02002TUMD08000","CRC1169LMX0A02001TUMD08000","CRC1169NLH0000000000D07000","CRC1169PRX0A01001TUMD08000","CRC1182LMX0A01001TUMD08000","CRC1182NLH0000000000D07000","CRC1182PRX0A01001TUMD08000","CRC1240LMX0A01001TUMD08000","CRC1240NLH0000000000D07000","CRC1240PRX0B01001TUMD08000","CRC1251LMX0A02001TUMD08000","CRC1251NLH0000000000D07000","CRC1251PRX0A01001TUMD08000","CRC1331LMX0A02005TUMD03000","CRC1331NMH0000000000D05000","CRC1331PRX0A01001TUMD05000","CRC1387LMX0A02001TUMD03000","CRC1387NLH0000000000D05000","CRC1387PRX0B01001TUMD05000","CRC1473LMX0B02002TUMD03000","CRC1473NMH0000000000D05000","CRC1473PRX0B01001TUMD03000","CRC1486LMX0B02002TUMD03000","CRC1486NLH0000000000D05000","CRC1486PRX0A01001TUMD03000","CRC1599LMX0A02001TUMD03000","CRC1599NLH0000000000D03000","CRC1599PRX0A02002TUMD03000","CRC1624LMX0B02001TUMD03000","CRC1624NLH0000000000D03000","CRC1624PRX0B02001TUMD03000","CRC1673LMX0B02004TUMD03000","CRC1673NMH0000000000D03000","CRC1673PRX0B02001TUMD03000","CRC1824LMX0A02001TUMD03000","CRC1824NMH0000000000D05000","CRC1824PRX0A02003TUMD03000","CRC2790LMX0A02001TUMD03000","CRC2790NLH0000000000D03000","CRC2790PRX0A02001TUMD03000"]
+SAMPLES_ORIG=["CRC0053LMX0A02204TUMD07000","CRC0053NLH0000000000D05000","CRC0053PRX0A01201TUMD05000","CRC0065LMX0B02205TUMD02000","CRC0065NLH0000000000D08000","CRC0065PRX0A01201TUMD03000","CRC0071LMX0A02204TUMD09000","CRC0071NLH0000000000D04000","CRC0071PRX0A01201TUMD06000","CRC0094LMX0A02201TUMD05000","CRC0094NLH0000000000D04000","CRC0094PRX0A01201TUMD06000","CRC0333LMX0A02204TUMD07000","CRC0333NLH0000000000D08000","CRC0333PRX0A01201TUMD07000","CRC0440LMX0A02001TUMD08000","CRC0440NLH0000000000D09000","CRC0440PRX0A01001TUMD12000","CRC0449LMX0A01001TUMD08000","CRC0449NLH0000000000D07000","CRC0449PRX0A01001TUMD11000","CRC0468LMX0B02004TUMD07000","CRC0468NLH0000000000D08000","CRC0468PRX0B01001TUMD08000","CRC0481LMX0A02001TUMD08000","CRC0481NLH0000000000D08000","CRC0481PRX0A01001TUMD08000","CRC0498LMX0A02001TUMD08000","CRC0498NLH0000000000D07000","CRC0498PRX0A01001TUMD08000","CRC0549LMX0B02004TUMD10000","CRC0549NLH0000000000D07000","CRC0549PRX0A02004TUMD08000","CRC0740LMX0A02001TUMD08000","CRC0740NLH0000000000D08000","CRC0740PRX0A02001TUMD08000","CRC1063LMX0A01001TUMD07000","CRC1063NLH0000000000D07000","CRC1063PRX0B02001TUMD08000","CRC1144LMX0A01001TUMD08000","CRC1144NLH0000000000D07000","CRC1144PRX0B02002TUMD08000","CRC1169LMX0A02001TUMD08000","CRC1169NLH0000000000D07000","CRC1169PRX0A01001TUMD08000","CRC1182LMX0A01001TUMD08000","CRC1182NLH0000000000D07000","CRC1182PRX0A01001TUMD08000","CRC1240LMX0A01001TUMD08000","CRC1240NLH0000000000D07000","CRC1240PRX0B01001TUMD08000","CRC1251LMX0A02001TUMD08000","CRC1251NLH0000000000D07000","CRC1251PRX0A01001TUMD08000","CRC1331LMX0A02005TUMD03000","CRC1331NMH0000000000D05000","CRC1331PRX0A01001TUMD05000","CRC1387LMX0A02001TUMD03000","CRC1387NLH0000000000D05000","CRC1387PRX0B01001TUMD05000","CRC1473LMX0B02002TUMD03000","CRC1473NMH0000000000D05000","CRC1473PRX0B01001TUMD03000","CRC1486LMX0B02002TUMD03000","CRC1486NLH0000000000D05000","CRC1486PRX0A01001TUMD03000","CRC1599LMX0A02001TUMD03000","CRC1599NLH0000000000D03000","CRC1599PRX0A02002TUMD03000","CRC1624LMX0B02001TUMD03000","CRC1624NLH0000000000D03000","CRC1624PRX0B02001TUMD03000","CRC1673LMX0B02004TUMD03000","CRC1673NMH0000000000D03000","CRC1673PRX0B02001TUMD03000","CRC1824LMX0A02001TUMD03000","CRC1824NMH0000000000D05000","CRC1824PRX0A02003TUMD03000","CRC2790LMX0A02001TUMD03000","CRC2790NLH0000000000D03000","CRC2790PRX0A02001TUMD03000"]
+
+#CRC0498PRX0A01001TUMD08000V2 e CRC1599LMX0A02001TUMD03000V2
+# CRC2790NLH
+SAMPLES_ORIG=[x + "V2" for x in SAMPLES_ORIG]
+rule checklen:
+    run:
+        print(len(SAMPLES_ORIG))
+SAMPLES=SAMPLES_ORIG
+
+# https://eu.idtdna.com/pages/products/next-generation-sequencing/workflow/xgen-ngs-hybridization-capture/pre-designed-hyb-cap-panels/exome-hyb-panel-v2#resources
+EXONS=DATA+'/xgen-exome-hyb-panel-v2-targets-hg38.bed'
+SEXONS=DATA+'/xgen-exome-hyb-panel-v2-targets-hg38.sorted.bed'
+PADDING=100
+
+#REF=""
+#SAMPLESD=[]
+#SAMPS=",".join(SAMPLESD)
+
+
+def find_normal():
+    import re
+    all_h=[]
+    all_x=[]
+    for sample in SAMPLES:
+        if re.search('H', sample):
+            all_h.append(sample)
+            all_h.append(sample)
+        elif re.search('X', sample):
+            all_x.append(sample)
+        else:
+            raise Exception('There is a bad sample here! ' + sample)
+    all_h.sort()
+    all_x.sort()
+    if len(all_x) != len(all_h):
+            print(all_x)
+            print(all_h)
+            raise Exception('Not all X have their H!')
+    for i in range(0,len(all_x)):
+        model_x = all_x[i][0:7]
+        model_h = all_h[i][0:7]
+        if model_x != model_h:
+            raise Exception('Your logic is flawed, llama!')
+    return(all_h, all_x)            
+
+NORMAL_TUMOR_PAIRS=find_normal()
+
+NORMAL=NORMAL_TUMOR_PAIRS[0]
+TUMOR=NORMAL_TUMOR_PAIRS[1]
+
+#XENOMED_SAMPLES=SAMPLES
+XENOMED_SAMPLES=TUMOR
+TRIMMED_SAMPLES=[]
+
+FASTQ_SUFFIX="_{pair}.fastq.gz"
+FASTQ_PRE="."
+FASTQ_POST=".fastq.gz"
+FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
+
+PAIRS=['SA_L001_R1_001','SA_L001_R2_001']
+PAIRS_XENOME=['1','2']
+XENOME_PREFIX='/mnt/trcanmed/snaketree/task/sequences/sequences/dataset/gdc/xenomidx'
+XENOME_TOOL='/mnt/trcanmed/snaketree/prj/snakegatk/local/src/gossamer/build/src/xenome'
+XENOME_WAIT=25200 #28800 # 6h for one, giving 2h bonus
+
+CORES=12
+CORESMD=2
+# TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
+PATTERNED=2500 
+# HiSeq4000, otherwise 100 for unpatterned
+#–o recal.bam
+
+AFPARAM=""
+#AFPARAM="--default-af 0"
+# https://gatkforums.broadinstitute.org/gatk/discussion/24633/mutect2-4-1-4-0-stats-file-with-a-negative-number#latest
+# use --default-af 0 to avoid 0.5 AF calls filtering 
+
+wildcard_constraints:
+    sample="[a-zA-Z0-9]+"
+
+
+CALLABLE="5:10,10:50,50:100,100:150,150:inf"
+CALLABLE_STRICT="50:100,100:150,150:inf"
+
+PLOIDY='plh'
+PURITY='plh'
+
+#PICARD="picard -Xmx10g -XX:ParallelGCThreads={params.cores}"
+PICARD="export JAVA_OPTIONS='-Xmx10g -XX:ParallelGCThreads=12' && picard-tools"
+
+SIZE=34 # WES agilent sureselect
+ASSAY="WES" #   "TARGETED"
+
+GCFILE=GNOMAD_TASK_DIR+'/sequenza_gc_w50.wig.gz'
+GENES="genes.tsv"
+NAME="Pri_Mets"
+
+rule all_markedDup:
+    input: expand("align/markedDup_{sample}.sorted.bam", sample=SAMPLES)
+
+rule xls_qc:
+    input:  "all_metrics"
+    output: "qc.xlsx"
+    shell:
+        """
+            echo -e "sample\\tPF_UQ_READS_ALIGNED\\tMEAN_TARGET_COVERAGE" > {output}.tmp1
+            cut -f 11,23,58 {input} | sed 1d | bawk '{{print $3,$1,$2}}' | sed 's/align\///1; s/\.hsmetrics//1' >> {output}.tmp1
+            tsv_to_xls -i {output}.tmp1 -s WES -o {output}
+            rm {output}.tmp*
+        """
+        
+
+def get_ppos(wildcards):
+    if re.match(r'.*LMX.*', wildcards.sample):
+        return 9
+    else:
+        return 10
+
+rule all_deDup_flagstat:
+    input: expand("align/deDup_{sample}.sorted.bam.flagstat", sample=SAMPLES)
+
+rule all_murine:
+    input: expand("xenome/{sample}.murine", sample=TUMOR)
+
+#BESTBET=['CRC0053LMX0A02204TUMD07000V2', 'CRC1331LMX0A02005TUMD03000V2', 'CRC1473LMX0B02002TUMD03000V2', 'CRC0053PRX0A01201TUMD05000V2', 'CRC1331PRX0A01001TUMD05000V2', 'CRC1473PRX0B01001TUMD03000V2', 'CRC0065LMX0B02205TUMD02000V2','CRC1387LMX0A02001TUMD03000V2' , 'CRC1599LMX0A02001TUMD03000V2' ,'CRC0065PRX0A01201TUMD03000V2', 'CRC1387PRX0B01001TUMD05000V2', 'CRC1599PRX0A02002TUMD03000V2']
+BESTBET=["CRC0053LMX0A02204TUMD07000V2","CRC0053PRX0A01201TUMD05000V2","CRC0065LMX0B02205TUMD02000V2","CRC0065PRX0A01201TUMD03000V2","CRC0071LMX0A02204TUMD09000V2","CRC0071PRX0A01201TUMD06000V2","CRC0094LMX0A02201TUMD05000V2","CRC0094PRX0A01201TUMD06000V2","CRC0333LMX0A02204TUMD07000V2","CRC0333PRX0A01201TUMD07000V2","CRC0440LMX0A02001TUMD08000V2","CRC0440PRX0A01001TUMD12000V2","CRC0449LMX0A01001TUMD08000V2","CRC0449PRX0A01001TUMD11000V2","CRC0468LMX0B02004TUMD07000V2","CRC0468PRX0B01001TUMD08000V2","CRC0481LMX0A02001TUMD08000V2","CRC0481PRX0A01001TUMD08000V2","CRC0549LMX0B02004TUMD10000V2","CRC0549PRX0A02004TUMD08000V2","CRC0740LMX0A02001TUMD08000V2","CRC0740PRX0A02001TUMD08000V2","CRC1063LMX0A01001TUMD07000V2","CRC1063PRX0B02001TUMD08000V2","CRC1144LMX0A01001TUMD08000V2","CRC1144PRX0B02002TUMD08000V2","CRC1169LMX0A02001TUMD08000V2","CRC1169PRX0A01001TUMD08000V2","CRC1182LMX0A01001TUMD08000V2","CRC1182PRX0A01001TUMD08000V2","CRC1240PRX0B01001TUMD08000V2","CRC1251LMX0A02001TUMD08000V2","CRC1251PRX0A01001TUMD08000V2","CRC1331LMX0A02005TUMD03000V2","CRC1331PRX0A01001TUMD05000V2","CRC1387LMX0A02001TUMD03000V2","CRC1387PRX0B01001TUMD05000V2","CRC1473LMX0B02002TUMD03000V2","CRC1473PRX0B01001TUMD03000V2","CRC1486LMX0B02002TUMD03000V2","CRC1486PRX0A01001TUMD03000V2","CRC1599LMX0A02001TUMD03000V2","CRC1599PRX0A02002TUMD03000V2","CRC1624LMX0B02001TUMD03000V2","CRC1624PRX0B02001TUMD03000V2","CRC1673LMX0B02004TUMD03000V2","CRC1673PRX0B02001TUMD03000V2","CRC1824LMX0A02001TUMD03000V2","CRC1824PRX0A02003TUMD03000V2","CRC2790LMX0A02001TUMD03000V2","CRC2790PRX0A02001TUMD03000V2"] 
+
+rule bet:
+    input: expand('{sample}.fit.{{low}}_{{high}}.r2', sample=TUMOR)
+    output: 'bestbet_{low,\d+.\d+}_{high}.tsv'
+    shell: 
+        """
+            head -n1 {input[0]} > {output}
+            grep -v intercept {input} | sort -k1,1 >> {output}
+        """
+
+rule bet_summary:
+    input: fit_r2_slope='bestbet_{low}_{high}.tsv'
+    output: r2_plot='r2_{low,\d+.\d+}_{high,\d+.\d+}_distr.pdf', delta_plot="r2_{low,\d+.\d+}_{high,\d+.\d+}_delta_plot.pdf"
+    log: log="{low,\d+.\d+}_{high,\d+.\d+}.log"
+    params: r2_thr=0.9, subl_thr=10
+    script: SRC_DIR+'/fit_r2_plots.R'
+
+rule neutral_sottoriva_bin:
+    input: afmatrix="mutect_paired/{sample}.pass.table.gz"
+    params: debug="no", afcolumn="{sample}"
+    output: fit="{sample}.binfit.{loweraf}_{higheraf}.pdf", r2="{sample}.binfit.{loweraf}_{higheraf}.r2"
+    script: SRC_DIR+"/neutral_sottoriva_bin.R"
+
+rule bet_bin:
+    input: expand('{sample}.binfit.{{low}}_{{high}}.r2', sample=TUMOR)
+    output: 'bestbet_bin_{low}_{high}.tsv'
+    shell: 
+        """
+            head -n1 {input[0]} > {output}
+            grep -v intercept {input} | sort -k1,1 >> {output}
+        """
+
+GENES="genes.tsv"
+NAME="PriMets"
+rule g:
+    output: "genes.tsv"
+    params: wes=EXONS
+    shell: "echo {params.wes} > {output}"
+
+
+
+### 
+rule subclonal_common:
+    input: pri="mutect_paired/{sample_pri}.pass.tsv.gz", met="mutect_paired/{sample_met}.pass.tsv.gz"
+    output: "venns/{sample_pri}_{sample_met}_subcl_{loweraf}_{higheraf}.tsv"
+    shell: 
+        """
+            mkdir -p venns
+            echo ">{wildcards.sample_met}" | bawk '{{print substr($1,0,8)}}' > {output}
+            zcat {input.pri} > {output}.apri.tmp
+            zcat {input.met} > {output}.amet.tmp
+            zcat {input.pri} | bawk '$4 > {wildcards.higheraf}{{print $1}}' > {output}.pri.tmp
+            zcat {input.met} | bawk '$4 > {wildcards.higheraf}{{print $1}}' > {output}.met.tmp
+            cat <(echo -en "all\\t") <(cat {output}.apri.tmp {output}.amet.tmp | sort | uniq | wc -l) >> {output}
+            cat <(echo -en "cpri\\t") <(cat {output}.pri.tmp | wc -l) >> {output}
+            cat <(echo -en "cmet\\t") <(cat {output}.met.tmp | wc -l) >> {output}
+            cat <(echo -en "cboth\\t") <(cat {output}.met.tmp | filter_1col 1 {output}.pri.tmp | wc -l) >> {output}
+            zcat {input.pri} | bawk '$4 > {wildcards.loweraf} && $4 < {wildcards.higheraf} {{print $1}}' > {output}.pri.tmp
+            zcat {input.met} | bawk '$4 > {wildcards.loweraf} && $4 < {wildcards.higheraf} {{print $1}}' > {output}.met.tmp
+            cat <(echo -en "spri\\t") <(cat {output}.pri.tmp | wc -l) >> {output}
+            cat <(echo -en "smet\\t") <(cat {output}.met.tmp | wc -l) >> {output}
+            cat <(echo -en "sboth\\t") <(cat {output}.met.tmp | filter_1col 1 {output}.pri.tmp | wc -l) >> {output}
+            rm {output}.*.tmp
+        """
+
+rule all_subclonal:
+    input: expand("venns/{sample_pri}_{sample_met}_subcl_{{loweraf}}_{{higheraf}}.tsv", zip, sample_pri=[x for x in TUMOR if re.match(r'.*LMX.*', x)], sample_met=[x for x in TUMOR if re.match(r'.*PRX.*', x)])
+    output: "all_intersection_{loweraf}_{higheraf}.fasta"
+    shell: "cat {input} > {output}"
+
+
+rule all_phyper:
+    input: fastamuts="all_intersection_{loweraf}_{higheraf}.fasta"
+    output: phyper="phyper_{loweraf}_{higheraf}.tsv"
+    script: SRC_DIR+'/phyper_common_pri_met.R'    
+
+
+rule all_phyper_thrs:
+    input: expand("phyper_{loweraf}_{higheraf}.tsv", loweraf=[0.05, 0.1, 0.12, 0.15], higheraf=[0.05, 0.1, 0.15, 0.2, 0.24, 0.3, 0.5])
+
+
+#from itertools import product
+#def my_order(combinator):
+#    def all_ordered(*args, **kwargs): #loweraf, higheraf):
+        #for laf in args[0]:
+        #    for haf in args[1]:
+#        for tu in combinator(*args, **kwargs):
+            #if haf > laf:
+#            if tu[0] < tu[1]:
+#                yield tu
+#    return all_ordered
+
+#my_order_boh = my_order(product)
+def my_expand(wildcards):
+    exp = expand("bestbet_{loweraf}_{higheraf}.tsv", loweraf=[0.05, 0.1, 0.12, 0.15], higheraf=[0.05, 0.1, 0.15, 0.2, 0.24, 0.3, 0.5])
+    res = []
+    import re
+    for e in exp:
+        sl = e.split('_')
+        laf = float(sl[1])
+        haf_tsv = sl[2]
+        haf = float(re.sub('\.tsv$', '', haf_tsv))
+        if laf < haf:
+            res.append(e)
+    return res
+
+rule all_bet:
+    input: my_expand
+    output: "all_bets.tsv"
+    shell: 
+        """ 
+            head -n1 {input[0]} > {output}
+            cat {input} | grep -v -w slope >> {output}
+        """  
+
+CALLABLEBED=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.bed.gz'
+rule intersect_cnv:
+    input: sequenza="sequenza/{sample}/{sample}_segments.txt", callable=CALLABLEBED
+    output: callable="{sample}.callable.bed.gz"
+    shell:
+        """
+            bedtools intersect -b {input.callable} -a <(sed 1d {input.sequenza} | bawk '{{print $1, $2-1, $3, $10}}') | gzip > {output.callable}
+        """
+
+ruleorder: vcf_cninterval_noloh > vcf_cn_noloh
+
+rule vcf_cn_noloh:
+    input: callable="{sample}.callable.bed.gz", vcf='mutect_paired/{sample}.pass.vcf.gz'
+    output: '{sample}_nolohcn{cn}.vcf.gz'
+    shell:
+        """
+            bedtools intersect -header -wa -b <(zcat {input.callable} | bawk '$4=={wildcards.cn} && $6!=0') -a {input.vcf} | bgzip > {output}
+        """
+
+rule vcf_cninterval_noloh:
+    input: callable="{sample}.callable.bed.gz", vcf='mutect_paired/{sample}.pass.vcf.gz'
+    output: '{sample}_nolohcnint{cn1}_{cn2}.vcf.gz'
+    shell:
+        """
+            bedtools intersect -header -wa -b <(zcat {input.callable} | bawk '$4>={wildcards.cn1} && $4<={wildcards.cn2} && $6!=0') -a {input.vcf} | bgzip > {output}
+        """

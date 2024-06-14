@@ -73,6 +73,10 @@ PATTERNED=2500
 # HiSeq4000, otherwise 100 for unpatterned
 #–o recal.bam
 
+XENOME_PREFIX=""
+XENOME_TOOL=''
+XENOME_WAIT=0
+PICARD=''
 
 ### TODO REMOVE ME FOR BULK!
 #AFPARAM="--default-af 0"

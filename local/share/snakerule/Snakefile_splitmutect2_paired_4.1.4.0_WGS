@@ -123,14 +123,21 @@ rule passFilter:
         tabix {output};
         """ 
 
+
+def get_pos(wildcards):
+    if get_ppos is None:
+        return 9
+    else:
+        return get_ppos(wildcards)
+
 rule single_table:
     input: vcf=MUTECT_DIR+"/{sample}.pass.vcf.gz"
     output: MUTECT_DIR+"/{sample}.pass.table.gz"
     docker: ALIGN_ODOCKER
-    params: nsamples=1
+    params: nsamples=1, pos=get_pos
     shell:
         """
-      zcat {input} | grep -v "^##" |  perl -ane '@gt=splice(@F,9,{params.nsamples}); $gt=""; foreach $g (@gt) {{ if ($.==1) {{$gt.=$g."\\t";}} else {{ @afs = split(":",$g); if ($afs[2] eq ".") {{$afs[2]=0;}} $gt.=$afs[2]."\\t";}} }} chop($gt) ; print $F[2]."\\t".$gt."\\n";' | grep -v "," | gzip > {output}
+      zcat {input} | grep -v "^##" |  perl -ane '@gt=splice(@F,{params.pos},{params.nsamples}); $gt=""; foreach $g (@gt) {{ if ($.==1) {{$gt.=$g."\\t";}} else {{ @afs = split(":",$g); if ($afs[2] eq ".") {{$afs[2]=0;}} $gt.=$afs[2]."\\t";}} }} chop($gt) ; print $F[2]."\\t".$gt."\\n";' | grep -v "," | gzip > {output}
         """
 
 rule neutral_sottoriva:
@@ -140,15 +147,26 @@ rule neutral_sottoriva:
     output: hist="{sample}.hist.{loweraf}_{higheraf}.pdf", fit="{sample}.fit.{loweraf}_{higheraf}.pdf", r2="{sample}.fit.{loweraf}_{higheraf}.r2"
     script: SRC_DIR+"/neutral_sottoriva.R"
 
+rule merge_targeted:
+    input: vcf=expand(MUTECT_DIR+"/{sample}.pass.vcf.gz", sample=TUMOR), bed=CALLABLE_BED
+    output: MUTECT_DIR+"/merged_targeted.vcf"
+    shell:
+        """
+            bcftools merge --missing-to-ref -m none -o {output}.vcf.tmp {input.vcf}
+            bedtools intersect -header -u -a {output}.vcf.tmp -b {input.bed} > {output}
+            rm {output}.*.tmp
+        """
+
+#vep -i {output.vcf}  --cache --dir_cache {params.cd} --output_file {output.txt} --stats_file {output.html} --pick
+#output: txt=MUTECT_DIR+"/merged.vep.txt", html=MUTECT_DIR+"/merged.vep.stats.html", 
 rule VEP:
     input: MUTECT_DIR+"/merged_targeted.vcf"
-    output: txt=MUTECT_DIR+"/merged.vep.txt", html=MUTECT_DIR+"/merged.vep.stats.html", vcf=MUTECT_DIR+"/merged.vcf.id"
+    output: vcf=MUTECT_DIR+"/merged.vcf.id"
     params: cd=VEP_CACHE_DIR
     docker: ALIGN_ODOCKER
     shell:
         """
              bcftools annotate -I +'%CHROM:%POS:%REF:%ALT' {input} > {output.vcf}
-             vep -i {output.vcf}  --cache --dir_cache {params.cd} --output_file {output.txt} --stats_file {output.html} --pick
         """
 
 rule vcf_to_aftable:
@@ -184,3 +202,27 @@ rule annovar:
         rm {output}.tmp
         mv merged.hg38_multianno.txt {output}
         """
+
+rule size:
+    input: CALLABLE_BED
+    output: "sequenced_size.txt"
+    shell:
+        """
+            zcat {input} | bawk 'BEGIN{{t=0}} {{t=t+($3-$2)}} END {{print t}}' > {output}
+        """
+
+rule mut_burden:
+    input: tsize="sequenced_size.txt", muts=MUTECT_DIR+"/merged.table_nomultiallele"
+    output: MUTECT_DIR+"/mut_burden.tsv"
+    run:
+        import pandas as pd
+        import numpy as np
+        data = pd.read_csv(input.muts, sep="\t", index_col=0)
+        tot = np.count_nonzero(data > 0.1, axis=0)
+        target_len = 0
+        with open(input.tsize, 'r') as tsize:
+            line = tsize.readline()
+            target_len = float(line.rstrip())
+        target_len = target_len / 1000000
+        res = pd.DataFrame(data = {'totmut': tot, 'burden': tot/target_len}, index=data.columns)
+        res.to_csv(output[0], sep="\t", index=True)

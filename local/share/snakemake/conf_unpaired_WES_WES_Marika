@@ -18,7 +18,7 @@ BIN_DIR=PRJ_ROOT+'/local/bin'
 FQ_REMOVED=False
 DEBUG="yes"
 TYPE="WES"
-PAIRED=False
+PAIRED=False #?????
 SUBSAMPLE=1 # if == 1 do not downsample (downsampling is done right after alignment and dup removal, not before calling, to also recalibrate on less data).
 
 # Needed references and annotations
@@ -30,11 +30,12 @@ ANNOVAR=ROOT+"/task/variant_annotations/dataset/annovar/hg38/humandb/"
 PON=""
 DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
 INTERVAL=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.interval_list'
-GCFILE=GNOMAD_TASK_DIR+'sequenza_gc_w200.wig.gz'
+GCFILE=GNOMAD_TASK_DIR+'sequenza_gc_w50.wig.gz'
 CALLABLE_BED=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.bed.gz'
 # Singularity containers and occam docker images
 GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
-GATK_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/gatk_fixedov:1"
+#GATK_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/gatk_fixedov:1"
+GATK_ODOCKER="broadinstitute/gatk:4.2.5.0"
 XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
 ALIGN_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/align_recalibrate:1"
 SEQUENZA_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/sequenza:1"
@@ -151,4 +152,15 @@ rule all_recalibrate:
 #picard 2.18.25 (godot & ulisse, picard-tools)
 #fastqc 0.11.8 (godot, & ulisse)
 #multiqc 1.8 (godot rnabioinfotree conda env)
+
+#SIZE=0.4 # biobanca targeted
+SIZE=34 # WES agilent sureselect
+ASSAY="WES" #   "TARGETED"
+
+GENES="genes.tsv"
+NAME="WES_MARIKA"
+
+rule g:
+    output: "genes.tsv"
+    shell: "echo WES > {output}"
 
