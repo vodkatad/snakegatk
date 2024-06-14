@@ -40,16 +40,16 @@ ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
 SEQUENZA_ODOCKER="egrassi/occamsnakes/sequenza:1"
 VARSCAN_ODOCKER="egrassi/occamsnakes/varscan:1"
 PLATYPUS_ODOCKER="egrassi/occamsnakes/platypus:1"
-PLH_DOCKER="bubusettete"
+PLH_DOCKEr="bubusettete"
 
 
-## This dataset:
-DATA=PRJ_ROOT+"/local/share/data/WGS_cleverers_treats_LD150"
+## this dataset:
+DATA=PRJ_ROOT+"/local/share/data/wgs_cleverers_treats_ld150"
 FQ_XENOME_DIR="xenome"
 XENOME_PREFIX=""
 XENOME_TOOL=""
 XENOME_WAIT=""
-PICARD=""
+PICARD='picard -Xmx10g -XX:ParallelGCThreads='
 
 #data@rotpunkt:~/work/snakegatk$ python3 local/src/tsv_to_json_metadata.py -i ~/Dropbox/work/evol/MA/second_shipment/samples/ss_282.txt -j /tmp/p
 

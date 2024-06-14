@@ -49,7 +49,7 @@ FQ_XENOME_DIR="xenome"
 XENOME_PREFIX=""
 XENOME_TOOL=""
 XENOME_WAIT=""
-PICARD=""
+PICARD='picard -Xmx10g -XX:ParallelGCThreads='
 
 #data@rotpunkt:~/work/snakegatk$ python3 local/src/tsv_to_json_metadata.py -i ~/Dropbox/work/evol/MA/second_shipment/samples/ss_282.txt -j /tmp/p
 
@@ -72,7 +72,7 @@ FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
 
 PAIRS=['R1_001','R2_001']
 PAIRS_XENOME=['1','2']
-CORES=4
+CORES=24
 CORESMD=4
 # TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
 PATTERNED=2500 
