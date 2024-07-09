@@ -70,7 +70,7 @@ TRIMMED_SAMPLES=[]
 XENOME_PREFIX=''
 XENOME_TOOL=''
 XENOME_WAIT=0
-PICARD=""
+PICARD="picard -Xmx10g -XX:ParallelGCThreads=4"
 
 #data@rotpunkt:~/work/snakegatk/local/src$ ./tsv_to_json_metadata.py -i ~/Dropbox/work/evol/MA/second_shipment/samples/ss_282.txt -j /tmp/test
 
@@ -79,7 +79,7 @@ FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
 
 PAIRS=['R1','R2']
 PAIRS_XENOME=['1','2']
-CORES=24
+CORES=12
 CORESMD=4
 # TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
 PATTERNED=2500 
@@ -88,7 +88,8 @@ PATTERNED=2500
 
 
 ### TODO REMOVE ME FOR BULK!
-AFPARAM="--default-af 0"
+#AFPARAM="--default-af 0"
+AFPARAM=""
 # https://gatkforums.broadinstitute.org/gatk/discussion/24633/mutect2-4-1-4-0-stats-file-with-a-negative-number#latest
 # use --default-af 0 to avoid 0.5 AF calls filtering 
 
