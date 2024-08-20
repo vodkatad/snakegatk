@@ -153,6 +153,8 @@ SIZE=34 # WES agilent sureselect
 ASSAY="WES" #   "TARGETED"
 
 GCFILE=GNOMAD_TASK_DIR+'/sequenza_gc_w50.wig.gz'
+SAINT_THOMAS="yes"
+
 GENES="genes.tsv"
 NAME="early_late_biobanca_xeno"
 
@@ -222,3 +224,5 @@ rule annotatr:
     script: SRC_DIR+"/annotatr.R"
 
 
+######### MSI-SENSOR MARCO ##########
+MSISENSOR_DOCKER="pengjia1110/msisensor-pro"
