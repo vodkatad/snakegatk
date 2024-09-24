@@ -111,4 +111,6 @@ PURITY=1
 rule all_callable_covered:
     input: expand("depth/callable_{depth}.covered.bed.gz", sample=TUMOR, depth=['10x','20x','30x','40x','50x', '60x', '70x', '80x', '90x', '100x','150x','200x'])
 
+SIZE=34 # the default for PCGR
+ASSAY="WGS" #   "TARGETED"
 

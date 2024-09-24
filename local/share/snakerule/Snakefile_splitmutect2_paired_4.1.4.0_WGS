@@ -214,7 +214,7 @@ rule mut_burden:
 rule all_pcgr:
     input: expand(MUTECT_DIR+"/{sample}.pcgr_acmg.grch38.snvs_indels.tiers.tsv", sample=TUMOR)
 
-PCGR='/mnt/trcanmed/snaketree/prj/snakegatk/local/src/pcgr/'
+PCGR='/mnt/cold1/snaketree/prj/snakegatk_real/local/src/pcgr/'
 rule pcgr:
     input: MUTECT_DIR+"/{sample}.pass.vcf.gz"
     output: MUTECT_DIR+"/{sample}.pcgr_acmg.grch38.snvs_indels.tiers.tsv"

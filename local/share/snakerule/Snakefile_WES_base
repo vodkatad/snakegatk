@@ -286,7 +286,7 @@ rule all_msi:
 rule sensord:
     input: normal=find_matched_normal_rel_path, tumor="align/realigned_{sample}.sorted.bam"
     params: gnomad=GNOMAD_TASK_DIR
-    docker: MSISENSOR_DOCKER
+    #docker: MSISENSOR_DOCKER
     output: "msipro/msipro_{sample}.txt"
     shell:
         """
@@ -307,8 +307,8 @@ rule consis:
         """
 
 
-rule all_sequenza_to_BED_depth_ratio:
-    input:expand('loh/bed_depth/{sample}.bed',sample=TUMOR)
+#rule all_sequenza_to_BED_depth_ratio:
+#    input:expand('loh/bed_depth/{sample}.bed',sample=TUMOR)
 
 
 if SAINT_THOMAS == "yes": 

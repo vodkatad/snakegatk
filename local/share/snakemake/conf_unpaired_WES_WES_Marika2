@@ -15,7 +15,7 @@ TMP="/tmp"
 
 SRC_DIR=PRJ_ROOT+'/local/src'
 BIN_DIR=PRJ_ROOT+'/local/bin'
-FQ_REMOVED=False
+FQ_REMOVED=True
 DEBUG="yes"
 TYPE="WES"
 PAIRED=False

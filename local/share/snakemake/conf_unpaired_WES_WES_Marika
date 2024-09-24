@@ -192,8 +192,8 @@ rule opty:
 		"""
 			docker run -v {params.dir}/:/data/ -t fred2/optitype -i {params.fq} -d -o /data/opti
 			cp {params.dir}/opti/*/*result.tsv {output.res}
-			cp {params.dir}/opti/*/*coverage_plot.tsv {output.plot}
-			rm -rf {params.dir}/data/opti
+			cp {params.dir}/opti/*/*coverage_plot.pdf {output.plot}
+			rm -rf {params.dir}/opti
 		"""
 
 rule all_opty: 
