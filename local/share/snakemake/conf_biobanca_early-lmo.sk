@@ -156,8 +156,8 @@ GCFILE = GNOMAD_TASK_DIR+'/sequenza_gc_w50.wig.gz'
 SAINT_THOMAS="yes"
 
 rule mut_burden_tot:
-    input: tsize="targeted_size.txt", muts="mutect_paired/merged.table_nomultiallele"
-    output: "mutect_paired/tot_mut_burden.tsv"
+    input: tsize="targeted_size.txt", muts="mutect_paired_st/merged.table_nomultiallele"
+    output: "mutect_paired_st/tot_mut_burden.tsv"
     run:
         import pandas as pd
         import numpy as np

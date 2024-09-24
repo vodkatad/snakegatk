@@ -102,3 +102,106 @@ rule single_table:
             zcat {input} | grep -v "^##" |  perl -ane '@gt=splice(@F,9,{params.nsamples}); $gt=""; foreach $g (@gt) {{ if ($.==1) {{$gt.=$g."\\t";}} else {{ @afs = split(":",$g); if ($afs[2] eq ".") {{$afs[2]=0;}} $gt.=$afs[2]."\\t";}} }} chop($gt) ; print $F[2]."\\t".$gt."\\n";' | grep -v "," | gzip > {output}
         """
 
+
+rule merge_targeted:
+    input: vcf=expand(MUTECT_DIR+"/{sample}.pass.vcf.gz", sample=SAMPLES), bed=SEXONS
+    output: MUTECT_DIR+"/merged_targeted.vcf"
+    shell:
+        """
+            bcftools merge --missing-to-ref -m none -o {output}.vcf.tmp {input.vcf}
+            bedtools intersect -header -u -a {output}.vcf.tmp -b {input.bed} > {output}
+            rm {output}.*.tmp
+        """
+
+
+# Removed cause we no longer use VEP
+#output: txt=MUTECT_DIR+"/merged.vep.txt", html=MUTECT_DIR+"/merged.vep.stats.html"
+#vep -i {output.vcf}  --cache --dir_cache {params.cd} --output_file {output.txt} --stats_file {output.html} --pick
+rule VEP:
+    input: MUTECT_DIR+"/merged_targeted.vcf"
+    output: vcf=MUTECT_DIR+"/merged.vcf.id"
+    params: cd=VEP_CACHE_DIR
+    shell:
+        """
+             bcftools annotate -I +'%CHROM:%POS:%REF:%ALT' {input} > {output.vcf}
+        """
+
+rule vcf_to_aftable:
+    input: MUTECT_DIR+"/merged.vcf.id"
+    output: table=MUTECT_DIR+"/merged.table_nomultiallele"
+    params: nsamples=len(SAMPLES)
+    shell:
+        """
+             cat {input} | grep -v "^##" |  perl -ane '@gt=splice(@F,9,{params.nsamples}); $gt=""; foreach $g (@gt) {{ if ($.==1) {{$gt.=$g."\\t";}} else {{ @afs = split(":",$g); if ($afs[2] eq ".") {{$afs[2]=0;}} $gt.=$afs[2]."\\t";}} }} chop($gt) ; print $F[2]."\\t".$gt."\\n";' | grep -v "," > {output.table}
+        """
+
+### annovar
+rule merged_bed:
+    input: MUTECT_DIR+"/merged.table_nomultiallele"
+    output: MUTECT_DIR+"/merged.bed"
+    shell:
+        """
+            sed 1d {input} | tr ":" "\\t" | bawk '{{print $1,$2-1,$2,$3"-"$4}}' > {output}
+        """
+
+rule annovar:
+    input: MUTECT_DIR+"/merged.bed", ANNOVAR
+    output: MUTECT_DIR+"/merged.hg38_multianno.txt"
+    log: MUTECT_DIR+"/merged.hg38_multianno.log"
+    params: ver="hg38"
+    shell:
+        """
+        sed 's/chr//1;' < {input[0]} | tr "-" "\\t" | bawk '{{if($5=="") {{$5="-"}} if ($4==""){{$4="-"}} b=$2+1; e=b+length($4)-1; print $1,b,e,$4,$5,$6}}' > {output}.tmp
+        table_annovar.pl {output}.tmp {input[1]} --otherinfo -buildver {params.ver} -out merged -remove -protocol refGene,avsnp150,cosmic87_coding,nci60,dbnsfp35c,clinvar_20180603 -operation g,f,f,f,f,f -nastring . -polish &> {log}
+        rm {output}.tmp
+        mv merged.hg38_multianno.txt {output}
+        """
+
+## PCGR
+# TODO move to conf.sk
+rule all_pcgr:
+    input: expand(MUTECT_DIR+"/{sample}.pcgr_acmg.grch38.snvs_indels.tiers.tsv", sample=SAMPLES)
+
+PCGR='/mnt/trcanmed/snaketree/prj/snakegatk/local/src/pcgr/'
+rule pcgr:
+    input: MUTECT_DIR+"/{sample}.pass.vcf.gz"
+    output: MUTECT_DIR+"/{sample}.pcgr_acmg.grch38.snvs_indels.tiers.tsv"
+    params: pcgr=PCGR, size=SIZE, assay=ASSAY, mdir=MUTECT_DIR
+    shell:
+        """
+            python3 {params.pcgr}/pcgr.py --pcgr_dir {params.pcgr} \
+            --output_dir {params.mdir} \
+            --sample_id {wildcards.sample} \
+            --genome_assembly grch38 \
+            --conf {params.pcgr}/examples/example_COAD.toml \
+            --input_vcf {input} \
+            --tumor_site 9 \
+            --tumor_purity 1 \
+            --include_trials \
+            --assay {params.assay} \
+            --estimate_msi_status \
+            --estimate_tmb \
+            --tumor_only \
+            --no_vcf_validate \
+            --target_size_mb {params.size}
+        """
+
+rule pcgr_tiers_af:
+    input: MUTECT_DIR+'/merged.table_nomultiallele'
+    output: af=MUTECT_DIR+'/merged.table_nomultiallele_wtiers', genes=MUTECT_DIR+'/merged.table_nomultiallele_wtiers_annot', long_muts=MUTECT_DIR+'/merged_longformat_wtiers.tsv'
+    params: mdir=MUTECT_DIR, tool=BIN_DIR+'/AFmatrix_filter_pcgr', tiers='TIER 1,TIER 2,TIER 3'
+    log: MUTECT_DIR+'/merged.table_nomultiallele_wtiers.log'
+    shell:
+        """
+            {params.tool} -m {input} -o {output.af} -g {output.genes} -w "{params.tiers}" -l {output.long_muts} &> {log}
+        """
+
+rule pcgr_tiers_af_all:
+    input: MUTECT_DIR+'/merged.table_nomultiallele'
+    output: af=MUTECT_DIR+'/merged.table_nomultiallele_alltiers', genes=MUTECT_DIR+'/merged.table_nomultiallele_alltiers_annot', long_muts=MUTECT_DIR+'/merged_longformat_alltiers.tsv'
+    params: mdir=MUTECT_DIR, tool=BIN_DIR+'/AFmatrix_filter_pcgr', tiers='TIER 1,TIER 2,TIER 3,TIER 4'
+    log: MUTECT_DIR+'/merged.table_nomultiallele_alltiers.log'
+    shell:
+        """
+            {params.tool} -m {input} -o {output.af} -g {output.genes} -w "{params.tiers}" -l {output.long_muts} &> {log}
+        """

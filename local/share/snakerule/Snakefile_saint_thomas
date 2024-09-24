@@ -106,7 +106,7 @@ rule all_pcgr_st:
 
 PCGR='/mnt/trcanmed/snaketree/prj/snakegatk/local/src/pcgr/'
 rule pcgr_st:
-    input: MUTECT_DIR+"/{sample}.pass.vcf.gz"
+    input: MUTECT_DIR+"/{sample}.OK.vcf.gz"
     output: MUTECT_DIR+"/{sample}.pcgr_acmg.grch38.snvs_indels.tiers.tsv"
     params: pcgr=PCGR, size=SIZE, assay=ASSAY, mdir=MUTECT_DIR
     shell:
@@ -123,7 +123,6 @@ rule pcgr_st:
             --assay {params.assay} \
             --estimate_msi_status \
             --estimate_tmb \
-            --tumor_only \
             --no_vcf_validate \
             --target_size_mb {params.size}
         """
@@ -151,7 +150,7 @@ rule pcgr_tiers_af_all_st:
 # For WGS we set SEXONS to all the mappable regions to begin with. Will need more specific rules to compute coverage on regions with at least X coverage (and keep only muts on exons for WES)
 rule size_st:
     input: SEXONS
-    output: "targeted_size.txt"
+    output: "st_targeted_size.txt"
     shell:
         """
             bawk 'BEGIN{{t=0}} {{t=t+($3-$2)}} END {{print t}}' {input} > {output}

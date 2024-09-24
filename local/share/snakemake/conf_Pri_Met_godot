@@ -208,14 +208,14 @@ rule bet_bin:
             grep -v intercept {input} | sort -k1,1 >> {output}
         """
 
-ruleorder: sub_bam > bwa_mem
-rule sub_bam:
-    input: "../Pri_Mets_godot/align/{sample}.bam"
-    output: "align/{sample}.bam"
-    shell:
-        """
-            samtools view -s 0.33 -b {input} > {output}
-        """
+#ruleorder: sub_bam > bwa_mem
+#rule sub_bam:
+#    input: "../Pri_Mets_godot/align/{sample}.bam"
+#    output: "align/{sample}.bam"
+#    shell:
+#        """
+#            samtools view -s 0.33 -b {input} > {output}
+#        """
 
 SUBS=["CRC0065PRX0A01201TUMD03000V2", "CRC1169PRX0A01001TUMD08000V2", "CRC1473PRX0B01001TUMD03000V2", "CRC1599PRX0A02002TUMD03000V2", "CRC0065LMX0B02205TUMD02000V2", "CRC1169LMX0A02001TUMD08000V2",  "CRC1473LMX0B02002TUMD03000V2", "CRC1599LMX0A02001TUMD03000V2"]
 rule allsubset:

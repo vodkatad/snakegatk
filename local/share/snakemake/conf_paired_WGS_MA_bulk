@@ -1,5 +1,5 @@
 import os
-ROOT=os.environ.get('BIOINFO_ROOT')
+ROOT=os.environ.get('SNAKE_ROOT')
 def find_prj_root(path=os.getcwd()):
     if os.path.isfile(os.path.join(path,".PRJ_ROOT")):
         return path
@@ -11,7 +11,7 @@ def find_prj_root(path=os.getcwd()):
 
 
 PRJ_ROOT=find_prj_root()
-TMP="/scratch/home/egrassi/"
+TMP="/scratch/trcanmed/tmp"
 
 SRC_DIR=PRJ_ROOT+'/local/src'
 BIN_DIR=PRJ_ROOT+'/local/bin'
@@ -44,18 +44,16 @@ PLH_DOCKER="bubusettete"
 
 
 ## This dataset:
-DATA=PRJ_ROOT+"/local/share/data/second_shipment"
+DATA=PRJ_ROOT+"/local/share/data/placeholder"
 FQ_XENOME_DIR="xenome"
-XENOME_PREFIX=''
-XENOME_TOOL=''
-XENOME_WAIT=0
-PICARD=""
 
-#data@rotpunkt:~/work/snakegatk/local/src$ ./tsv_to_json_metadata.py -i ~/Dropbox/work/evol/MA/second_shipment/samples/ss_282.txt -j /tmp/test
-SAMPLES_ORIG=['1740D-109-02_S30_L003','PRJ0003S66_SA_L001','PRJ0003S63_SA_L001']
-SAMPLES=['CRC1502','CRC1502-03-1-A','CRC1502-03-0']
-NORMAL=["CRC1502"]*(len(SAMPLES)-1)
-TUMOR=SAMPLES[1:]
+SAMPLES_ORIG=['', '', '', '', '','', '', '']
+SAMPLES=["CRC0282LMO-0-B","CRC0327LMO-0-B","CRC0441LMO-0-B","CRC1078LMO-0-B","CRC1307LMO","CRC1502LMO-0-B","CRC1599LMO-0-B","CRC1599PRO-0-B"]
+
+
+TUMOR=SAMPLES
+NORMAL=[SAMPLES[0]]*len(TUMOR)
+
 
 #REF=""
 #SAMPLESD=[]
@@ -64,6 +62,10 @@ TUMOR=SAMPLES[1:]
 XENOMED_SAMPLES=[]
 TRIMMED_SAMPLES=[]
 
+FQ_XENOME_DIR="xenome"
+XENOME_PREFIX=""
+XENOME_TOOL=""
+XENOME_WAIT=""
 
 FASTQ_SUFFIX="_{pair}.fastq.gz"
 FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
@@ -77,14 +79,16 @@ PATTERNED=2500
 # HiSeq4000, otherwise 100 for unpatterned
 #–o recal.bam
 
+PICARD="picard -Xmx10g -XX:ParallelGCThreads="
 
 ### TODO REMOVE ME FOR BULK!
-AFPARAM="--default-af 0"
+#AFPARAM="--default-af 0"
+AFPARAM=""
 # https://gatkforums.broadinstitute.org/gatk/discussion/24633/mutect2-4-1-4-0-stats-file-with-a-negative-number#latest
 # use --default-af 0 to avoid 0.5 AF calls filtering 
 
 wildcard_constraints:
-    sample="[a-zA-Z0-9]+-?[0-9]+-?[A-Z0-9]+-?[A-Z0-9]?"
+    sample="[a-zA-Z0-9]+-?[A-Z0-9]+-?[A-Z0-9]+-?[A-Z0-9]+?"
 
 
 CALLABLE="5:10,10:50,50:100,100:150,150:inf"
@@ -102,22 +106,10 @@ else:
 PLOIDY=3
 PURITY=1
 
-rule all_covered:
-    input: expand("depth/{sample}_callable_{depth}.covered.bed.gz", sample=TUMOR, depth=['10x','20x','30x','40x','50x', '60x', '70x', '80x', '90x', '100x','150x','200x'])
+SIZE=3000 # the default for PCGR
+ASSAY="WGS" #   "TARGETED"
 
 
-rule all_sottoriva_bin:
-    input: expand("{sample}.binfit.0.12_0.2.pdf", sample=TUMOR) 
+#/mnt/trcanmed/snaketree/prj/snakegatk/dataset/MA_bulk
 
-rule neutral_sottoriva_bin:
-    input: afmatrix="mutect_paired/{sample}.pass.table.gz"
-    params: debug="yes", afcolumn="{sample}"
-    output: fit="{sample}.binfit.{loweraf}_{higheraf}.pdf", r2="{sample}.binfit.{loweraf}_{higheraf}.r2"
-    script: SRC_DIR+"/neutral_sottoriva_bin.R"
-
-def get_ppos(wildcards):
-    return 10
-
-
-SIZE='wgs'
-ASSAY="WGS"
+#              transpose < {output.table}.tmp | grep -v NLH  | transpose > {output.table} to get rid of matched normals in vcf_to_aftable

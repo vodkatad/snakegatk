@@ -243,7 +243,6 @@ rule pcgr:
             --assay {params.assay} \
             --estimate_msi_status \
             --estimate_tmb \
-            --tumor_only \
             --no_vcf_validate \
             --target_size_mb {params.size}
         """

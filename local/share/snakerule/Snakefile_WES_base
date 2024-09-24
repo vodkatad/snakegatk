@@ -246,7 +246,7 @@ rule good_regions:
     output:cnvg='loh/bed_cnv_good/{sample}.bed'
     shell:
         """
-             bedtools intersect -a <(sed 1d {input.cnv}) -b {input.bad_bed} > {output.cnvg}
+             bedtools intersect -a {input.cnv} -b {input.bad_bed} > {output.cnvg}
 
         """
 rule all_good_regions:
@@ -286,7 +286,6 @@ rule all_msi:
 rule sensord:
     input: normal=find_matched_normal_rel_path, tumor="align/realigned_{sample}.sorted.bam"
     params: gnomad=GNOMAD_TASK_DIR
-    docker: MSISENSOR_DOCKER
     output: "msipro/msipro_{sample}.txt"
     shell:
         """
@@ -305,11 +304,6 @@ rule consis:
         """ 
             {params.tool} -o {input.o} -x {input.x} -r {output.results} 
         """
-
-
-rule all_sequenza_to_BED_depth_ratio:
-    input:expand('loh/bed_depth/{sample}.bed',sample=TUMOR)
-
 
 if SAINT_THOMAS == "yes": 
     include: PRJ_ROOT+"/local/share/snakerule/Snakefile_saint_thomas"
