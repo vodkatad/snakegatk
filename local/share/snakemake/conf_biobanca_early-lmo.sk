@@ -202,3 +202,14 @@ rule fgfr:
 
 ######### MSI-SENSOR MARCO ##########
 MSISENSOR_DOCKER="pengjia1110/msisensor-pro"
+
+### consistency
+rule consis:
+    input: o="samples_st.tsv", x="../biobanca_earlylate_xeno/samples_st.tsv"
+    params: tool=BIN_DIR+"/msisensor_concordancy_check"
+    output: results="msipro/msi_consistency_earlylate_pdo.tsv.tsv"
+    shell:
+        """
+            {params.tool} -o {input.o} -x {input.x} -r {output.results}
+        """
+

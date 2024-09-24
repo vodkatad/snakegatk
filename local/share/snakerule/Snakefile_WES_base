@@ -281,26 +281,6 @@ def find_matched_normal_rel_path(wildcards):
     except:
         raise ValueError("Check you TUMOR and NORMAL in conf.sk, cannot find matched normal for " + wildcards.sample)
 
-rule all_msi:
-    input: expand("msipro/msipro_{sample}.txt", sample=TUMOR)
-
-rule sensord:
-    input: normal=find_matched_normal_rel_path, tumor="align/realigned_{sample}.sorted.bam"
-    params: gnomad=GNOMAD_TASK_DIR
-    #docker: MSISENSOR_DOCKER
-    output: "msipro/msipro_{sample}.txt"
-    shell:
-        """
-            msisensor-pro msi -d {params.gnomad}/GRCh38.d1.vd1_repeats_msisensor.list \\
-            -n {input.normal} \\
-            -t {input.tumor} \\
-            -o {output}
-        """
-
-rule all_sequenza_to_BED_depth_ratio:
-    input:expand('loh/bed_depth/{sample}.bed',sample=TUMOR)
-
-
 if SAINT_THOMAS == "yes": 
     include: PRJ_ROOT+"/local/share/snakerule/Snakefile_saint_thomas"
     
