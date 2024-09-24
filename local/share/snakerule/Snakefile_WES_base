@@ -283,9 +283,11 @@ def find_matched_normal_rel_path(wildcards):
 
 rule all_msi:
     input: expand("msipro/msipro_{sample}.txt", sample=TUMOR)
+
 rule sensord:
     input: normal=find_matched_normal_rel_path, tumor="align/realigned_{sample}.sorted.bam"
     params: gnomad=GNOMAD_TASK_DIR
+    #docker: MSISENSOR_DOCKER
     output: "msipro/msipro_{sample}.txt"
     shell:
         """
@@ -295,15 +297,9 @@ rule sensord:
             -o {output}
         """
 
-### consistency
-rule consis:
-    input: o="samples_st.tsv", x="../biobanca_earlylate_xeno/samples_st.tsv"
-    params: tool=BIN_DIR+"/msisensor_concordancy_check"
-    output: results="msipro/msi_consistency_earlylate_pdo-pdx/mnt/trcanmed/snaketree/prj/snakegatk/dataset/biobanca_earlylate_pdo/msipro/msi_consistency_earlylate_pdo.tsv.tsv"
-    shell:
-        """ 
-            {params.tool} -o {input.o} -x {input.x} -r {output.results} 
-        """
+rule all_sequenza_to_BED_depth_ratio:
+    input:expand('loh/bed_depth/{sample}.bed',sample=TUMOR)
+
 
 if SAINT_THOMAS == "yes": 
     include: PRJ_ROOT+"/local/share/snakerule/Snakefile_saint_thomas"

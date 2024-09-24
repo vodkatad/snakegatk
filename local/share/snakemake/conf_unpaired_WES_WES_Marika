@@ -164,3 +164,37 @@ rule g:
     output: "genes.tsv"
     shell: "echo WES > {output}"
 
+
+# KRAS G12V
+NOLDATA='/mnt/cold1/snaketree/data/WES_marika'
+G12V=["CRC1090LMO0A04011001D02000","CRC1359LMO0B04008001D01000","CRC1390LMO0B04024002D02000","CRC1451LMO0A04010001D03000","CRC1523LMO0A01005001D02000","CRC1620LMO0B01004001D02000"]
+
+def find_orig_fq(wildcards):
+	wi = -1
+	for i in range(0, len(SAMPLES)):
+		if SAMPLES[i] == wildcards.sample:
+			wi = i
+	return([DATA+"/"+SAMPLES_ORIG[wi]+"_R1_001.fastq.gz", DATA+"/"+SAMPLES_ORIG[wi]+"_R2_001.fastq.gz"])
+	
+def find_orig_fq_basename(wildcards):
+	wi = -1
+	for i in range(0, len(SAMPLES)):
+		if SAMPLES[i] == wildcards.sample:
+			wi = i
+	return([SAMPLES_ORIG[wi]+"_R1_001.fastq.gz", SAMPLES_ORIG[wi]+"_R2_001.fastq.gz"])
+	
+
+rule opty:
+	input: find_orig_fq
+	output: res="optitype/{sample}.result.tsv", plot="optitype/{sample}_coverage_plot.pdf"
+	params: dir=NOLDATA, fq=find_orig_fq_basename
+	shell: 
+		"""
+			docker run -v {params.dir}/:/data/ -t fred2/optitype -i {params.fq} -d -o /data/opti
+			cp {params.dir}/opti/*/*result.tsv {output.res}
+			cp {params.dir}/opti/*/*coverage_plot.pdf {output.plot}
+			rm -rf {params.dir}/opti
+		"""
+
+rule all_opty: 
+	input: expand("optitype/{sample}.result.tsv", sample=G12V)

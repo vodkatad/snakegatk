@@ -40,29 +40,20 @@ ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
 SEQUENZA_ODOCKER="egrassi/occamsnakes/sequenza:1"
 VARSCAN_ODOCKER="egrassi/occamsnakes/varscan:1"
 PLATYPUS_ODOCKER="egrassi/occamsnakes/platypus:1"
-PLH_DOCKER="bubusettete"
+PLH_DOCKEr="bubusettete"
 
 
-## This dataset:
-DATA=PRJ_ROOT+"/local/share/data/WGS_cleverers_treats_LD150"
-FQ_XENOME_DIR="xenome"
-XENOME_PREFIX=""
-XENOME_TOOL=""
-XENOME_WAIT=""
-PICARD=""
+## this dataset:
+DATA=PRJ_ROOT+"/local/share/data/WGS_Ilio"
 
 #data@rotpunkt:~/work/snakegatk$ python3 local/src/tsv_to_json_metadata.py -i ~/Dropbox/work/evol/MA/second_shipment/samples/ss_282.txt -j /tmp/p
 
 # TODO link to files in second_shipment directory
 
 # original up to second shipment:
-SAMPLES_ORIG=['PRJ0003S1_SA_L001', 'BIOMEDICA-1-1-45_SA_L001', 'BIOMEDICA-1-1-46_SA_L001']
-SAMPLES=['CRC0282NMH0000000000D07000', 'CRC0282-05-0', 'CRC0282-05-1-C']
-
-NORMAL=["CRC0282NMH0000000000D07000"]*(len(SAMPLES)-1)
-
-# to reduce platypus to only in vitro:
-#TUMOR=SAMPLES[1:13]
+SAMPLES_ORIG=["BIODIV-027-CRC1888NL","BIODIV-027-1888-22D","BIODIV-027-1888-2H","BIODIV-027-1888-37D","BIODIV-027-1888-9H"] ### 
+SAMPLES=["CRC1888NL","CRC1888-22D","CRC1888-2H","CRC1888-37D","CRC1888-9H"]
+NORMAL=["CRC1888NL"]*(len(SAMPLES)-1)
 TUMOR=SAMPLES[1:]
 
 #REF=""
@@ -72,18 +63,20 @@ TUMOR=SAMPLES[1:]
 XENOMED_SAMPLES=[]
 TRIMMED_SAMPLES=[]
 
+FQ_XENOME_DIR="xenome"
 XENOME_PREFIX=''
 XENOME_TOOL=''
 XENOME_WAIT=0
+PICARD="picard -Xmx10g -XX:ParallelGCThreads=4"
 
 #data@rotpunkt:~/work/snakegatk/local/src$ ./tsv_to_json_metadata.py -i ~/Dropbox/work/evol/MA/second_shipment/samples/ss_282.txt -j /tmp/test
 
 FASTQ_SUFFIX="_{pair}.fastq.gz"
 FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
 
-PAIRS=['R1_001','R2_001']
+PAIRS=['R1','R2']
 PAIRS_XENOME=['1','2']
-CORES=24
+CORES=12
 CORESMD=4
 # TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
 PATTERNED=2500 
@@ -97,7 +90,7 @@ AFPARAM="--default-af 0"
 # use --default-af 0 to avoid 0.5 AF calls filtering 
 
 wildcard_constraints:
-    sample="[a-zA-Z0-9]+-?[0-9]+-?[A-Z0-9]+-?[A-Z0-9]?"
+    sample="[a-zA-Z0-9]+-?[A-Z0-9]+-?[A-Z0-9]+-?[A-Z0-9]?"
 
 
 CALLABLE="5:10,10:50,50:100,100:150,150:inf"
@@ -115,16 +108,9 @@ else:
 PLOIDY=2
 PURITY=1
 
-rule all_sottoriva_bin:
-    input: expand("{sample}.binfit.0.12_0.2.pdf", sample=TUMOR) 
+rule all_callable_covered:
+    input: expand("depth/callable_{depth}.covered.bed.gz", sample=TUMOR, depth=['10x','20x','30x','40x','50x', '60x', '70x', '80x', '90x', '100x','150x','200x'])
 
-rule neutral_sottoriva_bin:
-    input: afmatrix="mutect_paired/{sample}.pass.table.gz"
-    params: debug="yes", afcolumn="{sample}"
-    output: fit="{sample}.binfit.{loweraf}_{higheraf}.pdf", r2="{sample}.binfit.{loweraf}_{higheraf}.r2"
-    script: SRC_DIR+"/neutral_sottoriva_bin.R"
+SIZE=34 # the default for PCGR
+ASSAY="WGS" #   "TARGETED"
 
-get_ppos = None
-
-SIZE='wgs'
-ASSAY="WGS"
