@@ -173,7 +173,7 @@ rule mut_burden_st:
         res.to_csv(output[0], sep="\t", index=True)
 
 rule signature_st:
-    input: MUTECT_DIR+"/{sample}.pass.vcf.gz"
+    input: MUTECT_DIR+"/{sample}.OK.vcf.gz"
     output: "signatures/{sample}.cosmic.fit.tsv"
     params: tool=BIN_DIR+'/mut_pat_signatures_fit_one'
     shell: 
