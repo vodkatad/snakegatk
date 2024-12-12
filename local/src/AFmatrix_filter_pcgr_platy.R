@@ -59,7 +59,7 @@ normalize_cds <- function(cds_change) {
 }
 
 load_filter_pcgr <- function(sample) {
-  d <- read.table(paste0(mutect_dir, '/', sample, '.pcgr_acmg.grch38.snvs_indels.tiers.tsv'), sep="\t", header=T, stringsAsFactors = FALSE, quote='')
+  d <- read.table(paste0(mutect_dir, '/platypus.pcgr_acmg.grch38.snvs_indels.tiers.tsv'), sep="\t", header=T, stringsAsFactors = FALSE, quote='')
   d$id <- paste0(d$CHROM, ":", d$POS, ":", d$REF, ":", d$ALT)
   #W_TIERS <- c('TIER 1', 'TIER 2', 'TIER 3')ad
   d <- d[d$TIER %in% W_TIERS,]
