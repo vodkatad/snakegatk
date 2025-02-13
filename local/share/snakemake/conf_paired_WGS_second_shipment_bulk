@@ -134,3 +134,6 @@ rule mut_burden_wes:
         target_len = target_len / 1000000
         res = pd.DataFrame(data = {'totmut': tot, 'burden': tot/target_len}, index=data.columns)
         res.to_csv(output[0], sep="\t", index=True)
+
+SIZE='wgs'
+ASSAY='WGS'

@@ -7,14 +7,22 @@ rule saint_thomas:
                 {params.tool} {input.reference} {input.vcf} {input.bam} {params.dir}/{wildcards.sample}
             """
 
-
 # change MUTECT_DIR to work there
 MUTECT_DIR="mutect_paired_st"
+
+rule bgzip:
+        input: "mutect_paired_st/{sample}.OK.vcf.gz"
+        output: "mutect_paired_st/{sample}.pass.vcf.gz"
+        shell:
+            """
+                zcat {input} | bgzip -c > {output}
+                tabix {output}
+            """
 
 # --force-samples had to be added for biobanca early-late due to shared LMH
 #bcftools merge --force-samples --missing-to-ref -m none -o {output}.vcf.tmp {input.vcf}
 rule merge_targeted_st:
-    input: vcf=expand(MUTECT_DIR+"/{sample}.OK.vcf.gz", sample=TUMOR), bed=SEXONS
+    input: vcf=expand(MUTECT_DIR+"/{sample}.pass.vcf.gz", sample=TUMOR), bed=SEXONS
     output: MUTECT_DIR+"/merged_targeted.vcf"
     shell:
         """
@@ -106,7 +114,7 @@ rule all_pcgr_st:
 
 PCGR='/mnt/trcanmed/snaketree/prj/snakegatk/local/src/pcgr/'
 rule pcgr_st:
-    input: MUTECT_DIR+"/{sample}.OK.vcf.gz"
+    input: MUTECT_DIR+"/{sample}.pass.vcf.gz"
     output: MUTECT_DIR+"/{sample}.pcgr_acmg.grch38.snvs_indels.tiers.tsv"
     params: pcgr=PCGR, size=SIZE, assay=ASSAY, mdir=MUTECT_DIR
     shell:
@@ -173,7 +181,7 @@ rule mut_burden_st:
         res.to_csv(output[0], sep="\t", index=True)
 
 rule signature_st:
-    input: MUTECT_DIR+"/{sample}.OK.vcf.gz"
+    input: MUTECT_DIR+"/{sample}.pass.vcf.gz"
     output: "signatures/{sample}.cosmic.fit.tsv"
     params: tool=BIN_DIR+'/mut_pat_signatures_fit_one'
     shell: 

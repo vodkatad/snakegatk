@@ -1,4 +1,4 @@
-#!/opt/R/R-3.6.3/bin/Rscript
+#! /bin/env Rscript
 library(reshape)
 # steps for targeted annotation:
 #- load merged.table_nomultiallele

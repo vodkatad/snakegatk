@@ -313,12 +313,16 @@ rule all_signatures:
             res = res.merge(resi, left_index=True, right_index=True)
         res.to_csv(output[0], sep="\t")
 
-rule all_sequenza_to_BED_depth_ratio:
-    input:expand('loh/bed_depth/{sample}.bed',sample=TUMOR)
-
 
 rule all_msi:
     input: expand("msipro/msipro_{sample}.txt", sample=TUMOR)
+
+def find_matched_normal_rel_path(wildcards):
+    try:
+        index = TUMOR.index(wildcards.sample)
+        return "align/realigned_"+NORMAL[index]+".sorted.bam"
+    except:
+        raise ValueError("Check you TUMOR and NORMAL in conf.sk, cannot find matched normal for " + wildcards.sample)
 
 rule sensord:
     input: normal=find_matched_normal_rel_path, tumor="align/realigned_{sample}.sorted.bam"
@@ -332,3 +336,19 @@ rule sensord:
             -t {input.tumor} \\
             -o {output}
         """
+
+# rule all_msi:
+#     input: expand("msipro_{sample}.txt", sample=TUMOR)
+# rule sensor:
+#     input: normal=find_matched_normal_path, tumor=ROOT+"/data/biobanca_WES_earlylate/align/realigned_{sample}.sorted.bam"
+#     params: gnomad=GNOMAD_TASK_DIR+":/home/gnomad", root=ROOT+":"+ROOT, docker_img=MSISENSOR_DOCKER
+#     output:  ROOT+"/data/biobanca_WES_earlylate/msipro_{sample}.txt"
+#     shell:
+#         """
+#             docker run --volume {params.gnomad} --volume {params.root} {params.docker_img} \\
+#             msisensor-pro msi -d /home/gnomad/GRCh38.d1.vd1_repeats_msisensor.list \\
+#             -n {input.normal} \\
+#             -t {input.tumor} \\
+#             -o {output}
+#         """
+
