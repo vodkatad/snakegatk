@@ -103,7 +103,7 @@ save.image('borf.Rdata')
 af[!rownames(af) %in% keepids,] <- rep(0, ncol(af))
 r <- rowSums(af) == 0
 print(table(r))
-af <- af[!r,]
+af <- af[!r,, drop=FALSE]
 #genes <- genes[!r,, drop=FALSE]
 
 write.table(af, file=af_table_out_f, sep="\t", quote=FALSE)

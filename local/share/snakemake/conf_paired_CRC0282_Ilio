@@ -1,0 +1,277 @@
+import os
+ROOT=os.environ.get('SNAKE_ROOT')
+def find_prj_root(path=os.getcwd()):
+    if os.path.isfile(os.path.join(path,".PRJ_ROOT")):
+        return path
+    else:
+        if path:
+            return find_prj_root(os.path.dirname(path))
+        else:
+            raise Exception("Can not find the PRJ_ROOT directory")
+
+
+PRJ_ROOT=find_prj_root()
+TMP="/scratch/home/mviviani/"
+
+SRC_DIR=PRJ_ROOT+'/local/src'
+BIN_DIR=PRJ_ROOT+'/local/bin'
+FQ_REMOVED=True
+DEBUG="yes"
+TYPE="WGS"
+PAIRED=True
+SUBSAMPLE=1 # if == 1 do not downsample (downsampling is done right after alignment and dup removal, not before calling, to also recalibrate on less data).
+
+# Needed references and annotations
+GNOMAD_TASK_DIR=ROOT+'/task/annotations/dataset/gnomad'
+REF_DIR=GNOMAD_TASK_DIR
+GNOMAD=GNOMAD_TASK_DIR
+VEP_CACHE_DIR=ROOT+"/task/variant_annotations/dataset/VEP"
+ANNOVAR=ROOT+"/task/variant_annotations/dataset/annovar/hg38/humandb/"
+PON=GNOMAD_TASK_DIR+"/1000g_pon.hg38.vcf.gz"
+DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
+INTERVAL=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.interval_list'
+CALLABLE_BED=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.bed.gz'
+GCFILE=GNOMAD_TASK_DIR+'/sequenza_gc_w200.wig.gz'
+# Singularity containers and occam docker images
+GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
+GATK_ODOCKER="egrassi/occamsnakes/gatk_fixedov:1"
+XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
+ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
+SEQUENZA_ODOCKER="egrassi/occamsnakes/sequenza:1"
+VARSCAN_ODOCKER="egrassi/occamsnakes/varscan:1"
+PLATYPUS_ODOCKER="egrassi/occamsnakes/platypus:1"
+PLH_DOCKEr="bubusettete"
+
+
+## this dataset:
+DATA=PRJ_ROOT+"/local/share/data/WGS_Ilio"
+
+#data@rotpunkt:~/work/snakegatk$ python3 local/src/tsv_to_json_metadata.py -i ~/Dropbox/work/evol/MA/second_shipment/samples/ss_282.txt -j /tmp/p
+
+# TODO link to files in second_shipment directory
+
+# original up to second shipment:
+SAMPLES_ORIG=["BIODIV-027-CRC1888NL","BIODIV-027-1888-22D","BIODIV-027-1888-37D","BIODIV-027-1888-9H","BIODIV-027-1888-2H"] ### 
+SAMPLES=["CRC1888NL","CRC1888-22D","CRC1888-2H","CRC1888-37D","CRC1888-9H"]
+NORMAL=["CRC1888NL"]*(len(SAMPLES)-1)
+TUMOR=SAMPLES[1:]
+
+#REF=""
+#SAMPLESD=[]
+#SAMPS=",".join(SAMPLESD)
+
+XENOMED_SAMPLES=[]
+TRIMMED_SAMPLES=[]
+
+FQ_XENOME_DIR="xenome"
+XENOME_PREFIX=''
+XENOME_TOOL=''
+XENOME_WAIT=0
+PICARD="picard -Xmx10g -XX:ParallelGCThreads=4"
+
+#data@rotpunkt:~/work/snakegatk/local/src$ ./tsv_to_json_metadata.py -i ~/Dropbox/work/evol/MA/second_shipment/samples/ss_282.txt -j /tmp/test
+
+FASTQ_SUFFIX="_{pair}.fastq.gz"
+FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
+
+PAIRS=['R1','R2']
+PAIRS_XENOME=['1','2']
+CORES=12
+CORESMD=4
+# TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
+PATTERNED=2500 
+# HiSeq4000, otherwise 100 for unpatterned
+#–o recal.bam
+
+
+### TODO REMOVE ME FOR BULK!
+AFPARAM="--default-af 0"
+# https://gatkforums.broadinstitute.org/gatk/discussion/24633/mutect2-4-1-4-0-stats-file-with-a-negative-number#latest
+# use --default-af 0 to avoid 0.5 AF calls filtering 
+
+wildcard_constraints:
+    sample="[a-zA-Z0-9]+-?[A-Z0-9]+-?[A-Z0-9]+-?[A-Z0-9]?"
+
+
+CALLABLE="5:10,10:50,50:100,100:150,150:inf"
+CALLABLE_STRICT="50:100,100:150,150:inf"
+
+SPLIT=12
+SPLIT_INTERVAL=GNOMAD_TASK_DIR+'/GRCh38.d1.vd1.n'+str(SPLIT)
+if SPLIT >= 10:
+    SPLITS=['000'+str(x) for x in range(0,10)] + ['00'+str(x) for x in range(10,SPLIT)]
+else:
+    SPLITS=['000'+str(x) for x in range(0, SPLIT)]
+
+#+'-scattered.interval_list'
+
+PLOIDY=2
+PURITY=1
+
+rule all_callable_covered:
+    input: expand("depth/callable_{depth}.covered.bed.gz", sample=TUMOR, depth=['10x','20x','30x','40x','50x', '60x', '70x', '80x', '90x', '100x','150x','200x'])
+
+SIZE=34 # the default for PCGR
+ASSAY="WGS" #   "TARGETED"
+
+### Heatmap
+rule seqtobin:
+    input: sequenza="sequenza/{sample}/{sample}_segments.txt", chrs=DATA+"/chrs"
+    output: "sequenza/{sample}.{bin}.tsv.gz"
+    params: tool=BIN_DIR+"/project_bin"
+    shell: 
+        """    
+            {params.tool} -c <(sed 1d {input.sequenza} |  bawk '{{print $1,$2-1,$3,$10}}' | grep -v chrX | grep -v chrY| sed 's/chr//1' |  sort -k1,1n -k2,2n | bawk '{{print "chr"$1,$2,$3,$4}}') -b {wildcards.bin} | gzip > {output}
+        """
+
+rule alltobin_merged:
+    input: expand("sequenza/{sample}.50000.tsv.gz", sample=TUMOR+['CRC0282-05-0', 'CRC0282-07-0', 'CRC0282-01-0', 'CRCUECHPRO-13-1-D', 'CRCUECHPRO-13-1-C'])
+    output: m="merged.tsv.gz"
+    run:
+        import pandas as pd
+        res = pd.read_csv(input[0], sep="\t", header=None) 
+        samples = TUMOR+['CRC0282-05-0', 'CRC0282-07-0', 'CRC0282-01-0', 'CRCUECHPRO-13-1-D', 'CRCUECHPRO-13-1-C']
+        res.columns = ['chr','b','e', samples[0]]
+        for i in range(1, len(input)):
+            print('adding ' + samples[i])
+            current = pd.read_csv(input[i], sep="\t", header=None) 
+            current.columns = ['chr','b','e',samples[i]]
+            current = current.drop(columns=['chr','b','e'])
+            res = pd.concat([res, current], axis=1, sort=False)            
+        res.to_csv(output.m, sep="\t", compression='gzip', index=False)
+
+        
+rule heatmap:
+    input: "merged.tsv.gz"
+    output: "merged_heatmap.png"
+    run:
+        import numpy as np
+        import pandas as pd
+        import seaborn as sns
+        import matplotlib.colors as colors
+        import matplotlib 
+        import matplotlib.cm as cm
+        import matplotlib.ticker as ticker
+        import matplotlib.pyplot as plt
+        import matplotlib.colors as colors
+        import matplotlib.transforms as transforms
+
+        cnvs = pd.read_csv(input[0], sep="\t") 
+        boundaries = cnvs[['chr','b','e']].copy()
+        cnvs = cnvs.drop(columns=['chr','b','e']).transpose()
+        clusters = False
+        verbose = True
+        metric = 'euclidean'
+        method = 'ward'
+
+        chr_limits = boundaries.index[boundaries['e'].isin(boundaries.groupby('chr', sort=False)['e'].max().values)].tolist()
+        chr_boundaries = np.append(0, chr_limits)
+        chr_list = boundaries['chr'].unique().tolist()
+        chrN_list = []
+
+        for x in chr_list:
+            x = x[3:] #remove 'chr' for readability
+            chrN_list.append(x)
+
+        #compute the position where chromosome labels will be placed on the plots
+        start = 0
+        pos_list = []
+        for end in chr_limits:
+            pos_list.append((start+end)/2)
+            start = end+1
+
+        if clusters:
+            yticklabels = True
+        else:
+            yticklabels = False
+
+        cbar_kws={"ticks":np.arange(0,13,1)}
+        #import sys
+        #sys.setrecursionlimit(10000)
+        #h = sns.clustermap(cnvs, method=method, metric=metric, col_cluster=False, yticklabels = yticklabels,  cmap='RdBu_r', vmin=0, vmax=12,norm=divnorm, cbar_kws=cbar_kws)
+        h = sns.clustermap(cnvs, col_cluster=False, method=method, metric=metric, row_cluster=clusters, yticklabels = True, cmap='RdBu_r', vmin=0, vmax=12,center=2, cbar_kws=cbar_kws)
+        #Z = h.dendrogram_row.linkage
+        ax = h.ax_heatmap
+        #place vertical lines to identify chromosomes
+        for pos in chr_limits:
+            ax.axvline(x=pos, color='black')
+
+        #place chromosome ticks at the right position
+        ax.xaxis.set_major_locator(ticker.FixedLocator((pos_list)))
+        ax.xaxis.set_major_formatter(ticker.FixedFormatter((chrN_list)))
+        ax.tick_params(axis='x', rotation=0, labelsize=20)
+        ax.tick_params(axis='y', rotation=0, labelsize=20)
+    
+        ax.xaxis.set_minor_locator(ticker.FixedLocator(chr_boundaries))
+        ax.tick_params(axis='x', length=20, which='minor')
+
+        ax.set_xlabel("Chromosomes", fontweight='bold', fontsize=25)
+        if clusters:
+            ax.set_ylabel("Clusters", fontweight='bold', fontsize=25)
+        else:
+            ax.set_ylabel("Clones", fontsize=25, fontweight='bold')
+
+        plt.gcf().set_size_inches(37, 21)
+    
+        if clusters:
+            plt.gcf().suptitle("Clusters mean CNV heatmap", fontsize=30, fontweight='bold')
+            plt.savefig(output[0])
+        else:
+            plt.gcf().suptitle("CNV heatmap", fontsize=30, fontweight='bold')
+            plt.savefig(output[0])
+        plt.clf()
+
+
+PCGR='/mnt/trcanmed/snaketree/prj/snakegatk/local/src/pcgr/'
+rule platy_pcgr:
+    input: "platypus/platypus_filtered.vcf.gz"
+    output: "platypus/platypus.pcgr_acmg.grch38.snvs_indels.tiers.tsv"
+    params: pcgr=PCGR
+    shell:
+        """
+            python3 {params.pcgr}/pcgr.py --pcgr_dir {params.pcgr} \
+            --output_dir platypus \
+            --sample_id platypus \
+            --genome_assembly grch38 \
+            --conf {params.pcgr}/examples/example_COAD.toml \
+            --input_vcf {input} \
+            --tumor_site 9 \
+            --tumor_purity 1 \
+            --include_trials \
+            --assay WGS \
+            --estimate_msi_status \
+            --estimate_tmb \
+            --no_vcf_validate
+        """
+
+rule platy_to_table:
+    input: vcf="platypus/platypus_filtered.vcf.gz", chrs=PRJ_ROOT+"/local/share/data/chrs"
+    output: "platypus/platypus.table.tsv.gz"
+    params: tool=PRJ_ROOT+'/local/src/platypus_to_matrix.pl', multi='nomulti', kind='both'
+    log: "platypus/platy.multiallelic"
+    shell:
+        """
+            bcftools annotate -I +'%CHROM:%POS:%REF:%ALT' {input.vcf} \\
+            | grep -v "^##" |  filter_1col 1 {input.chrs} | {params.tool} {params.kind} {params.multi} 2> {log} | gzip > {output}
+        """
+
+# need to map sample as platypus since we do not have single sample vcfs
+rule pcgr_tiers_af_platy:
+    input: 'platypus/platypus.table.tsv.gz'
+    output: af='platypus/platypus.table_nomultiallele_alltiers', genes='platypus/platypus_nomultiallele_alltiers_annot', long_muts='platypus/platypus_longformat_alltiers.tsv'
+    params: mdir='platypus', tool=BIN_DIR+'/AFmatrix_filter_pcgr_platy', tiers='TIER 1,TIER 2,TIER 3,TIER 4'
+    log: 'platypus/platypus.table_nomultiallele_alltiers.log'
+    shell:
+        """
+            {params.tool} -m {input} -u {params.mdir} -o {output.af} -g {output.genes} -w "{params.tiers}" -l {output.long_muts} &> {log}
+        """
+
+rule pcgr_wtiers_af_platy:
+    input: 'platypus/platypus.table.tsv.gz'
+    output: af='platypus/platypus.table_nomultiallele_wtiers', genes='platypus/platypus_nomultiallele_wtiers_annot', long_muts='platypus/platypus_longformat_wtiers.tsv'
+    params: mdir='platypus', tool=BIN_DIR+'/AFmatrix_filter_pcgr_platy', tiers='TIER 1,TIER 2,TIER 3'
+    log: 'platypus/platypus.table_nomultiallele_wtiers.log'
+    shell:
+        """
+            {params.tool} -m {input} -u {params.mdir} -o {output.af} -g {output.genes} -w "{params.tiers}" -l {output.long_muts} &> {log}
+        """
