@@ -36,15 +36,16 @@ GCFILE=GNOMAD_TASK_DIR+'/sequenza_gc_w200.wig.gz'
 GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
 GATK_ODOCKER="egrassi/occamsnakes/gatk_fixedov:1"
 XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
-ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
-SEQUENZA_ODOCKER="egrassi/occamsnakes/sequenza:1"
+#ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate_nodef:1" ### old egrassi/occamsnakes/align_recalibrate:1
+ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1" ### old egrassi/occamsnakes/align_recalibrate:1
+SEQUENZA_ODOCKER="egrassi/occamsnakes/sequenza_nodef:1" ### old egrassi/occamsnakes/sequenza:1
 VARSCAN_ODOCKER="egrassi/occamsnakes/varscan:1"
-PLATYPUS_ODOCKER="egrassi/occamsnakes/platypus:1"
+PLATYPUS_ODOCKER="egrassi/occamsnakes/platypus:1" ### old egrassi/occamsnakes/platypus:1 (ho dimenticato il _nodef in fase di build)
 PLH_DOCKEr="bubusettete"
 
 
 ## this dataset:
-DATA=PRJ_ROOT+"/local/share/data/IANG"
+DATA=PRJ_ROOT+"/local/share/data/Ilio_linea"
 FQ_XENOME_DIR="xenome"
 XENOME_PREFIX=""
 XENOME_TOOL=""
@@ -56,10 +57,12 @@ PICARD='picard -Xmx10g -XX:ParallelGCThreads='
 # TODO link to files in second_shipment directory
 
 # original up to second shipment:
-SAMPLES_ORIG=["BIODIV-019-43","BIODIV-019-04","BIODIV-019-05","BIODIV-019-06","BIODIV-019-07","BIODIV-019-08","BIODIV-019-17","BIODIV-019-18","BIODIV-019-19","BIODIV-019-20","BIODIV-019-21","BIODIV-019-22","BIODIV-019-23","BIODIV-019-24","BIODIV-019-25","BIODIV-019-26","BIODIV-019-27","BIODIV-019-28","BIODIV-019-29"]
-SAMPLES=["CRCUECHNMH", "CRCUECHPRO-01-0","CRCUECHPRO-05-0","CRCUECHPRO-06-0","CRCUECHPRO-07-0","CRCUECHPRO-13-0","CRCUECHPRO-01-1-A","CRCUECHPRO-01-1-C","CRCUECHPRO-01-1-D","CRCUECHPRO-05-1-D","CRCUECHPRO-06-1-D","CRCUECHPRO-06-1-E","CRCUECHPRO-06-1-H","CRCUECHPRO-13-1-B","CRCUECHPRO-13-1-C","CRCUECHPRO-13-1-D","CRCUECHPRO-05-1-A","CRCUECHPRO-05-1-C","CRCUECHPRO-07-1-A"]
-NORMAL=["CRCUECHNMH"]*(len(SAMPLES)-1)
-TUMOR=SAMPLES[1:]
+SAMPLES_ORIG=["BIODIV-027-CRC1888NL","BIODIV-037-CRC1888LMO"]
+SAMPLES=["CRC1888NL", "CRC1888LMO"]
+NORMAL=["CRC1888NL"]*(len(SAMPLES)-1)
+# TUMOR=SAMPLES[1:]
+#NORMAL=["CRC1888NL"]
+TUMOR=["CRC1888LMO"]
 
 #REF=""
 #SAMPLESD=[]
@@ -115,5 +118,6 @@ PURITY=1
 rule all_callable_covered:
     input: expand("depth/callable_{depth}.covered.bed.gz", sample=TUMOR, depth=['10x','20x','30x','40x','50x', '60x', '70x', '80x', '90x', '100x','150x','200x'])
 
-SIZE='TODO'
-ASSAY='WGS'
+
+SIZE='wgs'
+ASSAY="WGS"

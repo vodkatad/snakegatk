@@ -265,3 +265,13 @@ rule pcgr_tiers_af_platy:
         """
             {params.tool} -m {input} -u {params.mdir} -o {output.af} -g {output.genes} -w "{params.tiers}" -l {output.long_muts} &> {log}
         """
+
+rule pcgr_wtiers_af_platy:
+    input: 'platypus/platypus.table.tsv.gz'
+    output: af='platypus/platypus.table_nomultiallele_wtiers', genes='platypus/platypus_nomultiallele_wtiers_annot', long_muts='platypus/platypus_longformat_wtiers.tsv'
+    params: mdir='platypus', tool=BIN_DIR+'/AFmatrix_filter_pcgr_platy', tiers='TIER 1,TIER 2,TIER 3'
+    log: 'platypus/platypus.table_nomultiallele_wtiers.log'
+    shell:
+        """
+            {params.tool} -m {input} -u {params.mdir} -o {output.af} -g {output.genes} -w "{params.tiers}" -l {output.long_muts} &> {log}
+        """
