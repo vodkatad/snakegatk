@@ -1,0 +1,199 @@
+import os
+import re
+ROOT=os.environ.get('SNAKE_ROOT')
+def find_prj_root(path=os.getcwd()):
+    if os.path.isfile(os.path.join(path,".PRJ_ROOT")):
+        return path
+    else:
+        if path:
+            return find_prj_root(os.path.dirname(path))
+        else:
+            raise Exception("Can not find the PRJ_ROOT directory")
+
+
+PRJ_ROOT=find_prj_root()
+TMP="/tmp"
+
+SRC_DIR=PRJ_ROOT+'/local/src'
+BIN_DIR=PRJ_ROOT+'/local/bin'
+FQ_REMOVED=True
+DEBUG="yes"
+TYPE="WES"
+PAIRED=False
+
+# Needed references and annotations
+GNOMAD_TASK_DIR=ROOT+'/task/annotations/dataset/gnomad'
+REF_DIR=GNOMAD_TASK_DIR
+GNOMAD=GNOMAD_TASK_DIR
+VEP_CACHE_DIR=ROOT+"/task/variant_annotations/dataset/VEP"
+ANNOVAR=ROOT+"/task/variant_annotations/dataset/annovar/hg38/humandb/"
+PON=GNOMAD_TASK_DIR+"/1000g_pon.hg38.vcf.gz"
+DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
+# Singularity containers and occam docker images
+GATK_SING="/home/egrassi/gatk4140/gatk.img"
+#GATK_ODOCKER="egrassi/occamsnakes/gatk:1"
+GATK_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/gatk_fixedov:1" # we keep this for this project and accept the filtering bug, even if it's not that small..
+SEQUENZA_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/sequenza:1" # we keep this for this project and accept the filtering bug, even if it's not that small..
+
+XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
+ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
+PLH_DOCKER="bubusettete"
+
+
+## This dataset:
+#DATA=ROOT+"/data/biobanca_WES_earlylate/merged_fastq"
+DATA=ROOT+"/data/biobanca_WES_earlylate/partial/merged_fastq"
+FQ_XENOME_DIR="xenome"
+
+# $ ls ../../local/share/data/Pri_Met_pairs/*fastq.gz | sed 's/..\/..\/local\/share\/data\/Pri_Met_pairs\///' | sed 's/_SA_L001_R._001.fastq.gz//1' | sort | uniq | tr "\n" "," | sed 's/,/","/g'
+#SAMPLES_ORIG=["1740FL-327-01-49","1740FL-327-01-50","1740FL-327-01-51","1740FL-327-01-52","1740FL-327-01-53","1740FL-327-01-57","1740FL-327-01-58","1740FL-327-01-59","1740FL-327-01-60","1740FL-327-01-61","1740FL-327-01-62","1740FL-327-01-63","1740FL-327-01-64","1740FL-327-01-66","1740FL-327-01-67","1740FL-327-01-68","1740FL-327-01-69"]
+#SAMPLES=["CRC0099LMX0A04215TUMD02000_3","CRC0123LMX0A04040TUMD02000","CRC0148LMX0A04002TUMD02000","CRC0152LMX0B03003TUMD02000","CRC0169LMX0B04003TUMD02000","CRC0464LMX0A03005TUMD02000","CRC0542LMX0B06001TUMD02000","CRC1169LMX0B05004TUMD02000","CRC1430LMX0A02002TUMD02000","CRC1446LMX0A01001TUMD02000","CRC1449LMX0B01001TUMD02000","CRC1460LMX0A02001TUMD02000","CRC1502LMX0A01001TUMD02000","CRC1588LMX0B02001TUMD02000","CRC1598LMX0B02001TUMD02000","CRC1599LMX0A02001TUMD02000","CRC1628LMX0A02003TUMD02000"]
+#SAMPLES_ORIG_BIS=["1740FL-327-01-06","1740FL-327-01-07","1740FL-327-01-08","1740FL-327-01-12","1740FL-327-01-14","1740FL-327-01-15","1740FL-327-01-22","1740FL-327-01-23","1740FL-327-01-31","1740FL-327-01-33","1740FL-327-01-36","1740FL-327-01-42","1740FL-327-01-43","1740FL-327-01-44","1740FL-327-01-46","1740FL-327-01-47","1740FL-327-01-48","1740FL-327-01-54","1740FL-327-01-55","1740FL-327-01-56","1740FL-327-01-65","1740FL-327-01-70","1740FL-327-01-83","1740FL-327-01-88"] 
+#SAMPLES_BIS=["CRC0123LMO0A04012001VT0700_8D","CRC0148LMO0A01003001VT0800D","CRC0148LMO0A03010001VT0800D","CRC0169LMO0A02009001VT0500_6D","CRC0171LMO0A04008001VT0500D","CRC0188LMO0A01003001VT0700D","CRC0542LMO0C03008001VT0400_5D","CRC1169LMO0C01003001VT0800D","CRC1460LMO0A01003001VT0800D","CRC1502LMO0A01003001VT0700D","CRC1568LMO0A04009001D01000","CRC1599LMO0A03009001VT0100D","CRC1628LMO0A01003001D03000","CRC1628LMO0A04010001VT0500D","CRC1961LMO0A02008001VT0500D","CRC0196LMO0B04008001D02000","CRC0095LMX0B03211TUMD02000","CRC0171LMX0B04008TUMRL0200","CRC0188LMX0A04007TUMRL0200","CRC0196LMX0B10011TUMD02000","CRC1568LMX0B02001TUMD02000","CRC1961LMX0A02001TUMD02000","CRC1430NLH0000000000D03000","CRC1568NLH0000000000D03000"]
+
+#egrassi@godot:/mnt/trcanmed/snaketree/data/biobanca_WES_earlylate$ grep -v LMO earlylate_Wes.txt | cut -f 2 | tr "\n" "," | sed 's/,/","/g'
+SAMPLES_ORIG=["1740FL-327-01-50"]# i would not put my hand in the fire for this
+SAMPLES=["CRC0123LMX0A04040TUMD02000"]#,"CRC0148LMX0A04002TUMD02000","CRC0152LMX0B03003TUMD02000","CRC0169LMX0B04003TUMD02000","CRC0171LMX0B04008TUMRL0200","CRC0188LMX0A04007TUMRL0200","CRC0196LMX0B10011TUMD02000","CRC0464LMX0A03005TUMD02000","CRC0542LMX0B06001TUMD02000","CRC1169LMX0B05004TUMD02000","CRC1430LMX0A02002TUMD02000","CRC1446LMX0A01001TUMD02000","CRC1449LMX0B01001TUMD02000","CRC1460LMX0A02001TUMD02000","CRC1502LMX0A01001TUMD02000","CRC1568LMX0B02001TUMD02000","CRC1588LMX0B02001TUMD02000","CRC1598LMX0B02001TUMD02000","CRC1599LMX0A02001TUMD02000","CRC1628LMX0A02003TUMD02000","CRC1961LMX0A02001TUMD02000","CRC0095NLH0000000000D02000","CRC0099NLH0000000000D02000","CRC0123NLH0000000000D02000","CRC0148NLH0000000000D02000","CRC0152NLH0000000000D02000","CRC0169NLH0000000000D02000","CRC0171NLH0000000000D02000","CRC0188NLH0000000000D02000","CRC0196NLH0000000000D02000","CRC0464NLH0000000000D05000","CRC0542NLH0000000000RL0100","CRC1169NLH0000000000RL0100","CRC1430NLH0000000000D03000","CRC1446NLH0000000000RL0200D","CRC1449NLH0000000000RL0500D","CRC1460NLH0000000000D03000","CRC1502NLH0000000000RL0100","CRC1568NLH0000000000D03000","CRC1588NLH0000000000D03000","CRC1598NLH0000000000D03000","CRC1599NLH0000000000RL0100","CRC1628NLH0000000000D03000"]
+
+#for i in range(0, len(SAMPLES_BIS)):
+#    if re.search('LMX', SAMPLES_BIS[i]):
+#        SAMPLES.append(SAMPLES_BIS[i])
+#        SAMPLES_ORIG.append(SAMPLES_ORIG_BIS[i])
+
+rule checklen:
+    run:
+        print(len(SAMPLES_ORIG))
+
+# https://eu.idtdna.com/pages/products/next-generation-sequencing/workflow/xgen-ngs-hybridization-capture/pre-designed-hyb-cap-panels/exome-hyb-panel-v2#resources
+EXONS=ROOT+'/data/biobanca_WES_earlylate/merged_fastq/xgen-exome-hyb-panel-v2-targets-hg38.bed'
+SEXONS=ROOT+'/data/biobanca_WES_earlylate/merged_fastq/xgen-exome-hyb-panel-v2-targets-hg38.sorted.bed'
+PADDING=100
+
+#REF=""
+#SAMPLESD=[]
+#SAMPS=",".join(SAMPLESD)
+
+TUMOR=SAMPLES
+
+XENOMED_SAMPLES=TUMOR
+TRIMMED_SAMPLES=[]
+
+FASTQ_SUFFIX="_{pair}.fastq.gz"
+FASTQ_PRE="."
+FASTQ_POST=".fastq.gz"
+FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
+PASTE_NAMEFQ_EXT="."
+
+
+PAIRS=['R1','R2']
+# needed because we have a _3 in sample names
+wildcard_constraints:
+    pair="R[12]"
+
+PAIRS_XENOME=['1','2']
+XENOME_PREFIX='/mnt/trcanmed/snaketree/task/sequences/sequences/dataset/gdc/xenomidx'
+XENOME_TOOL='/mnt/trcanmed/snaketree/prj/snakegatk/local/src/gossamer/build/src/xenome'
+XENOME_WAIT=10800 #14400 # conti per 17 campioni con 4h a testa (larghe, avevo stimato 3h) sono 68h, può girare con 20 core l'uno con -j3 e ci mettiamo 1 giorno.
+
+CORES=12
+CORESMD=2
+# TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
+PATTERNED=2500 
+# HiSeq4000, otherwise 100 for unpatterned
+#–o recal.bam
+
+AFPARAM=""
+#AFPARAM="--default-af 0"
+# https://gatkforums.broadinstitute.org/gatk/discussion/24633/mutect2-4-1-4-0-stats-file-with-a-negative-number#latest
+# use --default-af 0 to avoid 0.5 AF calls filtering 
+
+wildcard_constraints:
+    sample="CRC[a-zA-Z0-9_]+"
+
+
+CALLABLE="5:10,10:50,50:100,100:150,150:inf"
+CALLABLE_STRICT="50:100,100:150,150:inf"
+
+PLOIDY='plh'
+PURITY='plh'
+
+#PICARD="picard -Xmx10g -XX:ParallelGCThreads={params.cores}"
+PICARD="export JAVA_OPTIONS='-Xmx10g -XX:ParallelGCThreads=12' && picard-tools"
+
+SIZE=34 # WES agilent sureselect
+ASSAY="WES" #   "TARGETED"
+
+GCFILE=GNOMAD_TASK_DIR+'/sequenza_gc_w50.wig.gz'
+SAINT_THOMAS="yes"
+
+GENES="genes.tsv"
+NAME="early_late_biobanca_xeno"
+
+rule all_markedDup:
+    input: expand("align/markedDup_{sample}.sorted.bam", sample=SAMPLES)
+
+rule xls_qc:
+    input:  "all_metrics"
+    output: "qc.xlsx"
+    shell:
+        """
+            echo -e "sample\\tPF_UQ_READS_ALIGNED\\tMEAN_TARGET_COVERAGE" > {output}.tmp1
+            cut -f 11,23,58 {input} | sed 1d | bawk '{{print $3,$1,$2}}' | sed 's/align\///1; s/\.hsmetrics//1' >> {output}.tmp1
+            tsv_to_xls -i {output}.tmp1 -s WES -o {output}
+            rm {output}.tmp*
+        """
+        
+
+def get_ppos(wildcards):
+    if re.match(r'.*LMX.*', wildcards.sample):
+        return 9
+    else:
+        return 10
+
+rule all_deDup_flagstat:
+    input: expand("align/deDup_{sample}.sorted.bam.flagstat", sample=SAMPLES)
+
+rule all_murine:
+    input: expand("xenome/{sample}.murine", sample=TUMOR)
+
+
+GENES="genes.tsv"
+rule g:
+    output: "genes.tsv"
+    params: wes=EXONS
+    shell: "echo {params.wes} > {output}"
+
+
+rule mut_burden_tot:
+    input: tsize="targeted_size.txt", muts="mutect_paired_st/merged.table_nomultiallele"
+    output: "mutect_paired_st/tot_mut_burden.tsv"
+    run:
+        import pandas as pd
+        import numpy as np
+        data = pd.read_csv(input.muts, sep="\t", index_col=0)
+        tot = np.count_nonzero(data, axis=0)
+        target_len = 0
+        with open(input.tsize, 'r') as tsize:
+            line = tsize.readline()
+            target_len = float(line.rstrip())
+        target_len = target_len / 1000000
+        res = pd.DataFrame(data = {'totmut': tot, 'burden': tot/target_len}, index=data.columns)
+        res.to_csv(output[0], sep="\t", index=True)
+
+rule bed:
+    input: "mutect_paired/merged.table_nomultiallele"
+    output: "muts.bed"
+    shell: 
+        """
+            sed 1d {input} | cut -f 1 | tr ":" "\\t" | bawk '{{print $1, $2-1, $2}}' > {output}
+        """
+
+rule annotatr:
+    input: gained_bed="muts.bed"
+    params: custom_annot="no"
+    output: plot_n="muts.genomicregions.svg", plot_corr="muts.genomicregionsnorm.svg"
+    script: SRC_DIR+"/annotatr.R"
+
+
+######### MSI-SENSOR MARCO ##########
+MSISENSOR_DOCKER="pengjia1110/msisensor-pro"
