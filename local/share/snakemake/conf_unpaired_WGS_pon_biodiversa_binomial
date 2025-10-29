@@ -18,7 +18,7 @@ BIN_DIR=PRJ_ROOT+'/local/bin'
 FQ_REMOVED=False
 DEBUG="yes"
 TYPE="WGS"
-PAIRED=False
+PAIRED=True
 #SUBSAMPLE=0.25 # if == 1 do not downsample (downsampling is done right after alignment and dup removal, not before calling, to also recalibrate on less data).
 SUBSAMPLE=0.5 # if == 1 do not downsample (downsampling is done right after alignment and dup removal, not before calling, to also recalibrate on less data).
 

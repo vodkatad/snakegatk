@@ -20,6 +20,7 @@ DEBUG="yes"
 TYPE="WGS"
 PAIRED=True
 SUBSAMPLE=1 # if == 1 do not downsample (downsampling is done right after alignment and dup removal, not before calling, to also recalibrate on less data).
+TESTGERM=False
 
 # Needed references and annotations
 GNOMAD_TASK_DIR=ROOT+'/task/annotations/dataset/gnomad'
@@ -105,8 +106,12 @@ PURITY=1
 rule all_covered:
     input: expand("depth/{sample}_callable_{depth}.covered.bed.gz", sample=TUMOR, depth=['10x','20x','30x','40x','50x', '60x', '70x', '80x', '90x', '100x','150x','200x'])
 
+rule all_callable_covered:
+    input: expand("depth/callable_{depth}.covered.bed.gz", sample=TUMOR, depth=['10x','20x','30x','40x','50x', '60x', '70x', '80x', '90x', '100x','150x','200x'])
+
 XENOME_PREFIX=""
 XENOME_TOOL=""
 XENOME_WAIT=0
 PICARD='picard -Xmx10g -XX:ParallelGCThreads='
+
 

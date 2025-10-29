@@ -111,3 +111,48 @@ rule all_mpile:
     output: "all_mpile_alb"
     shell: "touch all_mpile_alb"
 
+#../../local/share/snakerule/Snakefile_platypus_WGS
+# for thomas 
+CLONE9=['CRC1307-09-0','CRC1307-09-1-B', 'CRC1307-09-1-C', 'CRC1307-09-1-E']
+PLATYPUS_DIR_9="platypus_9"
+rule merge_vcf_9:
+    input: expand("mutect_paired/{sample}.pass.vcf.gz", sample=CLONE9)
+    output: PLATYPUS_DIR_9+"/merged.vcf.gz"
+    docker: ALIGN_ODOCKER
+    shell:
+        """
+            bcftools merge --force-samples --missing-to-ref -o {output} -O z {input};
+            tabix {output};
+        """
+
+rule platypus_9:
+    input: PLATYPUS_DIR_9+"/merged.vcf.gz", REF_DIR+"/GRCh38.d1.vd1.fa", expand("align/realigned_{sample}.bam", sample=CLONE9)
+    output: PLATYPUS_DIR_9+"/platypus.vcf"
+    log: PLATYPUS_DIR_9+"/platypus.log"
+    params: bam = lambda wildcards, input: ','.join(input[2:]), cores = CORES
+    docker: PLATYPUS_ODOCKER
+    shell:
+        """
+            platypus callVariants --bamFiles={params.bam} --output={output} --refFile={input[1]} --source={input[0]} --minPosterior=0 --getVariantsFromBAMs=0 --minReads 1 --nCPU {params.cores} &> {log}
+        """
+
+rule pass_platypus_9:
+    output: PLATYPUS_DIR_9+"/pass"
+    params: keep="PASS,alleleBias"
+    shell:
+        """
+            echo {params.keep} | tr "," "\\n" > {output}
+        """
+
+rule filter_platypus_9:
+    input: vcf=PLATYPUS_DIR_9+"/platypus.vcf", keep=PLATYPUS_DIR_9+"/pass"
+    output: PLATYPUS_DIR_9+"/platypus_filtered.vcf.gz"
+    docker: ALIGN_ODOCKER
+    params: f1c=SRC_DIR+"/filter_1col.pl"
+    shell:
+        """
+            cat {input.vcf} | grep -v "^#"| {params.f1c} 7 {input.keep} | grep -v '\./\.' > {output}.tmp;
+            cat <(cat {input.vcf} | grep "^#") {output}.tmp | bgzip > {output};
+            tabix {output};
+            rm {output}.tmp;
+        """

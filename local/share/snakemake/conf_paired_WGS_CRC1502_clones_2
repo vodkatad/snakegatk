@@ -19,6 +19,7 @@ FQ_REMOVED=True
 DEBUG="yes"
 TYPE="WGS"
 PAIRED=True
+TESTGERM=True
 SUBSAMPLE=1 # if == 1 do not downsample (downsampling is done right after alignment and dup removal, not before calling, to also recalibrate on less data).
 
 # Needed references and annotations
@@ -46,6 +47,10 @@ PLH_DOCKER="bubusettete"
 ## This dataset:
 DATA=PRJ_ROOT+"/local/share/data/third_shipment"
 FQ_XENOME_DIR="xenome"
+XENOME_PREFIX=''
+XENOME_TOOL=''
+XENOME_WAIT=''
+PICARD='picard -Xmx10g -XX:ParallelGCThreads='
 
 # added normal and "TO" (which is a T1 in this case) links manually, the second one is needed by platypus - realigned and vcf are needed!
 # and check that this is stable:

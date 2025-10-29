@@ -22,7 +22,7 @@ rule mpileup:
     input: reference=REF_DIR+"/GRCh38.d1.vd1.fa", bam=ALIGN_DIR+"/markedDup_{sample}.sorted.bam"
     output: VARSCAN_DIR+"/{sample}.mpileup.gz"
     benchmark: "bench/{sample}.mpileup.gz.times"
-    docker: VARSCAN_ODOCKER
+    docker: "egrassi/occamsnakes/samtools:1"
     shell:
         """
             samtools mpileup -q 1 -B -f {input.reference} {input.bam} | gzip > {output}

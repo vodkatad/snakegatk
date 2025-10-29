@@ -165,9 +165,12 @@ if not PAIRED:
         input: "multiqc_report.html","multiqc_report.coverage.html","multiqc_report.align.html", MUTECT_DIR+"/all_samples.pass.table.gz"
 else:
     MUTECT_DIR="mutect_paired"
-    include: PRJ_ROOT+"/local/share/snakerule/Snakefile_splitmutect2_paired_4.1.4.0_"+TYPE
     VARSCAN_DIR="varscan_paired"
-    include: PRJ_ROOT+"/local/share/snakerule/Snakefile_varscan_"+TYPE+"_paired"
+    if not TESTGERM:
+        include: PRJ_ROOT+"/local/share/snakerule/Snakefile_varscan_"+TYPE+"_paired"
+    	include: PRJ_ROOT+"/local/share/snakerule/Snakefile_splitmutect2_paired_4.1.4.0_"+TYPE
+    else:
+    	include: PRJ_ROOT+"/local/share/snakerule/Snakefile_splitmutect2_paired_4.1.4.0_"+TYPE+"_germline"
     rule all_single_paired:
         input: expand("{{dir}}/{sample}.{{something}}", sample=TUMOR)
         output: "{dir}/all_samples_paired.{something}"

@@ -117,3 +117,49 @@ XENOME_TOOL=""
 XENOME_WAIT=""
 PICARD=""
 
+### platypus on only three clones for Ilio
+IPLATYPUS_DIR="ilio_platypus"
+MUTECT_DIR="mutect_paired"
+ALIGN_DIR="align"
+rule ilio_merge_vcf:
+    input: expand(MUTECT_DIR+"/{sample}.pass.vcf.gz", sample=['CRC0282-01-0', 'CRC0282-05-0', 'CRC0282-07-0'])
+    output: IPLATYPUS_DIR+"/merged.vcf.gz"
+    docker: ALIGN_ODOCKER
+    shell:
+        """
+            bcftools merge --force-samples --missing-to-ref -o {output} -O z {input};
+            tabix {output};
+        """
+
+rule ilio_platypus:
+    input: IPLATYPUS_DIR+"/merged.vcf.gz", REF_DIR+"/GRCh38.d1.vd1.fa", expand(ALIGN_DIR+"/realigned_{sample}.bam", sample=['CRC0282-01-0', 'CRC0282-05-0', 'CRC0282-07-0'])
+    output: IPLATYPUS_DIR+"/platypus.vcf"
+    log: IPLATYPUS_DIR+"/platypus.log"
+    params: bam = lambda wildcards, input: ','.join(input[2:]), cores = CORES
+    docker: PLATYPUS_ODOCKER
+    shell:
+        """
+            platypus callVariants --bamFiles={params.bam} --output={output} --refFile={input[1]} --source={input[0]} --minPosterior=0 --getVariantsFromBAMs=0 --minReads 1 --nCPU {params.cores} &> {log}
+        """
+
+rule ilio_pass_platypus:
+    output: IPLATYPUS_DIR+"/pass"
+    params: keep="PASS,alleleBias"
+    shell:
+        """
+            echo {params.keep} | tr "," "\\n" > {output}
+        """
+
+rule ilio_filter_platypus:
+    input: vcf=IPLATYPUS_DIR+"/platypus.vcf", keep=IPLATYPUS_DIR+"/pass"
+    output: IPLATYPUS_DIR+"/platypus_filtered.vcf.gz"
+    docker: ALIGN_ODOCKER
+    params: f1c=SRC_DIR+"/filter_1col.pl"
+    shell:
+        """
+            cat {input.vcf} | grep -v "^#"| {params.f1c} 7 {input.keep} | grep -v '\./\.' > {output}.tmp;
+            cat <(cat {input.vcf} | grep "^#") {output}.tmp | bgzip > {output};
+            tabix {output};
+            rm {output}.tmp;
+        """
+
