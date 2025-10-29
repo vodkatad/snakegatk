@@ -1,0 +1,103 @@
+import os
+ROOT=os.environ.get('BIOINFO_ROOT')
+def find_prj_root(path=os.getcwd()):
+    if os.path.isfile(os.path.join(path,".PRJ_ROOT")):
+        return path
+    else:
+        if path:
+            return find_prj_root(os.path.dirname(path))
+        else:
+            raise Exception("Can not find the PRJ_ROOT directory")
+
+
+PRJ_ROOT=find_prj_root()
+TMP="/scratch/home/egrassi/"
+
+SRC_DIR=PRJ_ROOT+'/local/src'
+BIN_DIR=PRJ_ROOT+'/local/bin'
+FQ_REMOVED=True
+DEBUG="yes"
+TYPE="WGS"
+PAIRED=True
+SUBSAMPLE=1 # if == 1 do not downsample (downsampling is done right after alignment and dup removal, not before calling, to also recalibrate on less data).
+
+# Needed references and annotations
+GNOMAD_TASK_DIR=ROOT+'/task/annotations/dataset/gnomad'
+REF_DIR=GNOMAD_TASK_DIR
+GNOMAD=GNOMAD_TASK_DIR
+VEP_CACHE_DIR=ROOT+"/task/variant_annotations/dataset/VEP"
+ANNOVAR=ROOT+"/task/variant_annotations/dataset/annovar/hg38/humandb/"
+PON=GNOMAD_TASK_DIR+"/1000g_pon.hg38.vcf.gz"
+DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
+INTERVAL=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.interval_list'
+CALLABLE_BED=GNOMAD_TASK_DIR+'/wgs_calling_regions.hg38.bed.gz'
+GCFILE=GNOMAD_TASK_DIR+'/sequenza_gc_w200.wig.gz'
+# Singularity containers and occam docker images
+GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
+GATK_ODOCKER="egrassi/occamsnakes/gatk_fixedov:1"
+XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
+ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
+SEQUENZA_ODOCKER="egrassi/occamsnakes/sequenza:1"
+VARSCAN_ODOCKER="egrassi/occamsnakes/varscan:1"
+PLATYPUS_ODOCKER="egrassi/occamsnakes/platypus:1"
+PLH_DOCKER="bubusettete"
+
+
+## This dataset:
+DATA=PRJ_ROOT+"/local/share/data/MA_treats_2"
+FQ_XENOME_DIR="xenome"
+
+SAMPLES_ORIG=['BIOMEDICA-1-1-48_SA_L001',"BIODIV-097-01","BIODIV-097-02","BIODIV-097-03","BIODIV-097-04","BIODIV-097-05","BIODIV-097-06","BIODIV-097-07","BIODIV-097-08","BIODIV-097-09","BIODIV-097-10","BIODIV-097-11","BIODIV-097-12","BIODIV-097-13","BIODIV-097-14","BIODIV-097-15","BIODIV-097-16","BIODIV-097-17","BIODIV-097-18","BIODIV-097-19","BIODIV-097-20","BIODIV-097-21","BIODIV-097-22","BIODIV-097-23","BIODIV-097-24","BIODIV-097-25","BIODIV-097-26","BIODIV-097-27","BIODIV-097-28","BIODIV-097-29","BIODIV-097-30"]
+SAMPLES=['CRC1430NLH0000000000D03000',"CRC1430-02-0","CRC1430-03-0","CRC1430-04-0","CRC1430-05-0","CRC1430-06-0","CRC1430-07-0","CRC1430-09-0","CRC1430-10-0","CRC1430-11-0","CRC1430-17-0","CRC1430-02-1-GA","CRC1430-03-1-GG","CRC1430-04-1-GA","CRC1430-05-1-GB","CRC1430-06-1-GA","CRC1430-07-1-GB","CRC1430-09-1-GB","CRC1430-10-1-GA","CRC1430-11-1-GB","CRC1430-17-1-GG","CRC1430-02-1-TC","CRC1430-03-1-TA","CRC1430-04-1-TA","CRC1430-05-1-TC","CRC1430-06-1-TC","CRC1430-07-1-TA","CRC1430-09-1-TB","CRC1430-10-1-TA","CRC1430-11-1-TA","CRC1430-17-1-TA"]
+
+NORMAL=[SAMPLES[0]]*(len(SAMPLES)-1)
+TUMOR=SAMPLES[1:]
+
+#REF=""
+#SAMPLESD=[]
+#SAMPS=",".join(SAMPLESD)
+
+XENOMED_SAMPLES=[]
+TRIMMED_SAMPLES=[]
+
+XENOME_PREFIX=""
+XENOME_TOOL=""
+XENOME_WAIT=""
+PICARD="picard -Xmx10g -XX:ParallelGCThreads="
+FASTQ_SUFFIX="_{pair}.fastq.gz"
+FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
+TESTGERM=False
+
+PAIRS=['R1_001','R2_001']
+PAIRS_XENOME=['1','2']
+CORES=12
+CORESMD=4
+# TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
+PATTERNED=2500 
+# HiSeq4000, otherwise 100 for unpatterned
+#–o recal.bam
+
+
+### TODO REMOVE ME FOR BULK!
+AFPARAM="--default-af 0"
+# https://gatkforums.broadinstitute.org/gatk/discussion/24633/mutect2-4-1-4-0-stats-file-with-a-negative-number#latest
+# use --default-af 0 to avoid 0.5 AF calls filtering 
+
+wildcard_constraints:
+    sample="[a-zA-Z0-9]+-?[0-9A-Z]+-?[A-Z0-9]+-?[A-Z0-9]?"
+
+
+CALLABLE="5:10,10:50,50:100,100:150,150:inf"
+CALLABLE_STRICT="50:100,100:150,150:inf"
+
+SPLIT=12
+SPLIT_INTERVAL=GNOMAD_TASK_DIR+'/GRCh38.d1.vd1.n'+str(SPLIT)
+if SPLIT >= 10:
+    SPLITS=['000'+str(x) for x in range(0,10)] + ['00'+str(x) for x in range(10,SPLIT)]
+else:
+    SPLITS=['000'+str(x) for x in range(0, SPLIT)]
+
+#+'-scattered.interval_list'
+
+PLOIDY=2
+PURITY=1
