@@ -164,3 +164,18 @@ rule g:
     output: "genes.tsv"
     shell: "echo WES > {output}"
 
+#cram
+#samtools view -T genome/chrX.fa -C -o eg/ERR188273_chrX.cram eg/ERR188273_chrX.bam
+
+rule tocram:
+    input: bam="align/{any}.bam", ref=REF_DIR+"/GRCh38.d1.vd1.fa"
+    output: cram="align/{any}.cram"
+    shell: 
+        """
+            samtools view -T {input.ref} -C -o {output.cram} {input.bam}
+        """
+# rm {input.bam}
+
+rule allcram:
+    input:  expand("align/realigned_{sample}.cram", sample=SAMPLES)
+
