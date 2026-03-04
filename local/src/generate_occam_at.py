@@ -5,17 +5,23 @@ def main():
     # 9 in vivo
     #SAMPLES=['CRC0282-01-MI-A', 'CRC0282-01-MI-D']
     #SAMPLES=["CRC0282LMO-0-B", "CRC1078LMO-0-B","CRC1502LMO-0-B","CRC0327LMO-0-B"]
-    SAMPLES=["CRC1430-02-0","CRC1430-03-0","CRC1430-04-0","CRC1430-05-0","CRC1430-06-0","CRC1430-07-0","CRC1430-09-0","CRC1430-10-0","CRC1430-11-0","CRC1430-17-0","CRC1430-02-1-GA","CRC1430-03-1-GG"]#,"CRC1430-04-1-GA","CRC1430-05-1-GB","CRC1430-06-1-GA","CRC1430-07-1-GB","CRC1430-09-1-GB","CRC1430-10-1-GA","CRC1430-11-1-GB","CRC1430-17-1-GG","CRC1430-02-1-TC","CRC1430-03-1-TA","CRC1430-04-1-TA",
-#            "CRC1430-05-1-TC","CRC1430-06-1-TC","CRC1430-07-1-TA","CRC1430-09-1-TB","CRC1430-10-1-TA","CRC1430-11-1-TA","CRC1430-17-1-TA"]
+    #SAMPLES=["CRC1430-02-0","CRC1430-03-0","CRC1430-04-0","CRC1430-05-0","CRC1430-06-0","CRC1430-07-0","CRC1430-09-0","CRC1430-10-0","CRC1430-11-0","CRC1430-17-0","CRC1430-02-1-GA","CRC1430-03-1-GG"]
+    #SAMPLES=["CRC1430-04-1-GA","CRC1430-05-1-GB","CRC1430-06-1-GA","CRC1430-07-1-GB","CRC1430-09-1-GB","CRC1430-10-1-GA","CRC1430-11-1-GB","CRC1430-17-1-GG"]#
+    #SAMPLES=["CRC1430-02-1-TC","CRC1430-03-1-TA","CRC1430-04-1-TA"]
+    SAMPLES=["CRC1430-04-1-TA", "CRC1430-04-1-TA"]
+    #SAMPLES=["CRC1430-05-1-TC","CRC1430-06-1-TC"]
+    #SAMPLES=["CRC1430-07-1-TA","CRC1430-09-1-TB"]#
+    #SAMPLES=["CRC1430-10-1-TA","CRC1430-11-1-TA",
+    #SAMPLES=["CRC1430-17-1-TA","CRC1430-17-1-TA"]
     #SAMPLES=[ 'CRC1502-10-MA-C', 'CRC1502-10-MC-A', 'CRC1502-10-MC-C', 'CRC1502-10-MC-D', 'CRC1502-10-MI-A', 'CRC1502-10-MI-C', 'CRC1502-10-MI-G','plh']
 
-    NODES=['RUN_NODE=node' + str(n) for n in range(1, 6)]# + ['RUN_NODE=node6','RUN_NODE=node7']
-    SH=['bulk_node' + str(n) + '.sh' for n in range(1, 6)]# + ['1502_node6.sh','1502_node7.sh']
+    NODES=['RUN_NODE=node' + str(n) for n in range(4,5)] #+ ['RUN_NODE=node5']# + ['RUN_NODE=node6','RUN_NODE=node7'] # range(1,5)
+    SH=['bulk_r4_node' + str(n) + '.sh' for n in range(4,5)]# + ['bulk_r3_node5.sh']# + ['1502_node6.sh','1502_node7.sh']
     at_command = """
  export {:s} && snakemake -j 2 --use-docker align/realigned_{:s}.bam align/realigned_{:s}.bam &> {:s}_align.slog;
  export {:s} && snakemake -j 6 --use-docker mutect_paired/{:s}.pass.vcf.gz mutect_paired/{:s}.pass.vcf.gz &> {:s}_mutect_paired.slog;
  export {:s} && snakemake -j 2 --use-docker sequenza/{:s} sequenza/{:s} &> {:s}_sequenza.slog;
- #export {:s} && snakemake -j 2 --use-docker fastqc_{:s} fastqc_{:s} &> {:s}_fastqc.slog;
+ export {:s} && snakemake -j 2 --use-docker fastqc_{:s} fastqc_{:s} &> {:s}_fastqc.slog;
  export {:s} && snakemake -j 2 --use-docker align/{:s}.bam.flagstat align/{:s}.bam.flagstat &> {:s}_flagstat.slog;
  export {:s} && snakemake -j 2 --use-docker align/{:s}.wgsmetrics align/{:s}.wgsmetrics &> {:s}_wgsmetrics.slog;
  """

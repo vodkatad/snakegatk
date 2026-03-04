@@ -1,3 +1,4 @@
+TESTGERM=''
 include: "conf.sk"
 
 rule all_ln:
@@ -8,7 +9,7 @@ def find_ln(wildcards):
     import os
     i = SAMPLES.index(wildcards.sample)
     w = DATA+"/"+SAMPLES_ORIG[i]+"_"+wildcards.pair+".fastq.gz"
-    #print(w)
+    print(w)
     if os.path.isfile(w) or FQ_REMOVED:
         return w
     else:

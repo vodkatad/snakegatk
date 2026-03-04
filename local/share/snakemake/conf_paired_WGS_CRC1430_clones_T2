@@ -47,8 +47,12 @@ PLH_DOCKER="bubusettete"
 DATA=PRJ_ROOT+"/local/share/data/MA_treats_2"
 FQ_XENOME_DIR="xenome"
 
-SAMPLES_ORIG=['BIOMEDICA-1-1-48_SA_L001',"BIODIV-097-01","BIODIV-097-02","BIODIV-097-03","BIODIV-097-04","BIODIV-097-05","BIODIV-097-06","BIODIV-097-07","BIODIV-097-08","BIODIV-097-09","BIODIV-097-10","BIODIV-097-11","BIODIV-097-12","BIODIV-097-13","BIODIV-097-14","BIODIV-097-15","BIODIV-097-16","BIODIV-097-17","BIODIV-097-18","BIODIV-097-19","BIODIV-097-20","BIODIV-097-21","BIODIV-097-22","BIODIV-097-23","BIODIV-097-24","BIODIV-097-25","BIODIV-097-26","BIODIV-097-27","BIODIV-097-28","BIODIV-097-29","BIODIV-097-30"]
+SAMPLES_ORIG=['BIOMEDICA-1-1-48_SA_L001',"BIODIV-097-1","BIODIV-097-2","BIODIV-097-3","BIODIV-097-4","BIODIV-097-5","BIODIV-097-6","BIODIV-097-7","BIODIV-097-8","BIODIV-097-9","BIODIV-097-10","BIODIV-097-11","BIODIV-097-12","BIODIV-097-13","BIODIV-097-14","BIODIV-097-15","BIODIV-097-16","BIODIV-097-17","BIODIV-097-18","BIODIV-097-19","BIODIV-097-20","BIODIV-097-21","BIODIV-097-22","BIODIV-097-23","BIODIV-097-24","BIODIV-097-25","BIODIV-097-26","BIODIV-097-27","BIODIV-097-28","BIODIV-097-29","BIODIV-097-30"]
 SAMPLES=['CRC1430NLH0000000000D03000',"CRC1430-02-0","CRC1430-03-0","CRC1430-04-0","CRC1430-05-0","CRC1430-06-0","CRC1430-07-0","CRC1430-09-0","CRC1430-10-0","CRC1430-11-0","CRC1430-17-0","CRC1430-02-1-GA","CRC1430-03-1-GG","CRC1430-04-1-GA","CRC1430-05-1-GB","CRC1430-06-1-GA","CRC1430-07-1-GB","CRC1430-09-1-GB","CRC1430-10-1-GA","CRC1430-11-1-GB","CRC1430-17-1-GG","CRC1430-02-1-TC","CRC1430-03-1-TA","CRC1430-04-1-TA","CRC1430-05-1-TC","CRC1430-06-1-TC","CRC1430-07-1-TA","CRC1430-09-1-TB","CRC1430-10-1-TA","CRC1430-11-1-TA","CRC1430-17-1-TA"]
+
+# for all_ln (different fastq extensions)
+#SAMPLES_ORIG=["BIODIV-097-1","BIODIV-097-2","BIODIV-097-3","BIODIV-097-4","BIODIV-097-5","BIODIV-097-6","BIODIV-097-7","BIODIV-097-8","BIODIV-097-9","BIODIV-097-10","BIODIV-097-11","BIODIV-097-12","BIODIV-097-13","BIODIV-097-14","BIODIV-097-15","BIODIV-097-16","BIODIV-097-17","BIODIV-097-18","BIODIV-097-19","BIODIV-097-20","BIODIV-097-21","BIODIV-097-22","BIODIV-097-23","BIODIV-097-24","BIODIV-097-25","BIODIV-097-26","BIODIV-097-27","BIODIV-097-28","BIODIV-097-29","BIODIV-097-30"]
+#SAMPLES=["CRC1430-02-0","CRC1430-03-0","CRC1430-04-0","CRC1430-05-0","CRC1430-06-0","CRC1430-07-0","CRC1430-09-0","CRC1430-10-0","CRC1430-11-0","CRC1430-17-0","CRC1430-02-1-GA","CRC1430-03-1-GG","CRC1430-04-1-GA","CRC1430-05-1-GB","CRC1430-06-1-GA","CRC1430-07-1-GB","CRC1430-09-1-GB","CRC1430-10-1-GA","CRC1430-11-1-GB","CRC1430-17-1-GG","CRC1430-02-1-TC","CRC1430-03-1-TA","CRC1430-04-1-TA","CRC1430-05-1-TC","CRC1430-06-1-TC","CRC1430-07-1-TA","CRC1430-09-1-TB","CRC1430-10-1-TA","CRC1430-11-1-TA","CRC1430-17-1-TA"]
 
 NORMAL=[SAMPLES[0]]*(len(SAMPLES)-1)
 TUMOR=SAMPLES[1:]
@@ -63,15 +67,17 @@ TRIMMED_SAMPLES=[]
 XENOME_PREFIX=""
 XENOME_TOOL=""
 XENOME_WAIT=""
-PICARD="picard -Xmx10g -XX:ParallelGCThreads="
 FASTQ_SUFFIX="_{pair}.fastq.gz"
 FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
 TESTGERM=False
 
-PAIRS=['R1_001','R2_001']
+
+#PAIRS=['R1_001','R2_001']
+PAIRS=['R1','R2']
 PAIRS_XENOME=['1','2']
 CORES=12
 CORESMD=4
+PICARD="picard -Xmx10g -XX:ParallelGCThreads="+str(CORES)
 # TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
 PATTERNED=2500 
 # HiSeq4000, otherwise 100 for unpatterned
@@ -83,8 +89,9 @@ AFPARAM="--default-af 0"
 # https://gatkforums.broadinstitute.org/gatk/discussion/24633/mutect2-4-1-4-0-stats-file-with-a-negative-number#latest
 # use --default-af 0 to avoid 0.5 AF calls filtering 
 
+#CRC1430-09-1-TB_R2.fastq.gz
 wildcard_constraints:
-    sample="[a-zA-Z0-9]+-?[0-9A-Z]+-?[A-Z0-9]+-?[A-Z0-9]?"
+    sample="[a-zA-Z0-9]+-?[0-9A-Z]+-?[A-Z0-9]+-?[A-Z0-9]*"
 
 
 CALLABLE="5:10,10:50,50:100,100:150,150:inf"
@@ -101,3 +108,54 @@ else:
 
 PLOIDY=2
 PURITY=1
+############
+BASELINE=["CRC1430-02-0","CRC1430-03-0","CRC1430-04-0","CRC1430-05-0","CRC1430-06-0","CRC1430-07-0","CRC1430-09-0","CRC1430-10-0","CRC1430-11-0","CRC1430-17-0","CRC1430-02-1-GA","CRC1430-03-1-GG","CRC1430-04-1-GA","CRC1430-05-1-GB","CRC1430-06-1-GA","CRC1430-07-1-GB","CRC1430-09-1-GB","CRC1430-10-1-GA","CRC1430-11-1-GB","CRC1430-17-1-GG"]
+TREAT=["CRC1430-02-0","CRC1430-03-0","CRC1430-04-0","CRC1430-05-0","CRC1430-06-0","CRC1430-07-0","CRC1430-09-0","CRC1430-10-0","CRC1430-11-0","CRC1430-17-0","CRC1430-02-1-TC","CRC1430-03-1-TA","CRC1430-04-1-TA","CRC1430-05-1-TC","CRC1430-06-1-TC","CRC1430-07-1-TA","CRC1430-09-1-TB","CRC1430-10-1-TA","CRC1430-11-1-TA","CRC1430-17-1-TA"]
+### platypus split baseline/T
+#BPLATYPUS_DIR="baseline_platypus" # "T_platypus"
+BPLATYPUS_DIR="T_platypus"
+BASELINE=TREAT
+MUTECT_DIR="mutect_paired"
+ALIGN_DIR="align"
+rule ilio_merge_vcf:
+    input: expand(MUTECT_DIR+"/{sample}.pass.vcf.gz", sample=BASELINE)
+    output: BPLATYPUS_DIR+"/merged.vcf.gz"
+    docker: ALIGN_ODOCKER
+    shell:
+        """
+            bcftools merge --force-samples --missing-to-ref -o {output} -O z {input};
+            tabix {output};
+        """
+
+rule ilio_platypus:
+    input: BPLATYPUS_DIR+"/merged.vcf.gz", REF_DIR+"/GRCh38.d1.vd1.fa", expand(ALIGN_DIR+"/realigned_{sample}.bam", sample=BASELINE)
+    output: BPLATYPUS_DIR+"/platypus.vcf"
+    log: BPLATYPUS_DIR+"/platypus.log"
+    params: bam = lambda wildcards, input: ','.join(input[2:]), cores = CORES
+    docker: PLATYPUS_ODOCKER
+    shell:
+        """
+            platypus callVariants --bamFiles={params.bam} --output={output} --refFile={input[1]} --source={input[0]} --minPosterior=0 --getVariantsFromBAMs=0 --minReads 1 --nCPU {params.cores} &> {log}
+        """
+
+rule ilio_pass_platypus:
+    output: BPLATYPUS_DIR+"/pass"
+    params: keep="PASS,alleleBias"
+    shell:
+        """
+            echo {params.keep} | tr "," "\\n" > {output}
+        """
+
+rule ilio_filter_platypus:
+    input: vcf=BPLATYPUS_DIR+"/platypus.vcf", keep=BPLATYPUS_DIR+"/pass"
+    output: BPLATYPUS_DIR+"/platypus_filtered.vcf.gz"
+    docker: ALIGN_ODOCKER
+    params: f1c=SRC_DIR+"/filter_1col.pl"
+    shell:
+        """
+            cat {input.vcf} | grep -v "^#"| {params.f1c} 7 {input.keep} | grep -v '\./\.' > {output}.tmp;
+            cat <(cat {input.vcf} | grep "^#") {output}.tmp | bgzip > {output};
+            tabix {output};
+            rm {output}.tmp;
+        """
+
