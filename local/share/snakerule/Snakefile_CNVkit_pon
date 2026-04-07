@@ -74,19 +74,6 @@ rule a_target_coverage:
 rule all_coverage:
     input: expand("cnn/{sample}.targetcoverage.cnn", sample=SAMPLES), expand("cnn/{sample}.antitargetcoverage.cnn", sample=SAMPLES) 
 
-#egrassi@godot:/mnt/trcanmed/snaketree/prj/snakegatk/dataset/CNVkit_pon$ time snakemake  all_coverage -j1 &> all_coverage.slog
-#real    128m17.503s
-#user    300m45.637s
-#sys     12m8.432s
-
-#egrassi@godot:/mnt/trcanmed/snaketree/prj/snakegatk/dataset/CNVkit_pon$  bawk  'BEGIN{{bp=0}} {{bp=bp+($3-$2)}} END{{print n,bp}}' targets.bed 
-#        14845899
-
-# TODO 10419 genes or genes, covered
-
-#cnvkit.py coverage Sample.bam targets.bed -o Sample.targetcoverage.cnn
-#cnvkit.py coverage Sample.bam antitargets.bed -o Sample.antitargetcoverage.cnn
-
 # then
 #cnvkit.py reference *coverage.cnn -f ucsc.hg19.fa -o Reference.cnn
 rule ref:
@@ -124,7 +111,6 @@ rule cns:
 rule all_cns:
     input: expand("cns/{sample}.cns", sample=SAMPLES)
 
-<<<<<<< HEAD
 # -v Sample.vcf 
 rule plot:
     input: cns="cns/{sample}.cns", cnr="cnr/{sample}.cnr"
@@ -142,8 +128,6 @@ rule metrics:
             cnvkit.py metrics {input.cnr} -s {input.cns} -o {output}
         """
 
-=======
->>>>>>> 60fe9b6 (CNVkit fix/segment on normal (?))
 rule flat:
     input: ref=REF_DIR+'/GRCh38.d1.vd1.fa', targ='targets.bed', atarg='antitargets.bed'
     output: "flat_reference.cnn"
@@ -151,3 +135,8 @@ rule flat:
         """
         cnvkit.py reference -o {output} -f {input.ref} -t {input.targ} -a {input.atarg}
         """
+
+# then flat:
+# cnvkit.py reference -o FlatReference.cnn -f ucsc.hg19.fa -t targets.bed -a antitargets.bed
+
+
