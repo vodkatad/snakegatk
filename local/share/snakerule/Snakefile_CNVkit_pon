@@ -1,0 +1,92 @@
+include: "conf.sk"
+
+# CLEANME: to python and use keys() rather than file names
+rule bed_lengths:
+    input: expand(BED_DIR+"/{kit}", kit=CAPTURE.values())
+    output:  "kits_lengths.tsv"
+    shell:
+        """
+            for k in {input}; do bawk -v n=$k 'BEGIN{{bp=0}} {{bp=bp+($3-$2)}} END{{print n,bp}}' $k; done > {output}
+        """
+
+rule bed_intersect:
+    input: expand(BED_DIR+"/{kit}", kit=CAPTURE.values())
+    output:  "all_kits_int.bed"
+    params: wanted=len(CAPTURE.values())
+    shell: 
+        """
+            multiIntersectBed -i  {input} | bawk '$4=={params.wanted}' > {output}
+        """
+    
+rule intersect_length:
+    input:  "all_kits_int.bed"
+    output:  "kits_intersect_length.tsv"
+    shell:
+        """
+            bawk -v n={input} 'BEGIN{{bp=0}} {{bp=bp+($3-$2)}} END{{print n,bp}}' {input} > {output}
+        """
+
+# split larger exons in smaller bins (266.6?) and assign name
+#Exons in the human genome have an average size of about 200bp. The target bin size default of 267 is chosen so that splitting larger exons will produce bins with a minimum size of 200. Since bins that contain fewer reads result in a noisier copy number signal, this approach ensures the “noisiness” of the bins produced by splitting larger exons will be no worse than average.
+#In practice we see good results with an average of 200–300 reads per bin; we therefore recommend an overall on-target sequencing coverage depth of at least 200x to 300x with a read length of 100bp to justify reducing the average target bin size to 100bp.
+rule split:
+    input: bed="all_kits_int.bed", refFlat=REFFLAT
+    output: "targets.bed"
+    shell: 
+        """
+            cnvkit.py target {input.bed} --annotate {input.refFlat} --split -o {output}
+        """
+# TODO capire e guardare weight of cnrs:
+#For hybrid capture, if your targets are not tiled with uniform density – for example, if your target panel is designed with a subset of targets having twice or half the usual number of tiles for a fixed number of genomic bases – you do not need to do anything in particular to compensate for this as long as you are using a pooled reference. When a test sample’s read depths are normalized to the pooled reference, the log2 ratios will even out. However, the “spread” of those bins in your pooled reference, and the “weight” of the corresponding bins in the test sample’s .cnr file, will be correspondingly higher or lower.
+
+# we do not have spike on so that's fine
+#https://www.encodeproject.org/documents/cbaffa9e-2e42-434e-8b88-f04619c57080/@@download/attachment/README.txt
+rule accessible_mappable:
+    input: excl=BLACKLIST, ref=REF_DIR+'/GRCh38.d1.vd1.fa'
+    output: "mappable.bed"
+    shell: 
+        """
+            cnvkit.py access {input.ref} -x {input.excl} -o {output}
+        """
+
+rule antitarget:
+    input: targ="targets.bed", mappable="mappable.bed"
+    output: antitarg="antitargets.bed"
+    shell:
+        """
+            cnvkit.py antitarget {input.targ} -g {input.mappable} -o {output}
+        """
+
+#TODO   -q, --min-mapq MIN_MAPQ ? default 0
+# -f not needed since we defined mappable before?
+rule a_target_coverage:
+    input: bam=BAM_DIR+"/realigned_{sample}.bam", bed="{target}.bed"
+    output: "cnn/{sample}_{target}.cnn"
+    log: depth="cnn/{sample}_{target}.cnn.log"
+    params: cores=CORES
+    benchmark: "bench/{sample}_{target}.times.txt"
+    shell: 
+        """
+            cnvkit.py coverage {input.bam} {input.bed} -o {output} -p {params.cores} 2> {log.depth}
+        """
+
+rule all_coverage:
+    input: expand("cnn/{sample}_targets.cnn", sample=SAMPLES), expand("cnn/{sample}_antitargets.cnn", sample=SAMPLES) 
+
+#egrassi@godot:/mnt/trcanmed/snaketree/prj/snakegatk/dataset/CNVkit_pon$  bawk  'BEGIN{{bp=0}} {{bp=bp+($3-$2)}} END{{print n,bp}}' targets.bed 
+#        14845899
+#egrassi@godot:/mnt/trcanmed/snaketree/prj/snakegatk/dataset/CNVkit_pon$ cat kits_intersect_length.tsv 
+#all_kits_int.bed        14845899
+
+# 10419 genes or genes, covered
+
+#cnvkit.py coverage Sample.bam targets.bed -o Sample.targetcoverage.cnn
+#cnvkit.py coverage Sample.bam antitargets.bed -o Sample.antitargetcoverage.cnn
+
+# then
+#cnvkit.py reference *coverage.cnn -f ucsc.hg19.fa -o Reference.cnn
+
+# then flat:
+# cnvkit.py reference -o FlatReference.cnn -f ucsc.hg19.fa -t targets.bed -a antitargets.bed
+
+
