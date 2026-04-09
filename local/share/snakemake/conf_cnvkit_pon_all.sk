@@ -18,12 +18,12 @@ TMP="/tmp"
 SRC_DIR=PRJ_ROOT+'/local/src'
 BIN_DIR=PRJ_ROOT+'/local/bin'
 
-BED_DIR=PRJ_ROOT+'/local/share/data/bed_wes'
+BED_DIR=PRJ_ROOT+'/local/share/data/bed_wes/sort'
 
 CAPTURE= {
-'agilent7': 'S31285117_Regions_sorted.bed', # Marika 1
-'agilent8': 'SureSelect_XT_HS2_V8_S33266340_Covered_goodchrs.bed', # WES_2023
-'agilent4': 'velculescu.bed', 
+'agilent7': 'S31285117_Padded.bed', # Marika 1
+'agilent8': 'S33266436_Padded.bed', # WES_2023
+'agilent4': 'S03723314_Padded_hg38.bed', 
 'idt':  'xgen-exome-hyb-panel-v2-targets-hg38.sorted.bed', # WES_early_late WES_2023 
 'edi': 'edinburghgen.bed' # Aizoon Edinburgh genetics
 }

@@ -1,1 +1,0 @@
-egrassi@godot:/mnt/trcanmed/snaketree/prj/whatever/dataset/mutcheck/ba_round/TCF7L2_SOX9/beds$ liftOver hg18/S03723314_Covered.bed   /mnt/trcanmed/snaketree/prj/pdxopedia/local/share/data/old_seq/hg19ToHg38.over.chain.gz velculescu.bed hg18/unmapped.new.bed 
