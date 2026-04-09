@@ -1,0 +1,16 @@
+https://earray.chem.agilent.com/suredesign/search/entity.htm
+
+remove header by hand
+liftover for v4:
+
+liftOver S03723314_Padded_hg19.bed   /mnt/trcanmed/snaketree/prj/pdxopedia/local/share/data/old_seq/hg19ToHg38.over.chain.gz S03723314_Padded_hg38.bed  S03723314_Padded_unmapped.bed
+
+
+ 2159  sort -k1,1 -k2,2n S31285117_Padded.bed > sort/S31285117_Padded.bed
+ 2187  sort -k1,1 -k2,2n S03723314_Padded_hg38.bed > sort/S03723314_Padded_hg38.bed
+
+
+uff sorting:
+egrassi@godot:/mnt/trcanmed/snaketree/prj/snakegatk/local/share/data/bed_wes$ sort -k1,1 -k2,2n edinburghgen.bed > sort/edinburghgen.bed
+egrassi@godot:/mnt/trcanmed/snaketree/prj/snakegatk/local/share/data/bed_wes$ sort -k1,1 -k2,2n xgen-exome-hyb-panel-v2-targets-hg38.sorted.bed > sort/xgen-exome-hyb-panel-v2-targets-hg38.sorted.bed
+
