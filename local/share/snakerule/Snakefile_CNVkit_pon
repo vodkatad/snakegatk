@@ -72,7 +72,12 @@ rule a_target_coverage:
 
 #used mmv and not run after discovering cnvkit naming assumptions, could not work
 rule all_coverage:
-    input: expand("cnn/{sample}.targetscoverage.cnn", sample=SAMPLES), expand("cnn/{sample}.antitargetscoverage.cnn", sample=SAMPLES) 
+    input: expand("cnn/{sample}.targetcoverage.cnn", sample=SAMPLES), expand("cnn/{sample}.antitargetcoverage.cnn", sample=SAMPLES) 
+
+#egrassi@godot:/mnt/trcanmed/snaketree/prj/snakegatk/dataset/CNVkit_pon$ time snakemake  all_coverage -j1 &> all_coverage.slog
+#real    128m17.503s
+#user    300m45.637s
+#sys     12m8.432s
 
 #egrassi@godot:/mnt/trcanmed/snaketree/prj/snakegatk/dataset/CNVkit_pon$  bawk  'BEGIN{{bp=0}} {{bp=bp+($3-$2)}} END{{print n,bp}}' targets.bed 
 #        14845899
@@ -119,6 +124,7 @@ rule cns:
 rule all_cns:
     input: expand("cns/{sample}.cns", sample=SAMPLES)
 
+<<<<<<< HEAD
 # -v Sample.vcf 
 rule plot:
     input: cns="cns/{sample}.cns", cnr="cnr/{sample}.cnr"
@@ -136,6 +142,8 @@ rule metrics:
             cnvkit.py metrics {input.cnr} -s {input.cns} -o {output}
         """
 
+=======
+>>>>>>> 60fe9b6 (CNVkit fix/segment on normal (?))
 rule flat:
     input: ref=REF_DIR+'/GRCh38.d1.vd1.fa', targ='targets.bed', atarg='antitargets.bed'
     output: "flat_reference.cnn"
