@@ -61,8 +61,8 @@ rule antitarget:
 # -f not needed since we defined mappable before?
 rule a_target_coverage:
     input: bam=BAM_DIR+"/realigned_{sample}.bam", bed="{target}.bed"
-    output: "cnn/{sample}_{target}.cnn"
-    log: depth="cnn/{sample}_{target}.cnn.log"
+    output: "cnn/{sample}.{target}coverage.cnn"
+    log: depth="cnn/{sample}.{target}.cnn.log"
     params: cores=CORES
     benchmark: "bench/{sample}_{target}.times.txt"
     shell: 
@@ -70,8 +70,14 @@ rule a_target_coverage:
             cnvkit.py coverage {input.bam} {input.bed} -o {output} -p {params.cores} 2> {log.depth}
         """
 
+#used mmv and not run after discovering cnvkit naming assumptions, could not work
 rule all_coverage:
-    input: expand("cnn/{sample}_targets.cnn", sample=SAMPLES), expand("cnn/{sample}_antitargets.cnn", sample=SAMPLES) 
+    input: expand("cnn/{sample}.targetscoverage.cnn", sample=SAMPLES), expand("cnn/{sample}.antitargetscoverage.cnn", sample=SAMPLES) 
+
+#egrassi@godot:/mnt/trcanmed/snaketree/prj/snakegatk/dataset/CNVkit_pon$ time snakemake  all_coverage -j1 &> all_coverage.slog
+#real    128m17.503s
+#user    300m45.637s
+#sys     12m8.432s
 
 #egrassi@godot:/mnt/trcanmed/snaketree/prj/snakegatk/dataset/CNVkit_pon$  bawk  'BEGIN{{bp=0}} {{bp=bp+($3-$2)}} END{{print n,bp}}' targets.bed 
 #        14845899
@@ -86,7 +92,36 @@ rule all_coverage:
 # then
 #cnvkit.py reference *coverage.cnn -f ucsc.hg19.fa -o Reference.cnn
 
-# then flat:
-# cnvkit.py reference -o FlatReference.cnn -f ucsc.hg19.fa -t targets.bed -a antitargets.bed
+# fix segment call then to call CN on tumor samples -> cnr
+rule cnr:
+    input: targ="cnn/{sample}.targetcoverage.cnn", atarg="cnn/{sample}.antitargetcoverage.cnn", ref="flat_reference.cnn"
+    output: "cnr/{sample}.cnr"
+    benchmark: "bench/{sample}_cnr.times.txt"
+    shell:  
+        """
+            cnvkit.py fix {input.targ} {input.atarg} {input.ref} -o {output}
+        """
+# cnr -> cns with segment
+rule cns:
+    input: "cnr/{sample}.cnr"
+    output: "cns/{sample}.cns"
+    benchmark: "bench/{sample}_cns.times.txt"
+    params: cores=CORES
+    shell:  
+        """
+            cnvkit.py segment -o {output} -p {params.cores} {input}
+        """
 
+# then call to integer CN
+# scatter produces a plot
+# metrics https://cnvkit.readthedocs.io/en/stable/reports.html#metrics
+rule all_cns:
+    input: expand("cns/{sample}.cns", sample=SAMPLES)
 
+rule flat:
+    input: ref=REF_DIR+'/GRCh38.d1.vd1.fa', targ='targets.bed', atarg='antitargets.bed'
+    output: "flat_reference.cnn"
+    shell:
+        """
+        cnvkit.py reference -o {output} -f {input.ref} -t {input.targ} -a {input.atarg}
+        """
