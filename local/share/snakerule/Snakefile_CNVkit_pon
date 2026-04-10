@@ -60,7 +60,7 @@ rule antitarget:
 #TODO   -q, --min-mapq MIN_MAPQ ? default 0
 # -f not needed since we defined mappable before?
 rule a_target_coverage:
-    input: bam=BAM_DIR+"/realigned_{sample}.bam", bed="{target}.bed"
+    input: bam=BAM_DIR+"/realigned_{sample}.bam", bed="{target}s.bed"
     output: "cnn/{sample}.{target}coverage.cnn"
     log: depth="cnn/{sample}.{target}.cnn.log"
     params: cores=CORES
@@ -119,6 +119,7 @@ rule cns:
 rule all_cns:
     input: expand("cns/{sample}.cns", sample=SAMPLES)
 
+# -v Sample.vcf 
 rule plot:
     input: cns="cns/{sample}.cns", cnr="cnr/{sample}.cnr"
     output: "{sample}_scatter.png"

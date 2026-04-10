@@ -1,0 +1,61 @@
+include: "conf.sk"
+
+#TODO   -q, --min-mapq MIN_MAPQ ? default 0
+# -f not needed since we defined mappable before?
+rule a_target_coverage:
+    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", bed=CNVKIT+"/{target}s.bed"
+    output: "cnvkit/{sample}.{target}coverage.cnn"
+    log: depth="cnvkit/{sample}.{target}.cnn.log"
+    params: cores=CORES
+    benchmark: "bench/{sample}_{target}.times.txt"
+    shell: 
+        """
+            cnvkit.py coverage {input.bam} {input.bed} -o {output} -p {params.cores} 2> {log.depth}
+        """
+
+#used mmv and not run after discovering cnvkit naming assumptions, could not work
+rule all_coverage:
+    input: expand("cnvkit/{sample}.targetscoverage.cnn", sample=SAMPLES), expand("cnn/{sample}.antitargetscoverage.cnn", sample=SAMPLES) 
+
+# fix segment call then to call CN on tumor samples -> cnr
+rule cnr:
+    input: targ="cnvkit/{sample}.targetcoverage.cnn", atarg="cnvkit/{sample}.antitargetcoverage.cnn", ref=CNVKIT+"/Reference.cnn" 
+    output: "cnvkit/{sample}.
+    benchmark: "bench/{sample}_cnr.times.txt"
+    shell:  
+        """
+            cnvkit.py fix {input.targ} {input.atarg} {input.ref} -o {output}
+        """
+# cnr -> cns with segment
+rule cns:
+    input: "cnvkit/{sample}.cnr"
+    output: "cnvkit/{sample}.cns"
+    benchmark: "bench/{sample}_cns.times.txt"
+    params: cores=CORES
+    shell:  
+        """
+            cnvkit.py segment -o {output} -p {params.cores} {input}
+        """
+
+# then call to integer CN
+# scatter produces a plot
+
+rule all_cns:
+    input: expand("cnvkit/{sample}.cns", sample=SAMPLES)
+
+# -v Sample.vcf 
+rule plot:
+    input: cns="cnvkit/{sample}.cns", cnr="cnvkit/{sample}.cnr"
+    output: "{sample}_scatter.png"
+    shell:
+        """
+            cnvkit.py scatter {input.cnr} -s {input.cns} -o {output}
+        """
+
+rule metrics:
+    input: cns=expand("cns/{sample}.cns", sample=SAMPLES), cnr=expand("cnr/{sample}.cnr", sample=SAMPLES)
+    output:  "metrics.txt"
+    shell:
+        """
+            cnvkit.py metrics {input.cnr} -s {input.cns} -o {output}
+        """

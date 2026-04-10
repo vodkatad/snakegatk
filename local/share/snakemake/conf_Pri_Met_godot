@@ -35,6 +35,7 @@ GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images 
 #GATK_ODOCKER="egrassi/occamsnakes/gatk:1"
 GATK_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/gatk_fixedov:1" # we keep this for this project and accept the filtering bug, even if it's not that small..
 SEQUENZA_ODOCKER="gitlab.c3s.unito.it:5000/egrassi/occamsnakes/sequenza:1" # we keep this for this project and accept the filtering bug, even if it's not that small..
+MSISENSOR_DOCKER='plh'
 
 XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
 ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
@@ -145,6 +146,7 @@ ASSAY="WES" #   "TARGETED"
 GCFILE=GNOMAD_TASK_DIR+'/sequenza_gc_w50.wig.gz'
 GENES="genes.tsv"
 NAME="Pri_Mets"
+CNVKIT='/mnt/trcanmed/snaketree/prj/snakegatk/dataset/CNVkit_pon' # has Reference.cnn and targets.bed antitargets.bed
 
 rule all_markedDup:
     input: expand("align/markedDup_{sample}.sorted.bam", sample=SAMPLES)

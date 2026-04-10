@@ -184,6 +184,10 @@ else:
     VARSCANGERM_DIR="vcf_varscan_germline"
     include: PRJ_ROOT+"/local/share/snakerule/Snakefile_varscangermline_"+TYPE
 
+# CNVKIT variable will exist and contain the chosen dir with Reference.cnn and targets/antitargets.bed
+if 'CNVKIT' in locals():
+    include: PRJ_ROOT+"/local/share/snakerule/Snakefile_CNVkit"
+
 CNV_DIR="sequenza"
 include: PRJ_ROOT+"/local/share/snakerule/Snakefile_sequenza_"+TYPE
 
@@ -199,7 +203,7 @@ rule all_realign:
 # phyloWGS
 include: PRJ_ROOT+"/local/share/snakerule/Snakefile_phyloWGS"
 
-rule sequenza_to_BED:
+rule sequenza_to_BED_2:
     input: 'sequenza/{sample}/{sample}_segments.txt'
     output:'loh/bed/{sample}.bed'
     run:
@@ -210,10 +214,10 @@ rule sequenza_to_BED:
         data_filtered=data.loc[:,['chromosome','start.pos','end.pos','A','B']]
         data_filtered.to_csv(output[0],sep='\t',index=False,header=False)
 
-rule all_sequenza_to_BED:
+rule all_sequenza_to_BED_2:
     input: expand('loh/bed/{sample}.bed',sample=TUMOR)
 
-rule sequenza_to_BED_depth_ratio:
+rule sequenza_to_BED_depth_ratio_2:
     input:'sequenza/{sample}/{sample}_segments.txt'
     output:'loh/bed_depth/{sample}.bed'
     run:
