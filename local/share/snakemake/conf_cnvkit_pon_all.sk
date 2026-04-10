@@ -1,0 +1,47 @@
+import os
+import re
+
+ROOT=os.environ.get('SNAKE_ROOT')
+def find_prj_root(path=os.getcwd()):
+    if os.path.isfile(os.path.join(path,".PRJ_ROOT")):
+        return path
+    else:
+        if path:
+            return find_prj_root(os.path.dirname(path))
+        else:
+            raise Exception("Can not find the PRJ_ROOT directory")
+
+
+PRJ_ROOT=find_prj_root()
+TMP="/tmp"
+
+SRC_DIR=PRJ_ROOT+'/local/src'
+BIN_DIR=PRJ_ROOT+'/local/bin'
+
+BED_DIR=PRJ_ROOT+'/local/share/data/bed_wes/sort'
+
+CAPTURE= {
+'agilent7': 'S31285117_Padded.bed', # Marika 1
+'agilent8': 'S33266436_Padded.bed', # WES_2023
+'agilent4': 'S03723314_Padded_hg38.bed', 
+'idt':  'xgen-exome-hyb-panel-v2-targets-hg38.sorted.bed', # WES_early_late WES_2023 
+'edi': 'edinburghgen.bed' # Aizoon Edinburgh genetics
+}
+
+# Needed references and annotations
+GNOMAD_TASK_DIR=ROOT+'/task/annotations/dataset/gnomad'
+REF_DIR=GNOMAD_TASK_DIR
+
+REFFLAT=PRJ_ROOT+'/local/share/data/bed_wes/refFlat.txt'
+BLACKLIST=PRJ_ROOT+'/local/share/data/bed_wes/ENCFF356LFX.bed'
+
+CORES=6
+
+BAM_DIR='/mnt/trcanmed/snaketree/prj/snakegatk/dataset/Pri_Mets_godot/align'
+
+SAMPLES=["CRC0053NLH0000000000D05000V2","CRC0065NLH0000000000D08000V2","CRC0071NLH0000000000D04000V2","CRC0094NLH0000000000D04000V2","CRC0333NLH0000000000D08000V2","CRC0440NLH0000000000D09000V2","CRC0449NLH0000000000D07000V2","CRC0468NLH0000000000D08000V2","CRC0481NLH0000000000D08000V2","CRC0498NLH0000000000D07000V2","CRC0549NLH0000000000D07000V2","CRC0740NLH0000000000D08000V2","CRC1063NLH0000000000D07000V2","CRC1144NLH0000000000D07000V2","CRC1169NLH0000000000D07000V2","CRC1182NLH0000000000D07000V2","CRC1240NLH0000000000D07000V2","CRC1251NLH0000000000D07000V2","CRC1331NMH0000000000D05000V2","CRC1387NLH0000000000D05000V2","CRC1473NMH0000000000D05000V2","CRC1486NLH0000000000D05000V2","CRC1599NLH0000000000D03000V2","CRC1624NLH0000000000D03000V2","CRC1673NMH0000000000D03000V2","CRC1824NMH0000000000D05000V2","CRC2790NLH0000000000D03000V2"]
+
+# Reference.cnn
+#Targets: 9878 (4.626%) bins failed filters (log2 < -5.0, log2 > 5.0, spread > 1.0)
+#Antitargets: 1353 (3.63%) bins failed filters
+
