@@ -200,8 +200,6 @@ rule all_single_something:
 rule all_realign:
 	input: expand(ALIGN_DIR+'/'+"realigned_{sample}.sorted.bam", sample=TUMOR)
 
-<<<<<<< HEAD
-=======
 # phyloWGS
 include: PRJ_ROOT+"/local/share/snakerule/Snakefile_phyloWGS"
 

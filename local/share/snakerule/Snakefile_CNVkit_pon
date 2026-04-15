@@ -139,4 +139,5 @@ rule flat:
 # then flat:
 # cnvkit.py reference -o FlatReference.cnn -f ucsc.hg19.fa -t targets.bed -a antitargets.bed
 
-
+rule clean:
+    shell: "echo TODO"
