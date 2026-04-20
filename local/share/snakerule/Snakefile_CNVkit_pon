@@ -39,10 +39,27 @@ rule split:
 # TODO capire e guardare weight of cnrs:
 #For hybrid capture, if your targets are not tiled with uniform density – for example, if your target panel is designed with a subset of targets having twice or half the usual number of tiles for a fixed number of genomic bases – you do not need to do anything in particular to compensate for this as long as you are using a pooled reference. When a test sample’s read depths are normalized to the pooled reference, the log2 ratios will even out. However, the “spread” of those bins in your pooled reference, and the “weight” of the corresponding bins in the test sample’s .cnr file, will be correspondingly higher or lower.
 
+# we want to exclude both blacklisted regions and regions in _any_ of our exomes kits from the antitarget.
+# and added also centromeres/telomeres from ucsc gap
+rule bed_union:
+    input: expand(BED_DIR+"/{kit}", kit=CAPTURE.values())
+    output:  "all_kits_union.bed"
+    shell: 
+        """
+            multiIntersectBed -i {input} | bawk '$4>=1' > {output}
+        """
+    
+rule blacklist_exclude:
+    input: excl=BLACKLIST, kits="all_kits_union.bed", gap=GAP
+    output: "exclude.bed"
+    shell:
+        """
+            multiIntersectBed -i {input} | bawk '$4>=1' > {output}
+        """
 # we do not have spike on so that's fine
 #https://www.encodeproject.org/documents/cbaffa9e-2e42-434e-8b88-f04619c57080/@@download/attachment/README.txt
 rule accessible_mappable:
-    input: excl=BLACKLIST, ref=REF_DIR+'/GRCh38.d1.vd1.fa'
+    input: excl="exclude.bed", ref=REF_DIR+'/GRCh38.d1.vd1.fa'
     output: "mappable.bed"
     shell: 
         """
