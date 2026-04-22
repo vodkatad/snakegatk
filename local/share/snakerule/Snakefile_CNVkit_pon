@@ -54,8 +54,10 @@ rule blacklist_exclude:
     output: "exclude.bed"
     shell:
         """
-            multiIntersectBed -i {input} | bawk '$4>=1' > {output}
+            multiIntersectBed -i {input} | bawk '$4>=1' > {output}.tmp
+            bedtools merge -i <(sort -k1,1 -k2,2n {output}.tmp) > {output}
         """
+
 # we do not have spike on so that's fine
 #https://www.encodeproject.org/documents/cbaffa9e-2e42-434e-8b88-f04619c57080/@@download/attachment/README.txt
 rule accessible_mappable:
@@ -127,6 +129,9 @@ rule cns:
 # metrics https://cnvkit.readthedocs.io/en/stable/reports.html#metrics
 rule all_cns:
     input: expand("cns/{sample}.cns", sample=SAMPLES)
+
+rule all_plot:
+    input: expand("{sample}_scatter.png", sample=SAMPLES)
 
 # -v Sample.vcf 
 rule plot:

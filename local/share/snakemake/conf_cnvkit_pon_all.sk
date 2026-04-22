@@ -35,6 +35,7 @@ REF_DIR=GNOMAD_TASK_DIR
 REFFLAT=PRJ_ROOT+'/local/share/data/bed_wes/refFlat.txt'
 BLACKLIST=PRJ_ROOT+'/local/share/data/bed_wes/ENCFF356LFX.bed'
 GAP=PRJ_ROOT+'/local/share/data/bed_wes/gap.bed'
+CEN=PRJ_ROOT+'/local/share/data/bed_wes/cen.bed'
 
 CORES=6
 
