@@ -36,8 +36,9 @@ REFFLAT=PRJ_ROOT+'/local/share/data/bed_wes/refFlat.txt'
 BLACKLIST=PRJ_ROOT+'/local/share/data/bed_wes/ENCFF356LFX.bed'
 GAP=PRJ_ROOT+'/local/share/data/bed_wes/gap.bed'
 CEN=PRJ_ROOT+'/local/share/data/bed_wes/cen.bed'
+CHRS=PRJ_ROOT+'/local/share/data/bed_wes/chrs'
 
-CORES=6
+CORES=4
 
 BAM_DIR='/mnt/trcanmed/snaketree/prj/snakegatk/dataset/Pri_Mets_godot/align'
 

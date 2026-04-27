@@ -56,18 +56,33 @@ rule blacklist_exclude:
         """
             multiIntersectBed -i {input} | bawk '$4>=1' > {output}.tmp
             bedtools merge -i <(sort -k1,1 -k2,2n {output}.tmp) > {output}
+            rm {output}.tmp
         """
 
 # we do not have spike on so that's fine
 #https://www.encodeproject.org/documents/cbaffa9e-2e42-434e-8b88-f04619c57080/@@download/attachment/README.txt
+# need to remove strange cmq afterwards, having an antitarget on CMV does not make any sense
 rule accessible_mappable:
-    input: excl="exclude.bed", ref=REF_DIR+'/GRCh38.d1.vd1.fa'
+    input: excl="exclude.bed", ref=REF_DIR+'/GRCh38.d1.vd1.fa', chrs=CHRS
     output: "mappable.bed"
     shell: 
         """
-            cnvkit.py access {input.ref} -x {input.excl} -o {output}
+            cnvkit.py access {input.ref} -x {input.excl} -o {output}.tmp
+            filter_1col 1 {input.chrs} < {output}.tmp > {output}
+            rm {output}.tmp
         """
 
+#egrassi@godot:/mnt/trcanmed/snaketree/prj/snakegatk/dataset/CNVkit_pon/cnn$ cnvkit.py autobin ../../../dataset/Pri_Mets_godot/align/rea*H*bam   -t ../targets.bed  -g ../mappable.bed
+#Detected file format: bed
+#Detected file format: bed
+#Estimated read length 150.0
+#Wrote /scratch/trcanmed/tmp/tmpe5wqmbub.bed with 100 regions
+#Splitting large targets
+#Wrote targets.target.bed with 222164 regions
+#Wrote targets.antitarget.bed with 271132 regions
+#                Depth   Bin size
+#Target:         455.152 220
+#Antitarget:     8.037   12443
 rule antitarget:
     input: targ="targets.bed", mappable="mappable.bed"
     output: antitarg="antitargets.bed"
