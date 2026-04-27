@@ -2,13 +2,15 @@ CSAMPLES=TUMOR # TODO add if for unmatched case
 ## FIXME not prj relative paths
 ##egrassi@godot:/mnt/trcanmed/snaketree/prj/snakegatk/local/share/data/bed_wes$ cut -f 1,3 /mnt/trcanmed/snaketree/task/annotations/dataset/gnomad/GRCh38.d1.vd1.allchr.bed > chr.len
 CHR_LEN='/mnt/trcanmed/snaketree/prj/snakegatk/local/share/data/bed_wes'
+CCORES=3
 #TODO   -q, --min-mapq MIN_MAPQ ? default 0
 # -f not needed since we defined mappable before?
+# TODO .sorted or not depending on which version has run
 rule a_target_coverage:
-    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", bed=CNVKIT+"/{target}s.bed"
+    input: bam=ALIGN_DIR+"/realigned_{sample}.sorted.bam", bed=CNVKIT+"/{target}s.bed"
     output: "cnvkit/{sample}.{target}coverage.cnn"
     log: depth="cnvkit/{sample}.{target}.cnn.log"
-    params: cores=CORES
+    params: cores=CCORES
     benchmark: "bench/{sample}_{target}.times.txt"
     shell: 
         """
@@ -33,11 +35,12 @@ rule cns:
     input: "cnvkit/{sample}.cnr"
     output: "cnvkit/{sample}.cns"
     benchmark: "bench/{sample}_cns.times.txt"
-    params: cores=CORES
+    params: cores=CCORES
     shell:  
         """
             cnvkit.py segment -o {output} -p {params.cores} {input}
         """
+
 
 # then call to integer CN
 # scatter produces a plot
@@ -98,6 +101,14 @@ rule all_cmp:
     shell:
         """
             for f in {input}; do bawk '{{print FILENAME, $0}}' $f; done > {output}
+        """
+
+# temporary rule to run when having also sequenza run on matched normal controls, no inputs depends on sequenza having run with metacharacters (WARNING)
+rule ploidy:
+    output: "cnvkit/ploidy.txt"
+    shell: 
+        """
+            for f in sequenza/*/*_confints_CP.txt; do echo -en "$f\t"; head -n2 $f | tail -n1 | cut -f 3; done |tr "/" "\t"| cut -f 2,4 > {output}
         """
 
 rule clean:

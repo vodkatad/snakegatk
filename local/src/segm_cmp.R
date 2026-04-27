@@ -90,7 +90,7 @@ ggplot(data=dd3, aes(x=tool.x, y=ave_len))+geom_boxplot(outlier.shape=NA)+geom_j
 
 #https://groups.google.com/g/sequenza-user-group/c/y9mQogdBuh8?pli=1
 
-pl <- read.table('/mnt/trcanmed/snaketree/prj/snakegatk/dataset/Pri_Mets_godot/ploidy', sep="\t")
+pl <- read.table('/mnt/trcanmed/snaketree/prj/snakegatk/dataset/Pri_Mets_godot/cnvkit/ploidy.txt', sep="\t")
 colnames(pl) <- c('V1', 'ploidy')
 pl$ploidy <- round(pl$ploidy, 2)
 pp <- merge(pd, pl, by.x="sample", by.y="V1")

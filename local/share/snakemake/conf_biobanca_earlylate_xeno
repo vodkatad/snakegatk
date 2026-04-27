@@ -40,6 +40,8 @@ ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
 PLH_DOCKER="bubusettete"
 
 
+CNVKIT='/mnt/trcanmed/snaketree/prj/snakegatk/dataset/CNVkit_pon' # has Reference.cnn and targets.bed antitargets.bed
+
 ## This dataset:
 #DATA=ROOT+"/data/biobanca_WES_earlylate/merged_fastq"
 DATA=ROOT+"/data/biobanca_WES_earlylate/partial/merged_fastq"
