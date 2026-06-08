@@ -24,7 +24,7 @@ CAPTURE= {
 'agilent7': 'S31285117_Padded.bed', # Marika 1
 'agilent8': 'S33266436_Padded.bed', # WES_2023
 'agilent4': 'S03723314_Padded_hg38.bed', 
-'idt':  'xgen-exome-hyb-panel-v2-targets-hg38.sorted.bed', # WES_early_late WES_2023 
+'idt':  'xgen-exome-hyb-panel-v2-targets-hg38.sorted.bed', # WES_early_late WES_Pri_Mets
 'edi': 'edinburghgen.bed' # Aizoon Edinburgh genetics
 }
 

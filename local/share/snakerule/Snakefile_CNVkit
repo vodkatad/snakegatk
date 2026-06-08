@@ -7,7 +7,7 @@ CCORES=3
 # -f not needed since we defined mappable before?
 # TODO .sorted or not depending on which version has run
 rule a_target_coverage:
-    input: bam=ALIGN_DIR+"/realigned_{sample}.sorted.bam", bed=CNVKIT+"/{target}s.bed"
+    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", bed=CNVKIT+"/{target}s.bed"
     output: "cnvkit/{sample}.{target}coverage.cnn"
     log: depth="cnvkit/{sample}.{target}.cnn.log"
     params: cores=CCORES
@@ -55,14 +55,14 @@ rule all_cns:
 #  vcf with germline with our somatic pipeline are simply not there
 rule call:
     input:  cns="cnvkit/{sample}.cns"
-    output:  "cnvkit/{sample}.cn.tsv"
+    output:  "cnvkit/p{ploidy}/{sample}.cn.tsv"
     shell:  
         """
-            cnvkit.py call {input.cns} --purity 1 --ploidy 3 -m clonal --filter cn -o {output}
+            cnvkit.py call {input.cns} --purity 1 --ploidy {wildcards.ploidy} -m clonal --filter cn -o {output}
         """
 
 rule all_call:
-    input: expand("cnvkit/{sample}.cn.tsv", sample=CSAMPLES)
+    input: expand("cnvkit/p{ploidy}/{sample}.cn.tsv", sample=CSAMPLES, ploidy=[2,3,4,5,6])
 
 # -v Sample.vcf 
 rule plot:
@@ -83,7 +83,7 @@ rule metrics:
 
 # let's assume they are both 1 based close ended right now FIXME
 rule cmp:
-    input: cnvkit="cnvkit/{sample}.cn.tsv", sequenza="sequenza/{sample}/{sample}_segments.txt", len=CHR_LEN
+    input: cnvkit="cnvkit/p3/{sample}.cn.tsv", sequenza="sequenza/{sample}/{sample}_segments.txt", len=CHR_LEN
     output: "cnvkit/{sample}_unionbedg.bed"
     log: log="cnvkit/{sample}_comp.txt", loglen="cnvkit/{sample}_len.txt"
     shell:
@@ -113,3 +113,26 @@ rule ploidy:
 
 rule clean:
     shell: "echo TODO"
+
+
+### ploidy evaluation
+rule all_germline:
+    input: expand("cnvkit/{sample}_germline_gnomad.tsv.gz", sample=CSAMPLES)
+
+rule germline_calls:
+    input: gnomad="gnomad.vcf.gz", reference=REF_DIR+"/GRCh38.d1.vd1.fa",  bam=ALIGN_DIR+"/realigned_{sample}.bam"
+    output: "cnvkit/{sample}_germline_gnomad.tsv.gz"
+    log: log="cnvkit/{sample}_germline_gnomad.tsv.gz.log"
+    params: tool=SRC_DIR+"/GNOMAD_VAF_check.sh", dir=SRC_DIR
+    shell:
+        """
+            bash {params.tool} {input.reference} {input.gnomad} {input.bam} {params.dir} 2> {log.log} | bawk '$2!="NA" && $2!=0' | gzip > {output}
+        """
+
+rule gnomad_limited:
+    input: gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", bed=SEXONS
+    output: "gnomad.vcf.gz"
+    shell:
+        """
+            bedtools intersect -header -wa -a {input.gnomad} -b {input.bed} | bgzip -c > {output}
+        """

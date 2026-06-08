@@ -109,3 +109,42 @@ scale_fill_manual(values=rev(c('red', 'orange', 'darkgreen', 'grey', 'violet')))
 ggplot(data=pp2, aes(x=sample, y=len, fill=class))+geom_col(position='stack')+theme_bw(base_size = 20)+
   scale_fill_manual(values=rev(c('red', 'orange', 'darkgreen', 'grey', 'violet')))+
   scale_x_discrete(label = ppp2$ploidy)+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+### early late xeno ##############################################
+
+d <- read.table('/mnt/trcanmed/snaketree/prj/snakegatk/dataset/biobanca_earlylate_xeno/cnvkit/cmp.tsv', sep= "\t", header=F)
+colnames(d) <-  c('file', 'chr', 'b', 'e', 'cnvkit', 'seq')
+
+alls <- unique(d$file)
+
+d$len <- d$e - d$b
+d$delta <- abs(d$cnvkit - d$seq)
+tt <- t(as.data.frame(sapply(alls, count_class_len, d, 3)))
+colnames(tt) <- c('miss_cnvkit', 'miss_seq', 'same', 'different', 'larger3')
+
+
+pd <- melt(tt)
+colnames(pd) <- c('sample', 'class', 'len')
+pd$sample <- gsub('cnvkit/', '', pd$sample, fixed=T)
+pd$sample <- gsub('_unionbedg.bed', '', pd$sample, fixed=T)
+
+pl <- read.table('/mnt/trcanmed/snaketree/prj/snakegatk/dataset/biobanca_earlylate_xeno/cnvkit/ploidy.txt', sep="\t")
+colnames(pl) <- c('V1', 'ploidy')
+pl$ploidy <- round(pl$ploidy, 2)
+pp <- merge(pd, pl, by.x="sample", by.y="V1")
+
+pp1 <- pp[abs(3-pp$ploidy) < 0.5,]
+pp2 <- pp[abs(3-pp$ploidy) >= 0.5,]
+
+ppp1 <- unique(pp1[, c('sample', 'ploidy')])
+ppp2 <- unique(pp2[, c('sample', 'ploidy')])
+
+ggplot(data=pp1, aes(x=sample, y=len, fill=class))+geom_col(position='stack')+theme_bw(base_size = 20)+
+  scale_fill_manual(values=rev(c('red', 'orange', 'darkgreen', 'grey', 'violet')))+
+  scale_x_discrete(label = ppp1$ploidy)+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+
+ggplot(data=pp2, aes(x=sample, y=len, fill=class))+geom_col(position='stack')+theme_bw(base_size = 20)+
+  scale_fill_manual(values=rev(c('red', 'orange', 'darkgreen', 'grey', 'violet')))+
+  scale_x_discrete(label = ppp2$ploidy)+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
