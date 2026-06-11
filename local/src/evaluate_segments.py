@@ -28,7 +28,6 @@ def next_germ_entry(germ, min_reads=5, verbose=False):
             line = germ.readline()
     return(None)
 
-
 def chr_to_n(chrs):
     try: 
         chr_n = int(chrs)

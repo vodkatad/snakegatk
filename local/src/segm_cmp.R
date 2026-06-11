@@ -148,3 +148,50 @@ ggplot(data=pp2, aes(x=sample, y=len, fill=class))+geom_col(position='stack')+th
   scale_fill_manual(values=rev(c('red', 'orange', 'darkgreen', 'grey', 'violet')))+
   scale_x_discrete(label = ppp2$ploidy)+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
+### segm eval
+#library(ggplot2)
+library(dplyr)
+d <- read.table(gzfile('/mnt/trcanmed/snaketree/prj/snakegatk/dataset/Pri_Mets_godot/cnvkit/eval_ploidies_all.tsv.gz'), sep="\t", header=F)
+colnames(d) <- c('sample', 'ploidy', 'chr', 'b', 'e', 'n_ok', 'n_ov')
+dd <- d[d$n_ov != 0,] # TODO evaluate n.
+dd$frac <- dd$n_ok / dd$n_ov
+
+ddave <- dd |> 
+  dplyr::group_by(sample, ploidy) |>
+  dplyr::summarise(
+    avefrac = mean(frac), minfrac=min(frac), maxfrac=max(frac), n = n()
+  )
+
+
+ggplot(data=ddave, aes(x=sample, y=avefrac, fill=ploidy))+geom_col(position='dodge')+
+  theme_bw(base_size=18)+
+  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank())
+
+
+
+ggplot(data=ddave, aes(x=ploidy, y=avefrac))+geom_boxplot(outlier.shape=NA)+
+  geom_jitter(height=0, aes(color=sample))+
+  theme_bw(base_size=18)+
+  theme(legend.position='none')
+
+
+
+ggplot(data=ddave, aes(x=ploidy, y=minfrac))+geom_boxplot(outlier.shape=NA)+
+  geom_jitter(height=0, aes(color=sample))+
+  theme_bw(base_size=18)+
+  theme(legend.position='none')
+
+
+pl <- read.table('/mnt/trcanmed/snaketree/prj/snakegatk/dataset/Pri_Mets_godot/cnvkit/ploidy.txt', sep="\t")
+
+colnames(pl) <- c('sample', 'pl')
+pl$realploidy <- cut(pl$pl, breaks=c(1.5, 2.5, 3.5, 4.5, 5.5, 6.5))
+# pl$s <- substr(pl$sample, 0,10)
+# ddave$s <- substr(ddave$sample, 0,10)
+m <- merge(ddave, pl, by='sample')
+
+ggplot(data=m, aes(x=ploidy, y=avefrac))+geom_boxplot(outlier.shape=NA)+
+  geom_jitter(height=0, aes(color=realploidy))+
+  theme_bw(base_size=18)
+
+  mean(dd[dd$sample=='CRC0053LMX0A02204TUMD07000V2', 'frac'])

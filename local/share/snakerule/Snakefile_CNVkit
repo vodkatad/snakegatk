@@ -136,3 +136,38 @@ rule gnomad_limited:
         """
             bedtools intersect -header -wa -a {input.gnomad} -b {input.bed} | bgzip -c > {output}
         """
+
+rule eval_segm:
+    input: cnvkit="cnvkit/p{ploidy}/{sample}.cn.tsv", germ="cnvkit/{sample}_germline_gnomad.tsv.gz"
+    output: "cnvkit/p{ploidy}/{sample}.segm.eval.tsv"
+    params: tool=SRC_DIR+"/evaluate_segments.py"
+    shell:
+        """
+            {params.tool} --cn {input.cnvkit} --germ {input.germ} > {output}
+        """
+
+rule all_eval:
+    input: expand("cnvkit/p{ploidy}/{sample}.cn.tsv", sample=CSAMPLES, ploidy=[2,3,4,5,6])
+
+rule ploidies:
+    input: expand("cnvkit/p{ploidy}/{{sample}}.segm.eval.tsv", ploidy=[2,3,4,5,6])
+    output: "cnvkit/{sample}_eval_ploidies.tsv"
+    shell:
+        """
+            for f in {input}; do 
+                p=$(echo $f | tr "/" "\\t" | cut -f 2)
+                cat $f |  bawk -v p=$p '{{print p, $0}}'
+            done > {output}
+        """
+
+
+rule ploidies_all:
+    input: expand("cnvkit/{sample}_eval_ploidies.tsv", sample=CSAMPLES)
+    output: "cnvkit/eval_ploidies_all.tsv.gz"
+    shell:
+        """
+            for f in {input}; do 
+                p=$(echo $f | tr "/" "\\t" | cut -f 2 | sed 's/_eval_ploidies\.tsv//1')
+                cat $f |  bawk -v p=$p '{{print p, $0}}'
+            done | gzip > {output}
+        """
