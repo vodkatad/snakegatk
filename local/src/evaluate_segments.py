@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+import gzip
 
 # return next bed entry as vector of chr, b, e, CN
 def next_bed_entry(bedcn):
@@ -19,13 +20,25 @@ def next_germ_entry(germ, min_reads=5, verbose=False):
         line.rstrip('\n')
         entry = line.split('\t')
         if verbose:
-            print("germ {}".format(entry[0]))
+            print("germ {}".format(entry[0]), file=sys.stderr)
         coords = entry[0].split(':')
         if int(entry[2]) >= min_reads:
             return([coords[0], int(coords[1])-1, int(coords[1]), float(entry[1])])
         else:
             line = germ.readline()
     return(None)
+
+
+def chr_to_n(chrs):
+    try: 
+        chr_n = int(chrs)
+        return chr_n
+    except ValueError:
+        # chrX/Y
+        if chrs == 'X':
+            return 23
+        else: 
+            return 24
 
 # return the first entry that overlap segment and True if the list of germlines is finished
 # false otherwise, with none if the current mut is preceding this segment (need to get next one at our next invocation)
@@ -42,10 +55,10 @@ def next_germ_entry(germ, min_reads=5, verbose=False):
 last_entry = None
 def get_next_overlapping_germ(segment, germ, verbose):
     if verbose:
-        print("get for {}".format(segment[1]))
+        print("get for {}".format(segment[1]), file=sys.stderr)
     global last_entry
     if verbose:
-        print("get2 for {}".format(last_entry))
+        print("get2 for {}".format(last_entry), file=sys.stderr)
     if last_entry == None:
         last_entry = next_germ_entry(germ, verbose=verbose)
         if last_entry == None:
@@ -73,10 +86,19 @@ def get_next_overlapping_germ(segment, germ, verbose):
             # otherwise we are after this segment, keep this mut
             result = None
             advance = False
-    # different chr we keep this mut
+    # different chr we keep this mut or not depending on chr order
     else:
-        result = None
-        advance = False
+        chr_germ = last_entry[0][3:]
+        chr_segm = segment[0][3:]
+        chr_germ_n = chr_to_n(chr_germ)
+        chr_segm_n = chr_to_n(chr_segm)
+        if (chr_germ_n < chr_segm_n): # go on segm
+            result = None
+            advance = True
+            last_entry = None
+        else: # go on germ
+            result = None
+            advance = False
     
     if verbose:
         print('returning from get next overlap {} {}'.format(last_entry, result), file=sys.stderr)
@@ -113,7 +135,7 @@ if __name__ == "__main__":
     
     with open(args.cn, 'r') as cn:
         cn.readline() # skip header
-        with open(args.germ, 'r') as germ:
+        with gzip.open(args.germ, 'rt') as germ:
             germ.readline() # skip header
             done = False
             mdone = False
