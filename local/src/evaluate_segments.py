@@ -22,6 +22,7 @@ def next_germ_entry(germ, min_reads=5, verbose=False):
         if verbose:
             print("germ {}".format(entry[0]), file=sys.stderr)
         coords = entry[0].split(':')
+        #if int(entry[2]) >= min_reads and float(entry[1]) > 0.1:
         if int(entry[2]) >= min_reads:
             return([coords[0], int(coords[1])-1, int(coords[1]), float(entry[1])])
         else:
@@ -105,7 +106,7 @@ def get_next_overlapping_germ(segment, germ, verbose):
 
 # evaluate if this germline mutation VAF is compatible with the reported CN
 # TODO binomial?
-def manage_overlap(gentry, segment, epsilon=0.05, verbose=False):
+def manage_overlap(gentry, segment, epsilon=0.005, verbose=False):
     cn = segment[3]
     vaf = gentry[3]
     i = 1

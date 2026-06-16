@@ -195,3 +195,43 @@ ggplot(data=m, aes(x=ploidy, y=avefrac))+geom_boxplot(outlier.shape=NA)+
   theme_bw(base_size=18)
 
   mean(dd[dd$sample=='CRC0053LMX0A02204TUMD07000V2', 'frac'])
+  
+  m$p <- as.numeric(gsub('p', '', m$ploidy))
+  m$frac_pen <- m$avefrac/(m$p/6)
+
+  ggplot(data=m, aes(x=ploidy, y=frac_pen))+geom_boxplot(outlier.shape=NA)+
+    geom_jitter(height=0, aes(color=realploidy))+
+    theme_bw(base_size=18)
+  
+  ##
+  ggplot(data=dd, aes(x=frac))+geom_histogram()+facet_wrap(~ploidy)+theme_bw(base_size=18)
+  
+  dd$len <- dd$e-dd$b
+  
+  ddlen_fragmentsok <- dd |> 
+    dplyr::group_by(sample, ploidy) |>
+    dplyr::filter(frac > 0.5) |>
+    dplyr::summarise(
+      totlen = sum(len), n = n()
+    )
+  
+  m2 <- merge(ddlen_fragmentsok, pl, by='sample')
+  
+  ggplot(data=m2, aes(x=ploidy, y=totlen))+geom_boxplot(outlier.shape=NA)+
+    geom_jitter(height=0, aes(color=realploidy))+
+    theme_bw(base_size=18)
+  
+  
+  ggplot(data=m2, aes(x=ploidy, y=n))+geom_boxplot(outlier.shape=NA)+
+    geom_jitter(height=0, aes(color=realploidy))+
+    theme_bw(base_size=18)
+  
+  
+  
+  ggplot(data=dd, aes(x=n_ov))+geom_histogram()+facet_wrap(~ploidy)+theme_bw(base_size=18)+scale_x_log10()
+  ggplot(data=dd, aes(x=n_ok))+geom_histogram()+facet_wrap(~ploidy)+theme_bw(base_size=18)+scale_x_log10()
+  
+  
+  ggplot(data=d, aes(x=n_ov))+geom_histogram()+facet_wrap(~ploidy)+theme_bw(base_size=18)+scale_x_log10()
+  ggplot(data=d, aes(x=n_ok))+geom_histogram()+facet_wrap(~ploidy)+theme_bw(base_size=18)+scale_x_log10()
+  
