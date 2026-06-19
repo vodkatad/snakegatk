@@ -10,7 +10,7 @@ def next_bed_entry(bedcn):
     if line != '':
         line.rstrip('\n')
         entry = line.split('\t')
-        return([entry[0], int(entry[1])-1, int(entry[2]), int(entry[5])])
+        return([entry[0], int(entry[1])-1, int(entry[2]), int(entry[9])])
     return(None)
 
 # return next germline entry with more than min_reads support as vector of chr, b, e, VAF 
@@ -106,19 +106,22 @@ def get_next_overlapping_germ(segment, germ, verbose):
 
 # evaluate if this germline mutation VAF is compatible with the reported CN
 # TODO binomial?
-def manage_overlap(gentry, segment, epsilon=0.05, verbose=False):
-    cn = segment[3]
-    vaf = gentry[3]
-    i = 1
-    for i in range(1, cn+1):
-        comp = i/cn
-        if vaf >= (comp-epsilon)*100 and vaf <= (comp+epsilon)*100:
-            if verbose:
-                print('evaluating compatibility {} {} ok'.format(cn, vaf), file=sys.stderr)
-            return True
-    if verbose:
-        print('evaluating compatibility {} {} fail'.format(cn, vaf), file=sys.stderr)
-    return False
+def manage_overlap(gentry, segment_ok, epsilon=0.05, verbose=False):
+    for cn in range(2,7):
+        vaf = gentry[3]
+        i = 1
+        compatible = False
+        for i in range(1, cn+1):
+            comp = i/cn
+            if vaf >= (comp-epsilon)*100 and vaf <= (comp+epsilon)*100:
+                if verbose:
+                    print('evaluating compatibility {} {} ok'.format(cn, vaf), file=sys.stderr)
+                compatible = True
+            else:
+                if verbose:
+                    print('evaluating compatibility {} {} fail'.format(cn, vaf), file=sys.stderr)
+        if compatible:
+            segment_ok[i-2] = segment_ok[i-2]+1
 
 
 if __name__ == "__main__":
@@ -141,7 +144,7 @@ if __name__ == "__main__":
             mdone = False
             while not done:
                 segment = next_bed_entry(cn)
-                segment_ok = 0
+                segment_ok = [0,0,0,0,0] # vector for 2,3,4,5,6
                 segment_ov = 0
                 if segment is None:
                     done = True
@@ -149,12 +152,10 @@ if __name__ == "__main__":
                     while not mdone:
                         mdone, gentry, goon = get_next_overlapping_germ(segment, germ, args.verbose)
                         if gentry is not None:
-                            if manage_overlap(gentry, segment, verbose=args.verbose):
-                                segment_ok =  segment_ok + 1
-                                # future: weight score on segments lengths 
+                            manage_overlap(gentry, segment_ok, verbose=args.verbose)
                             segment_ov = segment_ov + 1
                         if not goon:
                             break
                         
-                    print('{}\t{}\t{}\t{}\t{}'.format(segment[0],segment[1],segment[2], segment_ok, segment_ov))
+                    print('{}\t{}\t{}\t{}\t{}\t{}'.format(segment[0],segment[1],segment[2], segment[3], segment_ov, "\t".join([str(x) for x in segment_ok])))
             

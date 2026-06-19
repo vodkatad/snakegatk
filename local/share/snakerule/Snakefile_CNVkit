@@ -171,3 +171,36 @@ rule ploidies_all:
                 cat $f |  bawk -v p=$p '{{print p, $0}}'
             done | gzip > {output}
         """
+
+# here we change the logic: we have a single segmentation result from sequenza and evaluate all other possible 2-6CN for each segment
+# TODO change parsing segments
+# TODO change logic evaluation
+# print a column with the 'right' CN
+rule eval_segm_sequenza:
+    input: sequenza="sequenza/{sample}/{sample}_segments.txt", germ="cnvkit/{sample}_germline_gnomad.tsv.gz"
+    output: "cnvkit/sequenza_{sample}.segm.eval.tsv"
+    params: tool=SRC_DIR+"/evaluate_segments_sequenza.py"
+    shell:
+        """
+            {params.tool} --cn {input.sequenza} --germ {input.germ} > {output}
+        """
+
+rule ploidies_all_sequenza:
+    input: expand("cnvkit/sequenza_{sample}.segm.eval.tsv", sample=CSAMPLES)
+    output: "cnvkit/eval_seqploidies_all.tsv.gz"
+    shell:
+        """
+            for f in {input}; do 
+                p=$(echo $f | tr "/" "\\t" | cut -f 2 | sed 's/\.segm\.eval\.tsv//1')
+                cat $f |  bawk -v p=$p '{{print p, $0}}'
+            done | gzip > {output}
+        """
+
+#Giorgio Corti, [6/19/26 11:24 AM]
+#avevo anche pensato di confrontare la depth di ogni segmento per sequenza e cnvkit
+
+#Giorgio Corti, [6/19/26 11:24 AM]
+#in teoria, a parità di segmento (bedtools intersect, per capirci), dovremmo vedere un rapporto circa costante
+
+#Giorgio Corti, [6/19/26 11:25 AM]
+#o addirittura ci aspettiamo circa 1..

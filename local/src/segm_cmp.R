@@ -210,7 +210,7 @@ ggplot(data=m, aes(x=ploidy, y=avefrac))+geom_boxplot(outlier.shape=NA)+
   
   ddlen_fragmentsok <- dd |> 
     dplyr::group_by(sample, ploidy) |>
-    dplyr::filter(frac > 0.5) |>
+    dplyr::filter(frac > 0.9) |>
     dplyr::summarise(
       totlen = sum(len), n = n()
     )
@@ -235,3 +235,60 @@ ggplot(data=m, aes(x=ploidy, y=avefrac))+geom_boxplot(outlier.shape=NA)+
   ggplot(data=d, aes(x=n_ov))+geom_histogram()+facet_wrap(~ploidy)+theme_bw(base_size=18)+scale_x_log10()
   ggplot(data=d, aes(x=n_ok))+geom_histogram()+facet_wrap(~ploidy)+theme_bw(base_size=18)+scale_x_log10()
   
+#
+d <- read.table(gzfile('/mnt/trcanmed/snaketree/prj/snakegatk/dataset/Pri_Mets_godot/cnvkit/eval_seqploidies_all.tsv.gz'), sep="\t", header=F)
+colnames(d) <- c('sample', 'chr', 'b', 'e', 'cn', 'n_ov', 'ok2', 'ok3', 'ok4', 'ok5', 'ok6')
+dim(d)
+dd <- d[d$n_ov != 0,] # TODO evaluate n.
+dim(dd)
+
+# 5 is cn, 6 n_ov, numerator is 
+# 7 8 9 10 11
+# 2 3 4 5  6
+# x[5]+5 is > 11 then 11
+map_cn <- function(i) {
+  mapped <- i+5
+  if (mapped > 11) {
+    return(11)
+  } else {
+    return(mapped)
+  }
+}
+
+#fracok <- apply(dd, 1, function(x) { x[map_cn(as.integer(x[5]))] /  as.integer(x[6])})
+dd$frac <- NA 
+for (i in 1:nrow(dd)) {
+  dd[i, 'frac'] <- dd[i, map_cn(dd[i,'cn'])] / dd[i, 'n_ov']
+}
+hist(dd$frac)
+dd$sel <- NA 
+for (i in 1:nrow(dd)) {
+  sel <- which.max(dd[i, c(7,8,9,10,11)])
+  dd[i, 'sel'] <- sel+1
+}
+                                       
+table(dd$sel == dd$cn)
+
+dd6 <- dd[dd$cn <= 6,]
+table(dd6$sel == dd6$cn)
+
+library(reshape)
+dd$id <- paste0(dd$sample, dd$chr, dd$b)
+long <- melt(dd, id.vars='id', measure.vars=c("ok2", "ok3", "ok4", "ok5","ok6"))
+             
+mm <- merge(long, dd[, c('id', 'cn', 'n_ov')], by="id")  
+
+mm$frac <- mm$value / mm$n_ov
+
+library(dplyr)
+mm$sample <- sapply(strsplit(mm$id, "L"), function(x) {x[[1]]})
+ddave <- mm |> 
+  dplyr::group_by(sample, variable) |>
+  dplyr::summarise(
+    avefrac = mean(frac), minfrac=min(frac), maxfrac=max(frac), n = n()
+  )
+
+
+ggplot(data=ddave, aes(x=variable, y=avefrac))+geom_boxplot(outlier.shape=NA)+
+  geom_jitter(height=0, aes(color=realploidy))+
+  theme_bw(base_size=18)
