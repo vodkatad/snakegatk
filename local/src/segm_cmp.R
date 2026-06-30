@@ -281,7 +281,7 @@ mm <- merge(long, dd[, c('id', 'cn', 'n_ov')], by="id")
 mm$frac <- mm$value / mm$n_ov
 
 library(dplyr)
-mm$sample <- sapply(strsplit(mm$id, "L"), function(x) {x[[1]]})
+mm$sample <- sapply(strsplit(mm$id, "X"), function(x) {x[[1]]})
 ddave <- mm |> 
   dplyr::group_by(sample, variable) |>
   dplyr::summarise(
@@ -290,5 +290,5 @@ ddave <- mm |>
 
 
 ggplot(data=ddave, aes(x=variable, y=avefrac))+geom_boxplot(outlier.shape=NA)+
-  geom_jitter(height=0, aes(color=realploidy))+
+  geom_jitter(height=0)+
   theme_bw(base_size=18)
