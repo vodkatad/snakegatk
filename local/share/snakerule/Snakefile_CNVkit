@@ -3,6 +3,8 @@ CSAMPLES=TUMOR # TODO add if for unmatched case
 ##egrassi@godot:/mnt/trcanmed/snaketree/prj/snakegatk/local/share/data/bed_wes$ cut -f 1,3 /mnt/trcanmed/snaketree/task/annotations/dataset/gnomad/GRCh38.d1.vd1.allchr.bed > chr.len
 CHR_LEN='/mnt/trcanmed/snaketree/prj/snakegatk/local/share/data/bed_wes'
 CCORES=3
+#include: "conf.sk"
+
 #TODO   -q, --min-mapq MIN_MAPQ ? default 0
 # -f not needed since we defined mappable before?
 # TODO .sorted or not depending on which version has run
@@ -20,6 +22,8 @@ rule a_target_coverage:
 #used mmv and not run after discovering cnvkit naming assumptions, could not work
 rule all_cnvkit_coverage:
     input: expand("cnvkit/{sample}.targetscoverage.cnn", sample=CSAMPLES), expand("cnn/{sample}.antitargetscoverage.cnn", sample=CSAMPLES) 
+#rule all_coverage:
+#    input: expand("cnvkit/{sample}.targetscoverage.cnn", sample=SAMPLES), expand("cnn/{sample}.antitargetscoverage.cnn", sample=SAMPLES) 
 
 # fix segment call then to call CN on tumor samples -> cnr
 rule cnr:
@@ -30,6 +34,7 @@ rule cnr:
         """
             cnvkit.py fix {input.targ} {input.atarg} {input.ref} -o {output}
         """
+
 # cnr -> cns with segment
 rule cns:
     input: "cnvkit/{sample}.cnr"
