@@ -1,4 +1,4 @@
-include: "conf.sk"
+#include: "conf.sk"
 
 #TODO   -q, --min-mapq MIN_MAPQ ? default 0
 # -f not needed since we defined mappable before?
@@ -14,18 +14,19 @@ rule a_target_coverage:
         """
 
 #used mmv and not run after discovering cnvkit naming assumptions, could not work
-rule all_coverage:
-    input: expand("cnvkit/{sample}.targetscoverage.cnn", sample=SAMPLES), expand("cnn/{sample}.antitargetscoverage.cnn", sample=SAMPLES) 
+#rule all_coverage:
+#    input: expand("cnvkit/{sample}.targetscoverage.cnn", sample=SAMPLES), expand("cnn/{sample}.antitargetscoverage.cnn", sample=SAMPLES) 
 
 # fix segment call then to call CN on tumor samples -> cnr
 rule cnr:
     input: targ="cnvkit/{sample}.targetcoverage.cnn", atarg="cnvkit/{sample}.antitargetcoverage.cnn", ref=CNVKIT+"/Reference.cnn" 
-    output: "cnvkit/{sample}.
+    output: "cnvkit/{sample}.cnr"
     benchmark: "bench/{sample}_cnr.times.txt"
     shell:  
         """
             cnvkit.py fix {input.targ} {input.atarg} {input.ref} -o {output}
         """
+
 # cnr -> cns with segment
 rule cns:
     input: "cnvkit/{sample}.cnr"
