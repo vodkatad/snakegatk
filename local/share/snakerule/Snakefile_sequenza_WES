@@ -7,6 +7,9 @@ rule all_seq:
     output: CNV_DIR+"/all_sequenza.plh"
     shell: "mkdir -p sequenza; touch {output}"
 
+rule all_bin_seq:
+    input: expand(CNV_DIR+"/{sample}.all.bin.seqz.gz", sample=TUMOR)
+
 rule allseqz:
     input: expand(CNV_DIR+"/{{sample}}_{ch}.seqz.gz", ch=CHRS)
     output: CNV_DIR+"/{sample}.all.seqz.gz"

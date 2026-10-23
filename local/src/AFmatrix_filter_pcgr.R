@@ -114,8 +114,9 @@ stopifnot(nrow(genes) == nrow(af))
 m <- merge(af, genes, by.x='row.names', by.y='symbol')
 stopifnot(nrow(genes) == nrow(m))
 
-cols <- colnames(m)
-cols <- cols[grepl('CRC', cols, fixed=TRUE)]
+#cols <- colnames(m)
+#cols <- cols[grepl('CRC', cols, fixed=TRUE)]
+cols = colnames(af)
 long <- melt(m, id.vars=c('Row.names', 'genes', 'cds'), measure.vars=cols)
 colnames(long) <- c('mut_id','gene','cds','lgenealogy','af')
 write.table(long, file=long_af_genes, sep="\t", quote=FALSE)
