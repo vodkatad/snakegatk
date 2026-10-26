@@ -1,4 +1,5 @@
-CNV_DIR="sequenza_recal"
+#CNV_DIR="sequenza_recal"
+CNV_DIR="sequenza"
 #ALIGN_DIR="align_calibrate"
 CHRS=["chr"+str(x) for x in range(1,23)]+["chrX","chrY"]
 
@@ -53,3 +54,13 @@ rule r_seqz:
         """
          {params.tool} {wildcards.sample} {input} {output}
         """
+
+rule all_best_ll:
+    input: expand(CNV_DIR+"/{sample}/{sample}_bestsolution.tsv", sample=TUMOR)
+
+rule best_ll:
+    input: cptable=CNV_DIR+'/{sample}/{sample}_sequenza_cp_table.RData'
+    output: CNV_DIR+'/{sample}/{sample}_bestsolution.tsv'
+    log: vlog=CNV_DIR+'/{sample}/{sample}_bestsolution.vlog' 
+    script: SRC_DIR+'/sequenza_best.R' 
+     
