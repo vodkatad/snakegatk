@@ -33,16 +33,16 @@ GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images 
 GATK_ODOCKER="egrassi/occamsnakes/gatk:1"
 XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
 ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
+SEQUENZA_ODOCKER="egrassi/occamsnakes/sequenza:1"
 PLH_DOCKER="bubusettete"
-
+PICARD="picard -Xmx10g"
 
 ## This dataset:
 DATA=PRJ_ROOT+"/local/share/data/example"
-FQ_XENOME_DIR="xenome"
-
+NAME="example"
 # sed 1d PJ1903090-SF-Integragen-Targeted-Seq.tsv  | cut -f 1 | tr "_" "\t" | cut -f 1 | tr "\n" "," | sed 's/,/","/g'
-SAMPLES_ORIG=["example","examplen"]
-SAMPLES=["pippo","pluto"]
+SAMPLES_ORIG=["example"]
+SAMPLES=["pippo"]
 
 ##
 EXONS=DATA+'/targed.bed'
@@ -56,17 +56,26 @@ SEXONS='targeted_sorted.bed'
 XENOMED_SAMPLES=[]
 TRIMMED_SAMPLES=[]
 
-NORMAL=["pluto"]
+NORMAL=["pippo"]
 TUMOR=["pippo"]
+get_ppos = None # depending on matched normal names can be used to identify the tumor column in pass.vcf.gz
 
-FASTQ_SUFFIX=".{pair}.fastq.gz"
-FASTQ_PRE="."
+FASTQ_SUFFIX="_{pair}.fastq.gz"
+FASTQ_PRE="_"
 FASTQ_POST=".fastq.gz"
 FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
+XENOME_PREFIX="plh"
+XENOME_TOOL="plh"
+XENOME_WAIT=28800
+FQ_XENOME_DIR="xenome"
+SIZE=34 # Agilent sureselect
+ASSAY='WES'
+GCFILE=GNOMAD_TASK_DIR+'sequenza_gc_w50.wig.gz'
 
-PAIRS=['1','2']
+PAIRS=['R1_001','R2_001']
 PAIRS_XENOME=['1','2']
 CORES=12
+CORESMD=4
 # TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
 PATTERNED=2500 
 # HiSeq4000, otherwise 100 for unpatterned
@@ -84,3 +93,10 @@ wildcard_constraints:
 CALLABLE="5:10,10:50,50:100,100:150,150:inf"
 CALLABLE_STRICT="50:100,100:150,150:inf"
 PADDING=100
+
+GENES="genes.tsv"
+
+rule g:
+    output: "genes.tsv"
+    shell: "echo WES > {output}"
+

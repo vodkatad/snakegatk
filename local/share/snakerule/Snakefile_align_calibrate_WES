@@ -179,6 +179,7 @@ rule bam_stats:
     input: ALIGN_DIR+"/{something}.bam"
     output: ALIGN_DIR+"/{something}.bam.stats"
     docker: ALIGN_ODOCKER
+    benchmark: "bench/{something}.stats.times"
     shell:
         """
             samtools stats {input} > {output}
@@ -187,6 +188,7 @@ rule bam_stats:
 rule bam_flagstat:
     input: ALIGN_DIR+"/{something}.bam"
     output: ALIGN_DIR+"/{something}.bam.flagstat"
+    benchmark: "bench/{something}.flagstats.times"
     docker: ALIGN_ODOCKER
     shell:
        """
@@ -199,6 +201,7 @@ rule multiqc_align:
     input: expand(ALIGN_DIR+"/realigned_{sample}.sorted.bam.flagstat", sample=SAMPLES) 
     output: "multiqc_report.align.html"
     docker: ALIGN_ODOCKER
+    benchmark: "bench/multiqc_report.align.times"
     shell: 
         """
             echo {input} | tr " " "\\n" > {output}.tmp;
@@ -211,6 +214,7 @@ rule multiqc_coverage:
     input: expand(ALIGN_DIR+"/{sample}.hsmetrics", sample=SAMPLES) 
     output: "multiqc_report.coverage.html"
     docker: ALIGN_ODOCKER
+    benchmark: "bench/multiqc_report.coverage.times"
     shell: 
         """
             echo {input} | tr " " "\\n" > {output}.tmp;

@@ -6,7 +6,7 @@ rule all_ln:
 def find_ln(wildcards):
     import os
     i = SAMPLES.index(wildcards.sample)
-    w = DATA+"/"+SAMPLES_ORIG[i]+"."+wildcards.pair+".fastq.gz"
+    w = DATA+"/"+SAMPLES_ORIG[i]+FASTQ_PRE+wildcards.pair+".fastq.gz"
     print(w)
     if os.path.isfile(w) or FQ_REMOVED:
         return w
@@ -27,6 +27,7 @@ rule all_fastqc:
 rule fastqc:
     input: expand("{{sample}}_{pair}.fastq.gz", pair=PAIRS)
     output: directory("fastqc_{sample}")
+    benchmark: "bench/{sample}.fastq.times"
     shell: "mkdir -p {output}; fastqc --extract -t " + str(CORES) + " -o {output} {input}; rm {output}/*_fastqc.zip"
 
 
@@ -34,6 +35,7 @@ rule fastqc:
 rule multiqc:
     input: expand("fastqc_{sample}", sample=SAMPLES)
     output: "multiqc_report.html"
+    benchmark: "bench/multiqc_report.times"
     shell: "multiqc {input}"
 
 ### trimming (optional)
@@ -176,9 +178,8 @@ else:
         shell: "mkdir -p {wildcards.dir}; touch {output}"
     rule all:
         input: "multiqc_report.html","multiqc_report.coverage.html","multiqc_report.align.html", MUTECT_DIR+"/all_samples_paired.pass.table.gz"
-
-CNV_DIR="sequenza"
-include: PRJ_ROOT+"/local/share/snakerule/Snakefile_sequenza_"+TYPE
+    CNV_DIR="sequenza"
+    include: PRJ_ROOT+"/local/share/snakerule/Snakefile_sequenza_"+TYPE
 
 
 rule all_single_something:

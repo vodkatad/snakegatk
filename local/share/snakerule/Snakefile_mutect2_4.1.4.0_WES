@@ -4,36 +4,39 @@
 
 if PON != "":
     rule mutect:
-        input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", bed=SEXONS, reference=REF_DIR+"/GRCh38.d1.vd1.fa", pon=PON
+        input: bam=ALIGN_DIR+"/realigned_{sample}.sorted.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", bed=SEXONS, reference=REF_DIR+"/GRCh38.d1.vd1.fa", pon=PON
         output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), bam=MUTECT_DIR+"/{sample}.igv.bam", stats=MUTECT_DIR+"/{sample}.vcf.gz.stats"
         singularity: GATK_SING
         docker: GATK_ODOCKER
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
         params: padding=PADDING
+        benchmark: "bench/{sample}.vcf.gz.times"
         shell: 
             """
                 gatk Mutect2 --independent-mates -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --interval-padding {params.padding} --germline-resource {input.gnomad} -L {input.bed} --panel-of-normals {input.pon} --bam-output {output.bam} 2> {log}
             """
 else:
     rule mutect:
-        input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", bed=SEXONS, reference=REF_DIR+"/GRCh38.d1.vd1.fa"
+        input: bam=ALIGN_DIR+"/realigned_{sample}.sorted.bam", gnomad=GNOMAD+"/af-only-gnomad.hg38.vcf.gz", bed=SEXONS, reference=REF_DIR+"/GRCh38.d1.vd1.fa"
         output: vcf=protected(MUTECT_DIR+"/{sample}.vcf.gz"), bam=MUTECT_DIR+"/{sample}.igv.bam", stats=MUTECT_DIR+"/{sample}.vcf.gz.stats"
         singularity: GATK_SING
         docker: GATK_ODOCKER
         log: MUTECT_DIR+"/{sample}.vcf.gz.log"
         params: padding=PADDING
+        benchmark: "bench/{sample}.vcf.gz.times"
         shell: 
             """
                 gatk Mutect2 --independent-mates -tumor {wildcards.sample} -R {input.reference} -I {input.bam} -O {output.vcf} --interval-padding {params.padding} --germline-resource {input.gnomad} -L {input.bed} --bam-output {output.bam} 2> {log}
             """
 
 rule getpileup:
-    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", gnomad=GNOMAD+"/gnomad.forcontamination.exomes.vcf", bed=SEXONS
+    input: bam=ALIGN_DIR+"/realigned_{sample}.sorted.bam", gnomad=GNOMAD+"/gnomad.forcontamination.exomes.vcf", bed=SEXONS
     output: temp(MUTECT_DIR+"/{sample}.pileup.table")
     singularity: GATK_SING
     docker: GATK_ODOCKER
     params: padding=PADDING
     log: MUTECT_DIR+"/{sample}.pileup.table.log"
+    benchmark: "bench/{sample}.pileup.table.times"
     shell: 
         """
             gatk GetPileupSummaries -I {input.bam} -V {input.gnomad} -L {input.bed} -O {output} --interval-padding {params.padding} 2> {log}
@@ -45,6 +48,7 @@ rule calculatecontamination:
     singularity: GATK_SING
     docker: GATK_ODOCKER
     log: MUTECT_DIR+"/{sample}.contamination.table.log"
+    benchmark: "bench/{sample}.contamination.table.times"
     shell:
         """
             gatk CalculateContamination  -I {input} -O {output.table} --tumor-segmentation {output.seg} 2> {log}
@@ -60,6 +64,7 @@ rule filtercalls:
     singularity: GATK_SING
     docker: GATK_ODOCKER
     log: MUTECT_DIR+"/{sample}_filtering_stats.tsv.log"
+    benchmark: "bench/{sample}_filtered.vcf.gz.times"
     shell:
         """
             gatk FilterMutectCalls -V {input.vcf} -O {output.vcf} -R {input.ref} --stats {input.stats} --contamination-table {input.contam} --tumor-segmentation {input.seg} --filtering-stats {output.stats} 2> {log}
@@ -68,11 +73,12 @@ rule filtercalls:
 # Rule of thumb: less than 30 is worrisome for QSCORE  (https://gatkforums.broadinstitute.org/gatk/discussion/11136/how-to-call-somatic-mutations-using-gatk4-mutect2)
 #(A lower Q-score means a higher probability that a REF_BASE:ALT_BASE observation randomly picked from the data will be due to this artifact, rather than a true variant.)
 rule artifacts:
-    input: bam=ALIGN_DIR+"/realigned_{sample}.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
+    input: bam=ALIGN_DIR+"/realigned_{sample}.sorted.bam", reference=REF_DIR+"/GRCh38.d1.vd1.fa"
     output: MUTECT_DIR+"/{sample}.artifacts.pre_adapter_summary_metrics", MUTECT_DIR+"/{sample}.artifacts.pre_adapter_detail_metrics"
     singularity: GATK_SING
     docker: GATK_ODOCKER
     log: MUTECT_DIR+"/{sample}.artifacts.pre_adapter_summary_metrics.log"
+    benchmark: "bench/{sample}.artifacts.times"
     params: dir=MUTECT_DIR
     shell:
         """
@@ -86,6 +92,7 @@ rule filterOrientation:
     singularity: GATK_SING
     docker: GATK_ODOCKER
     log: MUTECT_DIR+"/{sample}.bifiltered.vcf.gz.log"
+    benchmark: "bench/{sample}.bifilter.times"
     shell:
         """
             gatk FilterByOrientationBias --artifact-modes G/T -P {input.artifact} -V {input.vcf} -O {output} 2> {log}
@@ -97,6 +104,7 @@ rule filterOrientation:
 rule passFilter:
     input: MUTECT_DIR+"/{sample}.filtered.vcf.gz"
     output: MUTECT_DIR+"/{sample}.pass.vcf.gz"
+    benchmark: "bench/{sample}.pass.vcf.gz.times"
     shell:
         """
         zcat {input} |  awk '/^#/ || $7=="PASS"' | bgzip > {output}

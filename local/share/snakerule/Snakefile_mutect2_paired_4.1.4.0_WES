@@ -1,5 +1,5 @@
 def find_matched_normal(wildcards):
-    return {'normal': ALIGN_DIR+"/realigned_"+find_matched_normal_sample(wildcards)+".bam"}
+    return {'normal': ALIGN_DIR+"/realigned_"+find_matched_normal_sample(wildcards)+".sorted.bam"}
     
 
 if PON != "":

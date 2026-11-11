@@ -1,5 +1,5 @@
-ROOT='/home/egrassi'
 import os
+ROOT=os.environ.get('BIOINFO_ROOT')
 def find_prj_root(path=os.getcwd()):
     if os.path.isfile(os.path.join(path,".PRJ_ROOT")):
         return path
@@ -15,41 +15,61 @@ TMP="/tmp"
 
 SRC_DIR=PRJ_ROOT+'/local/src'
 BIN_DIR=PRJ_ROOT+'/local/bin'
-DATA_DIR=PRJ_ROOT+'/local/share/data'
+FQ_REMOVED=False
+DEBUG="yes"
+TYPE="WES"
+PAIRED=False
 
 # Needed references and annotations
-REF_DIR='/home/egrassi/strata/local/share/data'
-GNOMAD=ROOT+"/common/task/annotations/dataset/gnomad" 
-VEP_CACHE_DIR=ROOT+"/common/task/variant_annotations/dataset/VEP"
-ANNOVAR=ROOT+"/common/task/variant_annotations/dataset/annovar/hg38/humandb/"
-PON=""
-# Singularity containers
-GATK_SING=ROOT+"/gatk4100/gatk.img"
-DEBUG="yes"
+GNOMAD_TASK_DIR=ROOT+'/task/annotations/dataset/gnomad'
+REF_DIR=GNOMAD_TASK_DIR
+GNOMAD=GNOMAD_TASK_DIR
+VEP_CACHE_DIR=ROOT+"/task/variant_annotations/dataset/VEP"
+ANNOVAR=ROOT+"/task/variant_annotations/dataset/annovar/hg38/humandb/"
+PON=GNOMAD_TASK_DIR+"/1000g_pon.hg38.vcf.gz"
+DBSNP=GNOMAD_TASK_DIR+'/chr_All_20180418.vcf.bgz'
+# Singularity containers and occam docker images
+GATK_SING="/home/egrassi/gatk4140/gatk.img" # TODO normalize singularity images paths
+GATK_ODOCKER="egrassi/occamsnakes/gatk:1"
+XENOME_ODOCKER="egrassi/occamsnakes/xenome:1"
+ALIGN_ODOCKER="egrassi/occamsnakes/align_recalibrate:1"
+PLH_DOCKER="bubusettete"
+PICARD="picard -Xmx10g"
 
 ## This dataset:
 DATA=PRJ_ROOT+"/local/share/data/example"
-#FQ_DIR=PRJ_ROOT+"/dataset/v1"
-FQ_XENOME_DIR="xenome"
-EXONS=DATA+'/targeted.bed'
-SEXONS='targeted_sorted.bed'
-
+NAME="example"
 # sed 1d PJ1903090-SF-Integragen-Targeted-Seq.tsv  | cut -f 1 | tr "_" "\t" | cut -f 1 | tr "\n" "," | sed 's/,/","/g'
 SAMPLES_ORIG=["example"]
 SAMPLES=["pippo"]
-REF=""
-SAMPLESD=[]
-SAMPS=",".join(SAMPLESD)
+
+##
+EXONS=DATA+'/targed.bed'
+SEXONS='targeted_sorted.bed'
+
+#REF=""
+#SAMPLESD=[]
+#SAMPS=",".join(SAMPLESD)
+
+#XENOMED_SAMPLES=SAMPLES
 XENOMED_SAMPLES=[]
 TRIMMED_SAMPLES=[]
 
 FASTQ_SUFFIX="_{pair}.fastq.gz"
+FASTQ_PRE="_"
+FASTQ_POST=".fastq.gz"
 FASTQ_SUFFIX_XENOME="_human_{pair}.fastq"
+XENOME_PREFIX="plh"
+XENOME_TOOL="plh"
+XENOME_WAIT=28800
+SIZE=34 # Agilent sureselect
+ASSAY='WES'
+FQ_XENOME_DIR="xenome"
 
-PAIRS=['R1','R2']
+PAIRS=['R1_001','R2_001']
 PAIRS_XENOME=['1','2']
-CORES=8
-MEM=4
+CORES=12
+CORESMD=4
 # TODO need to adapt to unpaired (do they exists?) reads, will need to change the all rule in the subdirs using an input function...
 PATTERNED=2500 
 # HiSeq4000, otherwise 100 for unpatterned
@@ -63,29 +83,14 @@ AFPARAM=""
 wildcard_constraints:
     sample="[a-zA-Z0-9]+"
 
-# Used references
-#https://gdc.cancer.gov/about-data/data-harmonization-and-generation/gdc-reference-files based on
-#ftp://ftp.ncbi.nlm.nih.gov/genomes/archive/old_genbank/Eukaryotes/vertebrates_mammals/Homo_sapiens/GRCh38/seqs_for_alignment_pipelines/README_ANALYSIS_SETS
-# DBSNP 151 ftp://ftp.ncbi.nih.gov/snp/organisms/human_9606_b151_GRCh38p7/VCF/All_20180418.vcf.gz
-ANNOTATIONS=ROOT+"/common/task/annotations/dataset/gdc"
 
 CALLABLE="5:10,10:50,50:100,100:150,150:inf"
 CALLABLE_STRICT="50:100,100:150,150:inf"
-
 PADDING=100
 
+GENES="genes.tsv"
 
-rule all_single_something:
-    input: expand("{{dir}}/{sample}.{{something}}", sample=SAMPLES)
-    output: "{dir}/all_samples_{something}"
-    shell: "mkdir -p {wildcards.dir}; touch {output}"
+rule g:
+    output: "genes.tsv"
+    shell: "echo WES > {output}"
 
-
-# Other phases Snakefiles are included here without symbolic links: in this way the right ones need to be
-# plugged in the base conf.sk
-ALIGN_DIR="align"
-include: PRJ_ROOT+"/local/share/snakerule/Snakefile_align_calibrate_WES_basedir"
-
-# then mutect
-MUTECT_DIR="mutect"
-include: PRJ_ROOT+"/local/share/snakerule/Snakefile_mutect2_WES_basedir"
