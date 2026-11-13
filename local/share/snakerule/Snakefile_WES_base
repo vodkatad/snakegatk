@@ -28,6 +28,7 @@ rule fastqc:
     input: expand("{{sample}}_{pair}.fastq.gz", pair=PAIRS)
     output: directory("fastqc_{sample}")
     benchmark: "bench/{sample}.fastq.times"
+    docker: ALIGN_ODOCKER
     shell: "mkdir -p {output}; fastqc --extract -t " + str(CORES) + " -o {output} {input}; rm {output}/*_fastqc.zip"
 
 
@@ -36,6 +37,7 @@ rule multiqc:
     input: expand("fastqc_{sample}", sample=SAMPLES)
     output: "multiqc_report.html"
     benchmark: "bench/multiqc_report.times"
+    docker: ALIGN_ODOCKER
     shell: "multiqc {input}"
 
 ### trimming (optional)
